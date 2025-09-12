@@ -158,23 +158,35 @@ function extractLocation(content: string, lines: string[]): JobInfo['location'] 
   return null
 }
 
+// Helper function to escape regex special characters
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function extractSkills(content: string): string[] {
   const foundSkills = new Set<string>()
   const text = content.toLowerCase()
   
   // Match exact skills from our list
   for (const skill of COMMON_SKILLS) {
-    const skillLower = skill.toLowerCase()
-    const patterns = [
-      new RegExp(`\\b${skillLower}\\b`, 'i'),
-      new RegExp(`\\b${skillLower}(?:\\.js|\\.py|script)\\b`, 'i')
-    ]
-    
-    for (const pattern of patterns) {
-      if (pattern.test(text)) {
-        foundSkills.add(skill)
-        break
+    try {
+      const skillLower = skill.toLowerCase()
+      const escapedSkill = escapeRegex(skillLower)
+      const patterns = [
+        new RegExp(`\\b${escapedSkill}\\b`, 'i'),
+        new RegExp(`\\b${escapedSkill}(?:\\.js|\\.py|script)\\b`, 'i')
+      ]
+      
+      for (const pattern of patterns) {
+        if (pattern.test(text)) {
+          foundSkills.add(skill)
+          break
+        }
       }
+    } catch (error) {
+      // Skip problematic skill regex and continue with others
+      console.warn(`Failed to create regex for skill "${skill}":`, error)
+      continue
     }
   }
   
