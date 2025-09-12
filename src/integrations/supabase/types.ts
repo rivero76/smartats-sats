@@ -439,6 +439,354 @@ export type Database = {
         }
         Relationships: []
       }
+      sats_analyses: {
+        Row: {
+          ats_score: number | null
+          created_at: string
+          enriched_by_user: boolean
+          id: string
+          jd_id: string
+          resume_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ats_score?: number | null
+          created_at?: string
+          enriched_by_user?: boolean
+          id?: string
+          jd_id: string
+          resume_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ats_score?: number | null
+          created_at?: string
+          enriched_by_user?: boolean
+          id?: string
+          jd_id?: string
+          resume_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sats_analyses_jd_id_fkey"
+            columns: ["jd_id"]
+            isOneToOne: false
+            referencedRelation: "sats_job_descriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sats_analyses_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "sats_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sats_companies: {
+        Row: {
+          created_at: string
+          id: string
+          industry: string | null
+          name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      sats_job_descriptions: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          location_id: string | null
+          name: string
+          pasted_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          location_id?: string | null
+          name: string
+          pasted_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          location_id?: string | null
+          name?: string
+          pasted_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sats_job_descriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "sats_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sats_job_descriptions_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "sats_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sats_job_skills: {
+        Row: {
+          extracted_at: string
+          id: string
+          job_id: string
+          skill_id: string
+        }
+        Insert: {
+          extracted_at?: string
+          id?: string
+          job_id: string
+          skill_id: string
+        }
+        Update: {
+          extracted_at?: string
+          id?: string
+          job_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sats_job_skills_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "sats_job_descriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sats_job_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "sats_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sats_locations: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sats_resumes: {
+        Row: {
+          created_at: string
+          file_url: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sats_skill_experiences: {
+        Row: {
+          added_manually: boolean
+          analysis_id: string | null
+          company_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          job_title: string | null
+          keywords: string[] | null
+          skill_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_manually?: boolean
+          analysis_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_title?: string | null
+          keywords?: string[] | null
+          skill_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_manually?: boolean
+          analysis_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_title?: string | null
+          keywords?: string[] | null
+          skill_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sats_skill_experiences_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "sats_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sats_skill_experiences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "sats_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sats_skill_experiences_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "sats_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sats_skills: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sats_user_skills: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_date: string | null
+          notes: string | null
+          proficiency_level: string | null
+          skill_id: string
+          updated_at: string
+          user_id: string
+          years_of_experience: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_date?: string | null
+          notes?: string | null
+          proficiency_level?: string | null
+          skill_id: string
+          updated_at?: string
+          user_id: string
+          years_of_experience?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_date?: string | null
+          notes?: string | null
+          proficiency_level?: string | null
+          skill_id?: string
+          updated_at?: string
+          user_id?: string
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sats_user_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "sats_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sats_users_public: {
         Row: {
           auth_user_id: string
