@@ -5,9 +5,12 @@ import {
   BarChart3, 
   Sparkles, 
   Settings, 
-  ShieldCheck 
+  ShieldCheck,
+  LogOut,
+  User,
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 import {
   Sidebar,
@@ -22,9 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-// Mock user role - in Phase 2 this will come from Supabase auth
-const mockUser = { role: "admin" } // Change to "user" to test non-admin view
-
+// Navigation items remain the same
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "My Resumes", url: "/resumes", icon: FileText },
@@ -40,6 +41,7 @@ const adminItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar()
+  const { satsUser, signOut } = useAuth()
   const location = useLocation()
   const currentPath = location.pathname
 
@@ -96,7 +98,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {mockUser.role === "admin" && (
+        {satsUser?.role === "admin" && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/70">
               {!isCollapsed && "Administration"}
@@ -117,6 +119,39 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* User Profile and Logout */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {satsUser && (
+                <SidebarMenuItem>
+                  <div className="flex items-center px-2 py-1.5 text-sm text-sidebar-foreground">
+                    <User className="h-4 w-4 flex-shrink-0 mr-2" />
+                    {!isCollapsed && (
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-medium truncate">{satsUser.name}</span>
+                        <span className="text-xs text-sidebar-foreground/70 capitalize">
+                          {satsUser.role}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </SidebarMenuItem>
+              )}
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={signOut} 
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 group"
+                >
+                  <LogOut className="h-4 w-4 flex-shrink-0" />
+                  {!isCollapsed && <span>Sign Out</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   )

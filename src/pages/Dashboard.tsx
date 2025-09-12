@@ -1,8 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock } from "lucide-react"
 
 const Dashboard = () => {
+  const { satsUser } = useAuth();
+  
   const stats = [
     {
       title: "Total Resumes",
@@ -45,7 +48,9 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome, {satsUser?.name || 'User'} 👋
+        </h1>
         <p className="text-muted-foreground">
           Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
         </p>

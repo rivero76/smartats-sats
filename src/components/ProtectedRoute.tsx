@@ -2,7 +2,11 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
-const Index = () => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -17,9 +21,7 @@ const Index = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If user is authenticated, this should redirect to dashboard
-  // but actually the App.tsx routing handles this differently
-  return null;
+  return <>{children}</>;
 };
 
-export default Index;
+export default ProtectedRoute;
