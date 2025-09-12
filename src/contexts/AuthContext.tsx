@@ -44,10 +44,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from("sats_users_public")
         .select("*")
         .eq("auth_user_id", userId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
-      setSatsUser(data as SATSUser);
+      
+      if (data) {
+        setSatsUser(data as SATSUser);
+      } else {
+        // Handle case where SATS user record doesn't exist
+        console.warn("SATS user record not found for user:", userId);
+        setSatsUser(null);
+      }
     } catch (error) {
       console.error("Error fetching SATS user:", error);
       setSatsUser(null);
