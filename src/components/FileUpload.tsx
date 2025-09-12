@@ -11,7 +11,7 @@ interface FileUploadProps {
   bucket: string
   accept?: Record<string, string[]>
   maxSize?: number
-  onUpload: (url: string, fileName: string) => void
+  onUpload: (url: string, fileName: string, extractedText?: string) => void
   disabled?: boolean
 }
 
@@ -59,7 +59,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         .from(bucket)
         .getPublicUrl(filePath)
 
-      onUpload(publicUrl, file.name)
+      // Extract text content for supported file types
+      let extractedText = '';
+      if (file.type === 'text/plain') {
+        extractedText = await file.text();
+      } else if (file.type === 'application/pdf' || 
+                 file.type === 'application/msword' || 
+                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        // For PDF and Word docs, we'll signal that backend processing is needed
+        extractedText = 'FILE_CONTENT_TO_EXTRACT';
+      }
+
+      onUpload(publicUrl, file.name, extractedText)
       
       toast({
         title: "File uploaded successfully",

@@ -17,6 +17,8 @@ import {
   JobDescription 
 } from '@/hooks/useJobDescriptions'
 import { Plus, Edit, Building, MapPin } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface JobDescriptionModalProps {
   jobDescription?: JobDescription
@@ -45,17 +47,23 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   const [newLocationData, setNewLocationData] = useState({ city: '', state: '', country: '' })
   const [showNewLocation, setShowNewLocation] = useState(false)
   
+  // Processing states
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [showReview, setShowReview] = useState(false)
+  const [extractedData, setExtractedData] = useState<any>(null)
+  
   const createJobDescription = useCreateJobDescription()
   const updateJobDescription = useUpdateJobDescription()
   const createCompany = useCreateCompany()
   const createLocation = useCreateLocation()
+  const { toast } = useToast()
   
   const { data: companies = [] } = useCompanies()
   const { data: locations = [] } = useLocations()
 
   const isEditing = !!jobDescription
   const isLoading = createJobDescription.isPending || updateJobDescription.isPending || 
-                    createCompany.isPending || createLocation.isPending
+                    createCompany.isPending || createLocation.isPending || isProcessing
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +106,78 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     }
   }
 
+  const processContent = async (content: string) => {
+    setIsProcessing(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('process-job-content', {
+        body: { content }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          title: "Processing Error",
+          description: "Could not extract information from content. Please fill manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setExtractedData(data);
+      
+      // Auto-populate fields
+      if (data.title) setName(data.title);
+      if (data.company) {
+        // Try to find existing company or suggest creating new one
+        const existingCompany = companies.find(c => 
+          c.name.toLowerCase().includes(data.company.toLowerCase())
+        );
+        if (existingCompany) {
+          setCompanyId(existingCompany.id);
+        } else {
+          setNewCompanyName(data.company);
+          setShowNewCompany(true);
+        }
+      }
+      if (data.location) {
+        // Try to find existing location
+        const locationStr = [data.location.city, data.location.state, data.location.country]
+          .filter(Boolean).join(", ");
+        const existingLocation = locations.find(l => 
+          formatLocationName(l).toLowerCase().includes(locationStr.toLowerCase())
+        );
+        if (existingLocation) {
+          setLocationId(existingLocation.id);
+        } else if (locationStr) {
+          setNewLocationData({
+            city: data.location.city || '',
+            state: data.location.state || '',
+            country: data.location.country || ''
+          });
+          setShowNewLocation(true);
+        }
+      }
+
+      setShowReview(true);
+      
+      toast({
+        title: "Content Processed",
+        description: "Job information extracted! Please review and confirm.",
+      });
+    } catch (error) {
+      console.error('Error processing content:', error);
+      toast({
+        title: "Processing Error",
+        description: "Could not process content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleClose = () => {
     setOpen(false)
     setName(jobDescription?.name || '')
@@ -110,16 +190,39 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     setShowNewCompany(false)
     setNewLocationData({ city: '', state: '', country: '' })
     setShowNewLocation(false)
+    setIsProcessing(false)
+    setShowReview(false)
+    setExtractedData(null)
     onClose?.()
   }
 
-  const handleFileUpload = (url: string, fileName: string) => {
-    setFileUrl(url)
-    if (!name.trim()) {
-      const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
-      setName(nameWithoutExtension)
+  const handleFileUpload = (url: string, fileName: string, extractedText?: string) => {
+    setFileUrl(url);
+    
+    // Auto-populate job title from filename if it's empty
+    if (!name.trim() && fileName) {
+      const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+      const cleanName = nameWithoutExt.replace(/[-_]/g, " ");
+      setName(cleanName);
     }
-  }
+
+    // Process extracted text or trigger file processing
+    if (extractedText && extractedText !== 'FILE_CONTENT_TO_EXTRACT') {
+      processContent(extractedText);
+    } else if (extractedText === 'FILE_CONTENT_TO_EXTRACT') {
+      toast({
+        title: "File Processing",
+        description: "Document uploaded. Text extraction from PDF/Word files coming soon!",
+      });
+    }
+  };
+
+  const handleTextPaste = (text: string) => {
+    setPastedText(text);
+    if (text.trim().length > 50) {
+      processContent(text);
+    }
+  };
 
   const formatLocationName = (location: any) => {
     const parts = [location.city, location.state, location.country].filter(Boolean)
@@ -310,7 +413,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
               <TabsContent value="text" className="space-y-4">
                 <Textarea
                   value={pastedText}
-                  onChange={(e) => setPastedText(e.target.value)}
+                  onChange={(e) => handleTextPaste(e.target.value)}
                   placeholder="Paste job description text here..."
                   className="min-h-[200px]"
                   disabled={isLoading}
@@ -318,6 +421,65 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Processing State */}
+          {isProcessing && (
+            <div className="flex items-center justify-center py-4 space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Processing job description...</span>
+            </div>
+          )}
+
+          {/* Review State */}
+          {showReview && extractedData && (
+            <div className="bg-muted p-4 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Review Extracted Information</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowReview(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="grid gap-2 text-sm">
+                {extractedData.title && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Job Title:</span>
+                    <span className="text-right">{extractedData.title}</span>
+                  </div>
+                )}
+                {extractedData.company && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Company:</span>
+                    <span className="text-right">{extractedData.company}</span>
+                  </div>
+                )}
+                {extractedData.location && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Location:</span>
+                    <span className="text-right">
+                      {[extractedData.location.city, extractedData.location.state, extractedData.location.country]
+                        .filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                {extractedData.skills && extractedData.skills.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Skills:</span>
+                    <span className="text-right text-xs">
+                      {extractedData.skills.slice(0, 3).join(", ")}
+                      {extractedData.skills.length > 3 && "..."}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Information has been auto-populated above. You can edit any fields before saving.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3">
             <Button 
