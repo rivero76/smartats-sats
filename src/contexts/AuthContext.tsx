@@ -51,9 +51,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data) {
         setSatsUser(data as SATSUser);
       } else {
-        // Handle case where SATS user record doesn't exist
+        // Handle case where SATS user record doesn't exist - try to create it
         console.warn("SATS user record not found for user:", userId);
-        setSatsUser(null);
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const fallbackName = userData.user.user_metadata?.name || 
+                               userData.user.user_metadata?.full_name || 
+                               userData.user.email?.split('@')[0] || 'User';
+            
+            const { data: newSatsUser, error: insertError } = await supabase
+              .from("sats_users_public")
+              .insert({
+                auth_user_id: userId,
+                name: fallbackName,
+                role: 'user'
+              })
+              .select()
+              .single();
+            
+            if (!insertError && newSatsUser) {
+              setSatsUser(newSatsUser as SATSUser);
+            } else {
+              console.error("Failed to create SATS user record:", insertError);
+              setSatsUser(null);
+            }
+          } else {
+            setSatsUser(null);
+          }
+        } catch (createError) {
+          console.error("Error creating fallback SATS user:", createError);
+          setSatsUser(null);
+        }
       }
     } catch (error) {
       console.error("Error fetching SATS user:", error);
