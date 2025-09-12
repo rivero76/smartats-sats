@@ -17,8 +17,8 @@ import {
   JobDescription 
 } from '@/hooks/useJobDescriptions'
 import { Plus, Edit, Building, MapPin } from 'lucide-react'
-import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { extractJobDescriptionInfo } from '@/utils/contentExtraction'
 
 interface JobDescriptionModalProps {
   jobDescription?: JobDescription
@@ -47,9 +47,8 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   const [newLocationData, setNewLocationData] = useState({ city: '', state: '', country: '' })
   const [showNewLocation, setShowNewLocation] = useState(false)
   
-  // Processing states
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [showReview, setShowReview] = useState(false)
+  // Auto-population states
+  const [showExtracted, setShowExtracted] = useState(false)
   const [extractedData, setExtractedData] = useState<any>(null)
   
   const createJobDescription = useCreateJobDescription()
@@ -63,7 +62,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
 
   const isEditing = !!jobDescription
   const isLoading = createJobDescription.isPending || updateJobDescription.isPending || 
-                    createCompany.isPending || createLocation.isPending || isProcessing
+                    createCompany.isPending || createLocation.isPending
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,44 +105,32 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     }
   }
 
-  const processContent = async (content: string) => {
-    setIsProcessing(true);
+  const processContent = (content: string) => {
+    if (!content.trim()) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('process-job-content', {
-        body: { content }
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Processing Error",
-          description: "Could not extract information from content. Please fill manually.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setExtractedData(data);
+      const extracted = extractJobDescriptionInfo(content);
+      setExtractedData(extracted);
       
       // Auto-populate fields
-      if (data.title) setName(data.title);
-      if (data.company) {
+      if (extracted.title) setName(extracted.title);
+      
+      if (extracted.company) {
         // Try to find existing company or suggest creating new one
         const existingCompany = companies.find(c => 
-          c.name.toLowerCase().includes(data.company.toLowerCase())
+          c.name.toLowerCase().includes(extracted.company!.toLowerCase())
         );
         if (existingCompany) {
           setCompanyId(existingCompany.id);
         } else {
-          setNewCompanyName(data.company);
+          setNewCompanyName(extracted.company);
           setShowNewCompany(true);
         }
       }
-      if (data.location) {
+      
+      if (extracted.location) {
         // Try to find existing location
-        const locationStr = [data.location.city, data.location.state, data.location.country]
+        const locationStr = [extracted.location.city, extracted.location.state, extracted.location.country]
           .filter(Boolean).join(", ");
         const existingLocation = locations.find(l => 
           formatLocationName(l).toLowerCase().includes(locationStr.toLowerCase())
@@ -152,29 +139,27 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
           setLocationId(existingLocation.id);
         } else if (locationStr) {
           setNewLocationData({
-            city: data.location.city || '',
-            state: data.location.state || '',
-            country: data.location.country || ''
+            city: extracted.location.city || '',
+            state: extracted.location.state || '',
+            country: extracted.location.country || ''
           });
           setShowNewLocation(true);
         }
       }
-
-      setShowReview(true);
+      
+      setShowExtracted(true);
       
       toast({
-        title: "Content Processed",
-        description: "Job information extracted! Please review and confirm.",
+        title: "Information Extracted",
+        description: "Job information auto-populated! Please review and adjust as needed.",
       });
     } catch (error) {
-      console.error('Error processing content:', error);
+      console.error('Error extracting content:', error);
       toast({
-        title: "Processing Error",
-        description: "Could not process content. Please try again.",
+        title: "Extraction Error",
+        description: "Could not extract information. Please fill manually.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -190,8 +175,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     setShowNewCompany(false)
     setNewLocationData({ city: '', state: '', country: '' })
     setShowNewLocation(false)
-    setIsProcessing(false)
-    setShowReview(false)
+    setShowExtracted(false)
     setExtractedData(null)
     onClose?.()
   }
@@ -206,20 +190,15 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
       setName(cleanName);
     }
 
-    // Process extracted text or trigger file processing
+    // Process extracted text immediately
     if (extractedText && extractedText !== 'FILE_CONTENT_TO_EXTRACT') {
       processContent(extractedText);
-    } else if (extractedText === 'FILE_CONTENT_TO_EXTRACT') {
-      toast({
-        title: "File Processing",
-        description: "Document uploaded. Text extraction from PDF/Word files coming soon!",
-      });
     }
   };
 
   const handleTextPaste = (text: string) => {
     setPastedText(text);
-    if (text.trim().length > 50) {
+    if (text.trim().length > 20) {
       processContent(text);
     }
   };
@@ -422,23 +401,15 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
             </Tabs>
           </div>
 
-          {/* Processing State */}
-          {isProcessing && (
-            <div className="flex items-center justify-center py-4 space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              <span className="text-sm text-muted-foreground">Processing job description...</span>
-            </div>
-          )}
-
-          {/* Review State */}
-          {showReview && extractedData && (
+          {/* Extracted Information Display */}
+          {showExtracted && extractedData && (
             <div className="bg-muted p-4 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">Review Extracted Information</h4>
+                <h4 className="font-medium">Auto-Extracted Information</h4>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowReview(false)}
+                  onClick={() => setShowExtracted(false)}
                 >
                   ✕
                 </Button>
@@ -467,10 +438,10 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                 )}
                 {extractedData.skills && extractedData.skills.length > 0 && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Skills:</span>
+                    <span className="font-medium">Skills Found:</span>
                     <span className="text-right text-xs">
                       {extractedData.skills.slice(0, 3).join(", ")}
-                      {extractedData.skills.length > 3 && "..."}
+                      {extractedData.skills.length > 3 && ` +${extractedData.skills.length - 3} more`}
                     </span>
                   </div>
                 )}

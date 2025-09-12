@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FileUpload } from '@/components/FileUpload'
 import { useCreateResume, useUpdateResume, Resume } from '@/hooks/useResumes'
-import { Plus, Edit } from 'lucide-react'
+import { Plus, Edit, User } from 'lucide-react'
+import { extractResumeInfo } from '@/utils/contentExtraction'
+import { useToast } from '@/hooks/use-toast'
 
 interface ResumeModalProps {
   resume?: Resume
@@ -17,9 +19,12 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(resume?.name || '')
   const [fileUrl, setFileUrl] = useState(resume?.file_url || '')
+  const [showExtracted, setShowExtracted] = useState(false)
+  const [extractedData, setExtractedData] = useState<any>(null)
   
   const createResume = useCreateResume()
   const updateResume = useUpdateResume()
+  const { toast } = useToast()
 
   const isEditing = !!resume
   const isLoading = createResume.isPending || updateResume.isPending
@@ -52,12 +57,46 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
     }
   }
 
-  const handleFileUpload = (url: string, fileName: string) => {
+  const processResumeContent = (content: string) => {
+    if (!content.trim()) return;
+    
+    try {
+      const extracted = extractResumeInfo(content);
+      setExtractedData(extracted);
+      
+      // Auto-populate name if available and not already set
+      if (extracted.name && !name.trim()) {
+        setName(extracted.name);
+      }
+      
+      setShowExtracted(true);
+      
+      toast({
+        title: "Resume Information Extracted",
+        description: "Resume details auto-populated! Please review and adjust as needed.",
+      });
+    } catch (error) {
+      console.error('Error extracting resume content:', error);
+      toast({
+        title: "Extraction Error",
+        description: "Could not extract information. Please fill manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileUpload = (url: string, fileName: string, extractedText?: string) => {
     setFileUrl(url)
+    
+    // Auto-fill name from filename if not set
     if (!name.trim()) {
-      // Auto-fill name from filename if not set
       const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
       setName(nameWithoutExtension)
+    }
+    
+    // Process extracted text if available
+    if (extractedText && extractedText !== 'FILE_CONTENT_TO_EXTRACT') {
+      processResumeContent(extractedText);
     }
   }
 
@@ -67,6 +106,8 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
       // Reset form when closing
       setName(resume?.name || '')
       setFileUrl(resume?.file_url || '')
+      setShowExtracted(false)
+      setExtractedData(null)
     }
   }
 
@@ -123,6 +164,66 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
               </p>
             )}
           </div>
+
+          {/* Extracted Information Display */}
+          {showExtracted && extractedData && (
+            <div className="bg-muted p-4 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Auto-Extracted Information
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowExtracted(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="grid gap-2 text-sm">
+                {extractedData.name && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Name:</span>
+                    <span className="text-right">{extractedData.name}</span>
+                  </div>
+                )}
+                {extractedData.email && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Email:</span>
+                    <span className="text-right">{extractedData.email}</span>
+                  </div>
+                )}
+                {extractedData.phone && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Phone:</span>
+                    <span className="text-right">{extractedData.phone}</span>
+                  </div>
+                )}
+                {extractedData.location && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Location:</span>
+                    <span className="text-right">{extractedData.location}</span>
+                  </div>
+                )}
+                {extractedData.skills && extractedData.skills.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Skills Found:</span>
+                    <span className="text-right text-xs">
+                      {extractedData.skills.slice(0, 3).join(", ")}
+                      {extractedData.skills.length > 3 && ` +${extractedData.skills.length - 3} more`}
+                    </span>
+                  </div>
+                )}
+                {extractedData.experience && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Experience:</span>
+                    <span className="text-right text-xs">{extractedData.experience}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3">
             <Button 

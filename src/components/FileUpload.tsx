@@ -63,11 +63,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       let extractedText = '';
       if (file.type === 'text/plain') {
         extractedText = await file.text();
+      } else if (file.type.includes('text/')) {
+        // Try to extract text from other text-based files
+        try {
+          extractedText = await file.text();
+        } catch (e) {
+          console.log('Could not extract text from file:', e);
+        }
       } else if (file.type === 'application/pdf' || 
                  file.type === 'application/msword' || 
                  file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // For PDF and Word docs, we'll signal that backend processing is needed
-        extractedText = 'FILE_CONTENT_TO_EXTRACT';
+        // For PDF and Word docs, return placeholder - pattern extraction will use filename
+        extractedText = '';
       }
 
       onUpload(publicUrl, file.name, extractedText)
