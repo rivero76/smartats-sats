@@ -441,35 +441,47 @@ export type Database = {
       }
       sats_analyses: {
         Row: {
+          analysis_data: Json | null
           ats_score: number | null
           created_at: string
           enriched_by_user: boolean
           id: string
           jd_id: string
+          matched_skills: Json | null
+          missing_skills: Json | null
           resume_id: string
           status: string
+          suggestions: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          analysis_data?: Json | null
           ats_score?: number | null
           created_at?: string
           enriched_by_user?: boolean
           id?: string
           jd_id: string
+          matched_skills?: Json | null
+          missing_skills?: Json | null
           resume_id: string
           status?: string
+          suggestions?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          analysis_data?: Json | null
           ats_score?: number | null
           created_at?: string
           enriched_by_user?: boolean
           id?: string
           jd_id?: string
+          matched_skills?: Json | null
+          missing_skills?: Json | null
           resume_id?: string
           status?: string
+          suggestions?: string | null
           updated_at?: string
           user_id?: string
         }
