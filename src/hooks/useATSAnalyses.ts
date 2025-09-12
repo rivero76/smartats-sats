@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
+import { useN8NWebhook, type N8NWebhookPayload } from '@/hooks/useN8NWebhook'
 
 export interface ATSAnalysis {
   id: string
@@ -126,11 +127,13 @@ export const useATSAnalysisStats = () => {
 export const useCreateATSAnalysis = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const { sendWebhook } = useN8NWebhook()
   
   return useMutation({
     mutationFn: async (data: CreateATSAnalysisData) => {
       if (!user) throw new Error('User not authenticated')
       
+      // Create the analysis record first
       const { data: analysis, error } = await supabase
         .from('sats_analyses')
         .insert({
@@ -146,6 +149,106 @@ export const useCreateATSAnalysis = () => {
         .single()
       
       if (error) throw error
+
+      // Fetch full resume and job description data for webhook
+      const [resumeResult, jobResult] = await Promise.all([
+        supabase
+          .from('sats_resumes')
+          .select('*')
+          .eq('id', data.resume_id)
+          .single(),
+        supabase
+          .from('sats_job_descriptions')
+          .select(`
+            *,
+            company:sats_companies!sats_job_descriptions_company_id_fkey (*),
+            location:sats_locations!sats_job_descriptions_location_id_fkey (*)
+          `)
+          .eq('id', data.jd_id)
+          .single()
+      ])
+
+      if (resumeResult.error || jobResult.error) {
+        console.error('Error fetching data for webhook:', resumeResult.error || jobResult.error)
+      }
+
+      // Prepare webhook payload
+      const webhookPayload: N8NWebhookPayload = {
+        analysis_id: analysis.id,
+        user_id: user.id,
+        resume_data: {
+          id: resumeResult.data?.id || data.resume_id,
+          name: resumeResult.data?.name || 'Unknown Resume',
+          file_url: resumeResult.data?.file_url
+        },
+        job_description_data: {
+          id: jobResult.data?.id || data.jd_id,
+          name: jobResult.data?.name || 'Unknown Job',
+          content: jobResult.data?.pasted_text,
+          company: jobResult.data?.company ? {
+            id: jobResult.data.company.id,
+            name: jobResult.data.company.name
+          } : undefined,
+          location: jobResult.data?.location ? {
+            id: jobResult.data.location.id,
+            name: `${jobResult.data.location.city}, ${jobResult.data.location.state}`
+          } : undefined
+        },
+        timestamp: new Date().toISOString(),
+        request_id: `req-${analysis.id}-${Date.now()}`
+      }
+
+      // Update status to processing and send webhook
+      await supabase
+        .from('sats_analyses')
+        .update({ status: 'processing' })
+        .eq('id', analysis.id)
+
+      // Send to N8N webhook (don't await to prevent blocking)
+      sendWebhook.mutateAsync(webhookPayload).then((webhookResult) => {
+        // Update analysis with webhook results
+        if (webhookResult.success) {
+          supabase
+            .from('sats_analyses')
+            .update({
+              status: 'complete',
+              ats_score: webhookResult.ats_score,
+              matched_skills: webhookResult.matched_skills || [],
+              missing_skills: webhookResult.missing_skills || [],
+              suggestions: webhookResult.suggestions,
+              analysis_data: { webhook_response: webhookResult } as any
+            })
+            .eq('id', analysis.id)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
+            })
+        } else {
+          supabase
+            .from('sats_analyses')
+            .update({
+              status: 'error',
+              analysis_data: { webhook_error: webhookResult.error } as any
+            })
+            .eq('id', analysis.id)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
+            })
+        }
+      }).catch((error) => {
+        // Handle webhook failure
+        console.error('Webhook failed:', error)
+        supabase
+          .from('sats_analyses')
+          .update({
+            status: 'error',
+            analysis_data: { webhook_error: error.message } as any
+          })
+          .eq('id', analysis.id)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
+          })
+      })
+      
       return analysis
     },
     onSuccess: () => {
