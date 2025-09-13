@@ -130,6 +130,80 @@ export const useN8NWebhook = () => {
     },
   })
 
+  const testConnectivity = useMutation({
+    mutationFn: async (testUrl?: string): Promise<{ success: boolean; status?: number; message?: string; error?: string }> => {
+      const url = testUrl || webhookUrl
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout for connectivity
+
+      try {
+        console.log('Testing connectivity to:', url)
+
+        // Try a simple GET request first to check if the endpoint exists
+        const response = await fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+        
+        console.log('Connectivity test response status:', response.status)
+        console.log('Connectivity test response headers:', Object.fromEntries(response.headers.entries()))
+
+        // For webhooks, we expect certain status codes
+        if (response.status === 200 || response.status === 405 || response.status === 404) {
+          return {
+            success: true,
+            status: response.status,
+            message: response.status === 405 
+              ? 'Webhook endpoint found (Method Not Allowed for GET is expected)'
+              : response.status === 404
+              ? 'Webhook endpoint not found - check URL'
+              : 'Webhook endpoint is accessible'
+          }
+        }
+
+        return {
+          success: false,
+          status: response.status,
+          error: `Unexpected status code: ${response.status}`
+        }
+      } catch (error) {
+        clearTimeout(timeoutId)
+        console.error('Connectivity test error:', error)
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+          return {
+            success: false,
+            error: 'Connectivity test timed out after 10 seconds'
+          }
+        }
+        
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Network error'
+        }
+      }
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast({
+          title: 'Connectivity Test Successful',
+          description: result.message || 'Webhook endpoint is reachable',
+        })
+      }
+    },
+    onError: (error: any) => {
+      console.error('Connectivity test error:', error)
+      toast({
+        title: 'Connectivity Test Failed',
+        description: error.message || 'Failed to reach webhook endpoint',
+        variant: 'destructive',
+      })
+    },
+  })
+
   const testWebhook = useMutation({
     mutationFn: async (testUrl?: string): Promise<N8NWebhookResponse> => {
       const url = testUrl || webhookUrl
@@ -237,7 +311,8 @@ export const useN8NWebhook = () => {
     setWebhookUrl,
     validateWebhookUrl,
     sendWebhook,
+    testConnectivity,
     testWebhook,
-    isLoading: sendWebhook.isPending || testWebhook.isPending,
+    isLoading: sendWebhook.isPending || testWebhook.isPending || testConnectivity.isPending,
   }
 }
