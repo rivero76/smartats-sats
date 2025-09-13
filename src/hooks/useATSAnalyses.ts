@@ -204,50 +204,82 @@ export const useCreateATSAnalysis = () => {
         .update({ status: 'processing' })
         .eq('id', analysis.id)
 
-      // Send to N8N webhook (don't await to prevent blocking)
-      sendWebhook.mutateAsync(webhookPayload).then((webhookResult) => {
+      // Send to N8N webhook - Use try/catch for better error handling
+      try {
+        console.log('Sending webhook with data:', webhookPayload)
+        const webhookResult = await sendWebhook.mutateAsync(webhookPayload)
+        console.log('Webhook response received:', webhookResult)
+        
         // Update analysis with webhook results
         if (webhookResult.success) {
-          supabase
+          const updateData: any = {
+            status: 'complete',
+            analysis_data: { webhook_response: JSON.parse(JSON.stringify(webhookResult)) }
+          }
+          
+          if (webhookResult.ats_score !== undefined) {
+            updateData.ats_score = webhookResult.ats_score
+          }
+          if (webhookResult.matched_skills) {
+            updateData.matched_skills = webhookResult.matched_skills
+          }
+          if (webhookResult.missing_skills) {
+            updateData.missing_skills = webhookResult.missing_skills
+          }
+          if (webhookResult.suggestions) {
+            updateData.suggestions = webhookResult.suggestions
+          }
+          
+          await supabase
             .from('sats_analyses')
-            .update({
-              status: 'complete',
-              ats_score: webhookResult.ats_score,
-              matched_skills: webhookResult.matched_skills || [],
-              missing_skills: webhookResult.missing_skills || [],
-              suggestions: webhookResult.suggestions,
-              analysis_data: { webhook_response: webhookResult } as any
-            })
+            .update(updateData)
             .eq('id', analysis.id)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
-            })
+            
+          toast({
+            title: 'Analysis Complete',
+            description: 'Your ATS analysis has been completed successfully.',
+          })
         } else {
-          supabase
+          // Update analysis with error status
+          await supabase
             .from('sats_analyses')
             .update({
               status: 'error',
-              analysis_data: { webhook_error: webhookResult.error } as any
+              analysis_data: { 
+                webhook_error: webhookResult.error || 'Webhook processing failed',
+                webhook_response: JSON.parse(JSON.stringify(webhookResult))
+              }
             })
             .eq('id', analysis.id)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
-            })
+            
+          toast({
+            title: 'Analysis Error',
+            description: `Analysis failed: ${webhookResult.error || 'Unknown error'}`,
+            variant: 'destructive',
+          })
         }
-      }).catch((error) => {
-        // Handle webhook failure
-        console.error('Webhook failed:', error)
-        supabase
+      } catch (webhookError) {
+        console.error('Webhook request failed:', webhookError)
+        
+        // Update analysis with webhook error
+        await supabase
           .from('sats_analyses')
           .update({
             status: 'error',
-            analysis_data: { webhook_error: error.message } as any
+            analysis_data: { 
+              webhook_error: webhookError instanceof Error ? webhookError.message : 'Webhook request failed',
+              webhook_failed: true,
+              error_timestamp: new Date().toISOString()
+            }
           })
           .eq('id', analysis.id)
-          .then(() => {
-            queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
-          })
-      })
+        
+        toast({
+          title: 'Webhook Error',
+          description: `Failed to process analysis: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`,
+          variant: 'destructive',
+        })
+      }
       
       return analysis
     },

@@ -40,7 +40,15 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
       const result = await testWebhook.mutateAsync(editUrl)
       setTestResult(result)
     } catch (error) {
-      setTestResult({ success: false, error: (error as Error).message })
+      console.error('Test error:', error)
+      setTestResult({ 
+        success: false, 
+        error: (error as Error).message,
+        _debug: {
+          url: editUrl,
+          timestamp: new Date().toISOString()
+        }
+      })
     }
   }
 

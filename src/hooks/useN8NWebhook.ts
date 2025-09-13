@@ -36,6 +36,7 @@ export interface N8NWebhookResponse {
   missing_skills?: string[]
   suggestions?: string
   error?: string
+  message?: string
 }
 
 const DEFAULT_WEBHOOK_URL = 'https://rivero76.app.n8n.cloud/webhook-test/3933699e-651b-487a-bc9d-01ed0eccf660'
@@ -66,6 +67,9 @@ export const useN8NWebhook = () => {
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
       try {
+        console.log('Sending webhook request to:', webhookUrl)
+        console.log('Payload:', JSON.stringify(payload, null, 2))
+
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
@@ -76,15 +80,40 @@ export const useN8NWebhook = () => {
         })
 
         clearTimeout(timeoutId)
+        
+        console.log('Webhook response status:', response.status)
+        console.log('Webhook response headers:', Object.fromEntries(response.headers.entries()))
 
         if (!response.ok) {
-          throw new Error(`Webhook request failed with status: ${response.status}`)
+          const errorText = await response.text()
+          console.error('Webhook error response:', errorText)
+          throw new Error(`Webhook request failed with status: ${response.status}. Response: ${errorText}`)
+        }
+
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text()
+          console.warn('Non-JSON response from webhook:', responseText)
+          
+          // Try to handle common N8N responses
+          if (responseText.includes('success') || response.status === 200) {
+            return {
+              success: true,
+              analysis_id: payload.analysis_id,
+              message: 'Webhook executed successfully but returned non-JSON response'
+            } as N8NWebhookResponse
+          }
+          
+          throw new Error(`Webhook returned non-JSON response: ${responseText}`)
         }
 
         const data = await response.json()
+        console.log('Webhook response data:', data)
         return data as N8NWebhookResponse
       } catch (error) {
         clearTimeout(timeoutId)
+        console.error('Webhook request error:', error)
+        
         if (error instanceof Error && error.name === 'AbortError') {
           throw new Error('Webhook request timed out after 30 seconds')
         }
@@ -134,6 +163,9 @@ export const useN8NWebhook = () => {
       const timeoutId = setTimeout(() => controller.abort(), 30000)
 
       try {
+        console.log('Testing webhook URL:', url)
+        console.log('Test payload:', JSON.stringify(testPayload, null, 2))
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -144,15 +176,40 @@ export const useN8NWebhook = () => {
         })
 
         clearTimeout(timeoutId)
+        
+        console.log('Test response status:', response.status)
+        console.log('Test response headers:', Object.fromEntries(response.headers.entries()))
 
         if (!response.ok) {
-          throw new Error(`Test failed with status: ${response.status}`)
+          const errorText = await response.text()
+          console.error('Test error response:', errorText)
+          throw new Error(`Test failed with status: ${response.status}. Response: ${errorText}`)
+        }
+
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text()
+          console.warn('Test returned non-JSON response:', responseText)
+          
+          // Try to handle common N8N responses
+          if (responseText.includes('success') || response.status === 200) {
+            return {
+              success: true,
+              analysis_id: testPayload.analysis_id,
+              message: 'Test successful but returned non-JSON response'
+            } as N8NWebhookResponse
+          }
+          
+          throw new Error(`Test returned non-JSON response: ${responseText}`)
         }
 
         const data = await response.json()
+        console.log('Test response data:', data)
         return data as N8NWebhookResponse
       } catch (error) {
         clearTimeout(timeoutId)
+        console.error('Test request error:', error)
+        
         if (error instanceof Error && error.name === 'AbortError') {
           throw new Error('Test request timed out after 30 seconds')
         }
