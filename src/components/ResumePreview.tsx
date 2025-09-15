@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileText, Eye, AlertCircle, Loader2 } from "lucide-react"
 import { useResumes, Resume } from '@/hooks/useResumes'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 interface ParsedContent {
   content: string
@@ -44,13 +45,23 @@ export const ResumePreview = () => {
     setParsedContent(null)
 
     try {
-      // Download the file first
-      const response = await fetch(selectedResume.file_url)
-      if (!response.ok) {
-        throw new Error(`Failed to download file: ${response.statusText}`)
+      // Extract the file path from the full URL
+      const urlParts = selectedResume.file_url.split('/storage/v1/object/public/SATS_resumes/')
+      if (urlParts.length !== 2) {
+        throw new Error('Invalid file URL format')
+      }
+      const filePath = urlParts[1]
+
+      // Download the file using authenticated Supabase client
+      const { data, error } = await supabase.storage
+        .from('SATS_resumes')
+        .download(filePath)
+
+      if (error) {
+        throw new Error(`Failed to download file: ${error.message}`)
       }
 
-      const blob = await response.blob()
+      const blob = data
       const fileName = selectedResume.name
       const fileType = blob.type || 'unknown'
       
