@@ -3,10 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FileText, Eye, AlertCircle, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { FileText, Eye, AlertCircle, Loader2, AlertTriangle, CheckCircle } from "lucide-react"
 import { useResumes, Resume } from '@/hooks/useResumes'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import { useDocumentExtraction, useCreateDocumentExtraction } from '@/hooks/useDocumentExtractions'
+import { extractTextFromDocument, isProcessingError } from '@/services/documentProcessor'
 
 interface ParsedContent {
   content: string
@@ -18,15 +21,19 @@ export const ResumePreview = () => {
   const { data: resumes = [] } = useResumes()
   const { toast } = useToast()
   const [selectedResumeId, setSelectedResumeId] = useState<string>('')
-  const [parsedContent, setParsedContent] = useState<ParsedContent | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isExtracting, setIsExtracting] = useState(false)
+  
+  const { data: extraction, isLoading: extractionLoading } = useDocumentExtraction(selectedResumeId || null)
+  const createExtraction = useCreateDocumentExtraction()
 
-  const handleParseResume = async () => {
+  const selectedResume = resumes.find(r => r.id === selectedResumeId)
+
+  const handleExtractText = async () => {
     if (!selectedResumeId) {
       toast({
         variant: "destructive",
         title: "No resume selected",
-        description: "Please select a resume to preview."
+        description: "Please select a resume to extract text from."
       })
       return
     }
@@ -41,8 +48,7 @@ export const ResumePreview = () => {
       return
     }
 
-    setIsLoading(true)
-    setParsedContent(null)
+    setIsExtracting(true)
 
     try {
       // Extract the file path from the full URL
@@ -61,85 +67,48 @@ export const ResumePreview = () => {
         throw new Error(`Failed to download file: ${error.message}`)
       }
 
-      const blob = data
-      const fileName = selectedResume.name
-      const fileType = blob.type || 'unknown'
-      
-      // Determine file extension from URL or content type
-      const fileExtension = selectedResume.file_url.split('.').pop()?.toLowerCase() || ''
-      
-      let content = ''
+      // Extract text using document processor
+      const extractedContent = await extractTextFromDocument(data, selectedResume.name)
 
-      // Handle different file types
-      if (fileType.includes('text/') || fileExtension === 'txt' || fileExtension === 'md') {
-        // Plain text files
-        content = await blob.text()
-      } else if (fileType.includes('application/pdf') || fileExtension === 'pdf' || 
-                 fileType.includes('application/msword') || fileExtension === 'doc' || fileExtension === 'docx' ||
-                 fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
-        // For binary documents, try to create a temporary file and parse it
-        try {
-          // Create a temporary file URL for parsing
-          const tempFileName = `temp_resume_${Date.now()}.${fileExtension}`
-          
-          // Create a File object from the blob
-          const file = new File([blob], tempFileName, { type: fileType })
-          
-          // For now, we'll indicate that parsing is available but requires implementation
-          // In a real scenario, you would use a document parsing service here
-          content = `[${fileExtension.toUpperCase()} file detected - File size: ${Math.round(blob.size / 1024)}KB]
-[This is a binary document that requires specialized parsing]
-[File name: ${fileName}]
-[Content type: ${fileType}]
-[To properly extract text from this file, implement document parsing service integration]
-
-Note: For PDF and Word documents, consider using:
-- PDF parsing libraries (pdf-parse, pdf2pic)
-- Document conversion services  
-- OCR services for scanned documents
-- Microsoft Graph API for Office documents
-
-The file is ready to be processed when parsing capabilities are added.`
-        } catch (parseError) {
-          content = `[Error parsing ${fileExtension} file: ${parseError}]`
-        }
-      } else {
-        // Try to read as text for other file types
-        try {
-          content = await blob.text()
-        } catch {
-          content = `[Binary file detected - Cannot display content as text]
-[File type: ${fileType}]
-[File size: ${Math.round(blob.size / 1024)}KB]`
-        }
-      }
-
-      setParsedContent({
-        content,
-        fileName,
-        fileType
+      // Save extraction to database
+      await createExtraction.mutateAsync({
+        resume_id: selectedResumeId,
+        extracted_text: extractedContent.text,
+        word_count: extractedContent.wordCount,
+        extraction_method: extractedContent.method,
+        warnings: extractedContent.warnings,
+        metadata: extractedContent.metadata || {},
       })
 
       toast({
-        title: "Resume parsed successfully",
-        description: `Extracted content from ${fileName}`
+        title: "Text extraction completed",
+        description: `Extracted ${extractedContent.wordCount} words using ${extractedContent.method}.`
       })
 
     } catch (error) {
-      console.error('Error parsing resume:', error)
-      toast({
-        variant: "destructive",
-        title: "Failed to parse resume",
-        description: error instanceof Error ? error.message : "An unknown error occurred"
-      })
+      console.error('Error extracting text:', error)
+      
+      if (isProcessingError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Text extraction failed",
+          description: error.message
+        })
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Failed to extract text",
+          description: error instanceof Error ? error.message : "An unknown error occurred"
+        })
+      }
     } finally {
-      setIsLoading(false)
+      setIsExtracting(false)
     }
   }
 
   const getDisplayLines = () => {
-    if (!parsedContent?.content) return []
-    return parsedContent.content.split('\n').slice(0, 40)
+    if (!extraction?.extracted_text) return []
+    return extraction.extracted_text.split('\n').slice(0, 40)
   }
 
   return (
@@ -171,25 +140,42 @@ The file is ready to be processed when parsing capabilities are added.`
             </Select>
           </div>
           <Button 
-            onClick={handleParseResume}
-            disabled={!selectedResumeId || isLoading}
+            onClick={handleExtractText}
+            disabled={!selectedResumeId || isExtracting || extractionLoading}
             className="flex items-center gap-2"
           >
-            {isLoading ? (
+            {isExtracting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : extraction ? (
+              <CheckCircle className="h-4 w-4" />
             ) : (
               <Eye className="h-4 w-4" />
             )}
-            {isLoading ? 'Parsing...' : 'Preview Content'}
+            {isExtracting ? 'Extracting...' : extraction ? 'Re-extract Text' : 'Extract Text'}
           </Button>
         </div>
 
-        {parsedContent && (
+        {extraction && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <AlertCircle className="h-4 w-4" />
-              <span>Showing first 40 lines of {parsedContent.fileName} ({parsedContent.fileType})</span>
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span>Text extracted using <Badge variant="outline">{extraction.extraction_method}</Badge></span>
+              <span className="text-muted-foreground">• {extraction.word_count} words</span>
             </div>
+            
+            {extraction.warnings && extraction.warnings.length > 0 && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">Extraction Warnings:</p>
+                  <ul className="mt-1 space-y-1 text-yellow-700 dark:text-yellow-300">
+                    {extraction.warnings.map((warning, index) => (
+                      <li key={index}>• {warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
             
             <Card className="bg-muted/50">
               <CardContent className="p-4">
@@ -209,9 +195,23 @@ The file is ready to be processed when parsing capabilities are added.`
             </Card>
 
             <div className="text-sm text-muted-foreground">
-              Total content length: {parsedContent.content.length} characters
-              ({parsedContent.content.split('\n').length} lines)
+              Total content: {extraction.extracted_text.length} characters
+              ({extraction.extracted_text.split('\n').length} lines)
             </div>
+          </div>
+        )}
+
+        {selectedResumeId && !extraction && !extractionLoading && !isExtracting && (
+          <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+            <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <p className="font-medium mb-2">No text extraction available</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Extract text from this resume to preview its content.
+            </p>
+            <Button onClick={handleExtractText} variant="outline">
+              <Eye className="h-4 w-4 mr-2" />
+              Extract Text Now
+            </Button>
           </div>
         )}
 

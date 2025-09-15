@@ -1,17 +1,18 @@
 import React, { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload, File, X, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
+import { extractTextFromDocument, isProcessingError, ExtractedContent } from '@/services/documentProcessor'
 
 interface FileUploadProps {
   bucket: string
   accept?: Record<string, string[]>
   maxSize?: number
-  onUpload: (url: string, fileName: string, extractedText?: string) => void
+  onUpload: (url: string, fileName: string, extractedContent?: ExtractedContent) => void
   disabled?: boolean
 }
 
@@ -44,6 +45,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `${user.id}/${fileName}`
 
+      setProgress(25)
+
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -54,34 +57,64 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       if (error) throw error
 
+      setProgress(50)
+
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath)
 
-      // Extract text content for supported file types
-      let extractedText = '';
-      if (file.type === 'text/plain') {
-        extractedText = await file.text();
-      } else if (file.type.includes('text/')) {
-        // Try to extract text from other text-based files
-        try {
-          extractedText = await file.text();
-        } catch (e) {
-          console.log('Could not extract text from file:', e);
+      setProgress(75)
+
+      // Extract text content using document processor
+      let extractedContent: ExtractedContent | undefined;
+      try {
+        extractedContent = await extractTextFromDocument(file, file.name)
+        
+        // Show warnings if any
+        if (extractedContent.warnings.length > 0) {
+          toast({
+            title: "Extraction completed with warnings",
+            description: extractedContent.warnings.join(' '),
+            variant: "default",
+          })
         }
-      } else if (file.type === 'application/pdf' || 
-                 file.type === 'application/msword' || 
-                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // For PDF and Word docs, return placeholder - pattern extraction will use filename
-        extractedText = '';
+      } catch (error) {
+        if (isProcessingError(error)) {
+          // Handle known processing errors
+          toast({
+            title: "Text extraction failed",
+            description: error.message,
+            variant: "destructive",
+          })
+          
+          // For unsupported formats, still allow upload without text extraction
+          if (error.code === 'UNSUPPORTED_FORMAT') {
+            extractedContent = undefined; // No text extraction for unsupported files
+          } else {
+            throw error; // Re-throw other processing errors
+          }
+        } else {
+          // Handle unexpected errors
+          console.error('Unexpected extraction error:', error)
+          toast({
+            title: "Text extraction failed",
+            description: "An unexpected error occurred during text extraction",
+            variant: "destructive",
+          })
+        }
       }
 
-      onUpload(publicUrl, file.name, extractedText)
+      // Store extracted content globally for later use
+      if (extractedContent) {
+        (window as any).__lastExtractedContent = extractedContent;
+      }
+
+      onUpload(publicUrl, file.name, extractedContent)
       
       toast({
         title: "File uploaded successfully",
-        description: `${file.name} has been uploaded.`
+        description: `${file.name} has been uploaded${extractedContent ? ` and text extracted (${extractedContent.wordCount} words)` : ''}.`
       })
 
       setProgress(100)
@@ -92,8 +125,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         description: error.message || "Failed to upload file"
       })
     } finally {
-      setUploading(false)
-      setProgress(0)
+      setUploading(true)
+      setTimeout(() => {
+        setUploading(false)
+        setProgress(0)
+      }, 500)
     }
   }, [bucket, user, onUpload, toast])
 
@@ -123,7 +159,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <Upload className="h-8 w-8 text-primary" />
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium">Uploading file...</p>
+              <p className="text-sm font-medium">
+                {progress < 50 ? 'Uploading file...' : 
+                 progress < 75 ? 'Processing upload...' : 
+                 'Extracting text content...'}
+              </p>
               <Progress value={progress} className="w-full" />
             </div>
           </div>
@@ -142,7 +182,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               Select File
             </Button>
             <p className="text-xs text-muted-foreground">
-              Supported: PDF, DOC, DOCX (Max {Math.round(maxSize / 1024 / 1024)}MB)
+              Supported: PDF, DOCX, HTML, TXT (Max {Math.round(maxSize / 1024 / 1024)}MB)
             </p>
           </div>
         )}

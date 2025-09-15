@@ -7,6 +7,8 @@ import { FileUpload } from '@/components/FileUpload'
 import { useCreateResume, useUpdateResume, Resume } from '@/hooks/useResumes'
 import { Plus, Edit, User } from 'lucide-react'
 import { extractResumeInfo } from '@/utils/contentExtraction'
+import { useCreateDocumentExtraction } from '@/hooks/useDocumentExtractions'
+import { ExtractedContent } from '@/services/documentProcessor'
 import { useToast } from '@/hooks/use-toast'
 
 interface ResumeModalProps {
@@ -85,7 +87,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
     }
   };
 
-  const handleFileUpload = (url: string, fileName: string, extractedText?: string) => {
+  const handleFileUpload = (url: string, fileName: string, extractedContent?: any) => {
     setFileUrl(url)
     
     // Auto-fill name from filename if not set
@@ -95,8 +97,8 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
     }
     
     // Process extracted text if available
-    if (extractedText && extractedText !== 'FILE_CONTENT_TO_EXTRACT') {
-      processResumeContent(extractedText);
+    if (extractedContent?.text) {
+      processResumeContent(extractedContent.text);
     }
   }
 

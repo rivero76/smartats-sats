@@ -349,6 +349,42 @@ export type Database = {
         }
         Relationships: []
       }
+      document_extractions: {
+        Row: {
+          created_at: string
+          extracted_text: string
+          extraction_method: string
+          id: string
+          metadata: Json | null
+          resume_id: string
+          updated_at: string
+          warnings: Json | null
+          word_count: number
+        }
+        Insert: {
+          created_at?: string
+          extracted_text: string
+          extraction_method: string
+          id?: string
+          metadata?: Json | null
+          resume_id: string
+          updated_at?: string
+          warnings?: Json | null
+          word_count?: number
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string
+          extraction_method?: string
+          id?: string
+          metadata?: Json | null
+          resume_id?: string
+          updated_at?: string
+          warnings?: Json | null
+          word_count?: number
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string

@@ -180,7 +180,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     onClose?.()
   }
 
-  const handleFileUpload = (url: string, fileName: string, extractedText?: string) => {
+  const handleFileUpload = (url: string, fileName: string, extractedContent?: any) => {
     setFileUrl(url);
     
     // Auto-populate job title from filename if it's empty
@@ -191,8 +191,8 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     }
 
     // Process extracted text immediately
-    if (extractedText && extractedText !== 'FILE_CONTENT_TO_EXTRACT') {
-      processContent(extractedText);
+    if (extractedContent?.text) {
+      processContent(extractedContent.text);
     }
   };
 
