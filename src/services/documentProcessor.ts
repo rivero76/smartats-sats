@@ -1,12 +1,15 @@
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { convert as htmlToText } from 'html-to-text';
+
+// Set up PDF.js worker for browser compatibility
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export interface ExtractedContent {
   text: string;
   wordCount: number;
-  method: 'mammoth' | 'pdf-parse' | 'html-to-text' | 'text' | 'docx-fallback';
+  method: 'mammoth' | 'pdfjs-dist' | 'html-to-text' | 'text' | 'docx-fallback';
   warnings: string[];
   metadata?: {
     pages?: number;
@@ -76,24 +79,48 @@ function detectFileType(buffer: ArrayBuffer, filename?: string): string {
 
 async function extractFromPDF(buffer: ArrayBuffer): Promise<ExtractedContent> {
   try {
+    // Load PDF document using pdfjs-dist
     const uint8Array = new Uint8Array(buffer);
-    const pdfData = await pdfjsLib(uint8Array);
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
+      cMapPacked: true,
+    });
+    
+    const pdf = await loadingTask.promise;
+    const totalPages = pdf.numPages;
+    
+    // Extract text from all pages
+    const pagePromises: Promise<string>[] = [];
+    
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      const pagePromise = pdf.getPage(pageNum).then(async (page) => {
+        const textContent = await page.getTextContent();
+        return textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+      });
+      pagePromises.push(pagePromise);
+    }
+    
+    const pageTexts = await Promise.all(pagePromises);
+    const fullText = pageTexts.join('\n').trim();
     
     const warnings: string[] = [];
     
     // Check if PDF might be scanned (low text-to-page ratio)
-    const avgTextPerPage = pdfData.text.length / pdfData.numpages;
+    const avgTextPerPage = fullText.length / totalPages;
     if (avgTextPerPage < 50) {
       warnings.push('This PDF may contain scanned images. Consider using OCR for better text extraction.');
     }
 
     return {
-      text: pdfData.text.trim(),
-      wordCount: pdfData.text.trim().split(/\s+/).length,
-      method: 'pdf-parse',
+      text: fullText,
+      wordCount: fullText.split(/\s+/).filter(word => word.length > 0).length,
+      method: 'pdfjs-dist',
       warnings,
       metadata: {
-        pages: pdfData.numpages,
+        pages: totalPages,
         fileSize: buffer.byteLength,
         detectedMimeType: 'application/pdf',
       },
