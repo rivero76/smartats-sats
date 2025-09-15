@@ -127,11 +127,16 @@ export const useATSAnalysisStats = () => {
 export const useCreateATSAnalysis = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const { sendWebhook } = useN8NWebhook()
+  const { sendWebhook, webhookUrl, validateWebhookUrl } = useN8NWebhook()
   
   return useMutation({
     mutationFn: async (data: CreateATSAnalysisData) => {
       if (!user) throw new Error('User not authenticated')
+      
+      // Validate webhook URL before starting analysis
+      if (!webhookUrl || !validateWebhookUrl(webhookUrl)) {
+        throw new Error('N8N webhook URL not configured. Please configure it in the N8N settings before running an analysis.')
+      }
       
       // Create the analysis record first
       const { data: analysis, error } = await supabase

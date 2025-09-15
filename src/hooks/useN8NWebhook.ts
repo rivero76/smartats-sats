@@ -39,18 +39,11 @@ export interface N8NWebhookResponse {
   message?: string
 }
 
-const DEFAULT_WEBHOOK_URL = 'https://rivero76.app.n8n.cloud/webhook-test/3933699e-651b-487a-bc9d-01ed0eccf660'
 const WEBHOOK_URL_KEY = 'n8n_webhook_url'
 
 export const useN8NWebhook = () => {
   const [webhookUrl, setWebhookUrlState] = useState<string>(() => {
-    // Clear any old webhook URLs and use the new default
-    const storedUrl = localStorage.getItem(WEBHOOK_URL_KEY)
-    if (storedUrl && storedUrl !== DEFAULT_WEBHOOK_URL) {
-      console.log('Clearing old webhook URL and using new default:', DEFAULT_WEBHOOK_URL)
-      localStorage.setItem(WEBHOOK_URL_KEY, DEFAULT_WEBHOOK_URL)
-    }
-    return DEFAULT_WEBHOOK_URL
+    return localStorage.getItem(WEBHOOK_URL_KEY) || ''
   })
 
   const setWebhookUrl = (url: string) => {
@@ -59,9 +52,9 @@ export const useN8NWebhook = () => {
   }
 
   const resetToDefaultUrl = () => {
-    console.log('Resetting to default webhook URL:', DEFAULT_WEBHOOK_URL)
-    setWebhookUrlState(DEFAULT_WEBHOOK_URL)
-    localStorage.setItem(WEBHOOK_URL_KEY, DEFAULT_WEBHOOK_URL)
+    console.log('Clearing webhook URL')
+    setWebhookUrlState('')
+    localStorage.removeItem(WEBHOOK_URL_KEY)
   }
 
   const validateWebhookUrl = (url: string): boolean => {

@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { useResumes } from '@/hooks/useResumes'
 import { useJobDescriptions } from '@/hooks/useJobDescriptions'
 import { useCreateATSAnalysis } from '@/hooks/useATSAnalyses'
+import { useN8NWebhook } from '@/hooks/useN8NWebhook'
 
 interface ATSAnalysisModalProps {
   open: boolean
@@ -19,6 +20,7 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
 
   const { data: resumes, isLoading: resumesLoading } = useResumes()
   const { data: jobDescriptions, isLoading: jobDescriptionsLoading } = useJobDescriptions()
+  const { webhookUrl, validateWebhookUrl } = useN8NWebhook()
   const createAnalysis = useCreateATSAnalysis()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,7 +46,8 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
   }
 
   const isLoading = resumesLoading || jobDescriptionsLoading || createAnalysis.isPending
-  const isValid = selectedResume && selectedJobDescription
+  const hasWebhookUrl = webhookUrl && validateWebhookUrl(webhookUrl)
+  const isValid = selectedResume && selectedJobDescription && hasWebhookUrl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,6 +116,14 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
               </p>
             )}
           </div>
+
+          {!hasWebhookUrl && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-sm text-amber-800">
+                <strong>N8N Integration Required:</strong> Please configure your N8N webhook URL in the "TEST N8N" settings before running an analysis.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

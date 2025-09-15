@@ -88,22 +88,27 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
           {/* Webhook URL Configuration */}
           <div className="space-y-3">
             <Label htmlFor="webhook-url">Webhook URL</Label>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Input
                 id="webhook-url"
                 value={editUrl}
                 onChange={(e) => setEditUrl(e.target.value)}
-                placeholder="https://your-n8n-instance.com/webhook/..."
-                className={!isUrlValid ? 'border-destructive' : ''}
+                placeholder="https://your-n8n-instance.com/webhook/your-webhook-id"
+                className={!isUrlValid && editUrl.length > 0 ? "border-destructive" : ""}
               />
-              {!isUrlValid && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  Invalid webhook URL format
+              {!isUrlValid && editUrl.length > 0 && (
+                <div className="text-sm text-destructive">
+                  Invalid webhook URL format. URL should contain 'webhook' or 'n8n'.
+                </div>
+              )}
+              {editUrl.length === 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Configure your N8N webhook URL to enable ATS analysis integration.
                 </div>
               )}
               <div className="flex gap-2">
-                {editUrl !== webhookUrl && isUrlValid && (
+                {editUrl !== webhookUrl && editUrl.length > 0 && isUrlValid && (
                   <Button 
                     onClick={handleSaveUrl}
                     size="sm"
@@ -112,21 +117,24 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
                     Save URL
                   </Button>
                 )}
-                <Button 
-                  onClick={() => {
-                    resetToDefaultUrl()
-                    setEditUrl(webhookUrl)
-                    setConnectivityResult(null)
-                    setPayloadResult(null)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Reset to Default
-                </Button>
+                {webhookUrl.length > 0 && (
+                  <Button 
+                    onClick={() => {
+                      resetToDefaultUrl()
+                      setEditUrl('')
+                      setConnectivityResult(null)
+                      setPayloadResult(null)
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Clear URL
+                  </Button>
+                )}
               </div>
             </div>
+          </div>
           </div>
 
           <Separator />
@@ -139,7 +147,7 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
                 <Label>Test #1: Connectivity Check</Label>
                 <Button
                   onClick={handleConnectivityTest}
-                  disabled={!isUrlValid || isLoading}
+                  disabled={!isUrlValid || editUrl.length === 0 || isLoading}
                   size="sm"
                   variant="outline"
                 >
@@ -197,7 +205,7 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
                 <Label>Test #2: Full Payload Test</Label>
                 <Button
                   onClick={handlePayloadTest}
-                  disabled={!isUrlValid || isLoading}
+                  disabled={!isUrlValid || editUrl.length === 0 || isLoading}
                   size="sm"
                 >
                   {testWebhook.isPending ? (
