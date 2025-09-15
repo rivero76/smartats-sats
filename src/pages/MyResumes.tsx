@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { FileText, Download, Trash2, Plus, Edit, ExternalLink } from "lucide-react"
 import { useResumes, useDeleteResume, Resume } from '@/hooks/useResumes'
 import { ResumeModal } from '@/components/ResumeModal'
+import { ResumePreview } from '@/components/ResumePreview'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const MyResumes = () => {
@@ -188,6 +189,8 @@ const MyResumes = () => {
           )}
         </CardContent>
       </Card>
+
+      <ResumePreview />
     </div>
   )
 }
