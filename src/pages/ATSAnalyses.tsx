@@ -268,11 +268,13 @@ const ATSAnalyses = () => {
                         Add Missing Experience (Coming Soon)
                       </Button>
                     </div>
-                  ) : analysis.status === 'processing' ? (
+                   ) : analysis.status === 'processing' ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-muted-foreground">Processing analysis...</span>
+                        <span className="text-muted-foreground">
+                          Processing analysis via N8N workflow...
+                        </span>
                       </div>
                     </div>
                   ) : analysis.status === 'error' ? (

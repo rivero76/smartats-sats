@@ -215,8 +215,12 @@ export const useCreateATSAnalysis = () => {
         const webhookResult = await sendWebhook.mutateAsync(webhookPayload)
         console.log('Webhook response received:', webhookResult)
         
-        // Update analysis with webhook results
-        if (webhookResult.success) {
+        // Handle different N8N response formats
+        const isN8NWorkflowStarted = webhookResult.message === "Workflow was started"
+        const hasAnalysisResults = webhookResult.success && (webhookResult.ats_score !== undefined || webhookResult.matched_skills || webhookResult.missing_skills)
+        
+        if (hasAnalysisResults) {
+          // Complete analysis with results from N8N
           const updateData: any = {
             status: 'complete',
             analysis_data: { webhook_response: JSON.parse(JSON.stringify(webhookResult)) }
@@ -244,6 +248,23 @@ export const useCreateATSAnalysis = () => {
             title: 'Analysis Complete',
             description: 'Your ATS analysis has been completed successfully.',
           })
+        } else if (isN8NWorkflowStarted) {
+          // N8N workflow started successfully - keep in processing state
+          await supabase
+            .from('sats_analyses')
+            .update({
+              status: 'processing',
+              analysis_data: { 
+                webhook_response: JSON.parse(JSON.stringify(webhookResult)),
+                workflow_started_at: new Date().toISOString()
+              }
+            })
+            .eq('id', analysis.id)
+            
+          toast({
+            title: 'Analysis Started',
+            description: 'Your ATS analysis is being processed. This may take a few moments.',
+          })
         } else {
           // Update analysis with error status
           await supabase
@@ -266,7 +287,7 @@ export const useCreateATSAnalysis = () => {
       } catch (webhookError) {
         console.error('Webhook request failed:', webhookError)
         
-        // Update analysis with webhook error
+        // Update analysis with error status for webhook communication failures
         await supabase
           .from('sats_analyses')
           .update({
@@ -280,10 +301,12 @@ export const useCreateATSAnalysis = () => {
           .eq('id', analysis.id)
         
         toast({
-          title: 'Webhook Error',
-          description: `Failed to process analysis: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`,
+          title: 'Webhook Error', 
+          description: 'Failed to communicate with N8N workflow. Please check your webhook configuration.',
           variant: 'destructive',
         })
+        
+        throw new Error('Analysis could not be started. Please try again or check your N8N configuration.')
       }
       
       return analysis
