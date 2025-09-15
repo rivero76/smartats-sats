@@ -15,7 +15,7 @@ interface N8NTestModalProps {
 }
 
 const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
-  const { webhookUrl, setWebhookUrl, validateWebhookUrl, testConnectivity, testWebhook, isLoading } = useN8NWebhook()
+  const { webhookUrl, setWebhookUrl, resetToDefaultUrl, validateWebhookUrl, testConnectivity, testWebhook, isLoading } = useN8NWebhook()
   const [editUrl, setEditUrl] = useState(webhookUrl)
   const [connectivityResult, setConnectivityResult] = useState<any>(null)
   const [payloadResult, setPayloadResult] = useState<any>(null)
@@ -102,15 +102,30 @@ const N8NTestModal = ({ open, onOpenChange }: N8NTestModalProps) => {
                   Invalid webhook URL format
                 </div>
               )}
-              {editUrl !== webhookUrl && isUrlValid && (
+              <div className="flex gap-2">
+                {editUrl !== webhookUrl && isUrlValid && (
+                  <Button 
+                    onClick={handleSaveUrl}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Save URL
+                  </Button>
+                )}
                 <Button 
-                  onClick={handleSaveUrl}
+                  onClick={() => {
+                    resetToDefaultUrl()
+                    setEditUrl(webhookUrl)
+                    setConnectivityResult(null)
+                    setPayloadResult(null)
+                  }}
                   size="sm"
-                  className="w-full"
+                  variant="outline"
+                  className="flex-1"
                 >
-                  Save URL
+                  Reset to Default
                 </Button>
-              )}
+              </div>
             </div>
           </div>
 

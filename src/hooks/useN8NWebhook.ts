@@ -44,12 +44,24 @@ const WEBHOOK_URL_KEY = 'n8n_webhook_url'
 
 export const useN8NWebhook = () => {
   const [webhookUrl, setWebhookUrlState] = useState<string>(() => {
-    return localStorage.getItem(WEBHOOK_URL_KEY) || DEFAULT_WEBHOOK_URL
+    // Clear any old webhook URLs and use the new default
+    const storedUrl = localStorage.getItem(WEBHOOK_URL_KEY)
+    if (storedUrl && storedUrl !== DEFAULT_WEBHOOK_URL) {
+      console.log('Clearing old webhook URL and using new default:', DEFAULT_WEBHOOK_URL)
+      localStorage.setItem(WEBHOOK_URL_KEY, DEFAULT_WEBHOOK_URL)
+    }
+    return DEFAULT_WEBHOOK_URL
   })
 
   const setWebhookUrl = (url: string) => {
     setWebhookUrlState(url)
     localStorage.setItem(WEBHOOK_URL_KEY, url)
+  }
+
+  const resetToDefaultUrl = () => {
+    console.log('Resetting to default webhook URL:', DEFAULT_WEBHOOK_URL)
+    setWebhookUrlState(DEFAULT_WEBHOOK_URL)
+    localStorage.setItem(WEBHOOK_URL_KEY, DEFAULT_WEBHOOK_URL)
   }
 
   const validateWebhookUrl = (url: string): boolean => {
@@ -309,6 +321,7 @@ export const useN8NWebhook = () => {
   return {
     webhookUrl,
     setWebhookUrl,
+    resetToDefaultUrl,
     validateWebhookUrl,
     sendWebhook,
     testConnectivity,
