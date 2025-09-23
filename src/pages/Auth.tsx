@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import genezxLogo from "@/assets/genezx-logo.png";
 
 const Auth = () => {
   const { signUp, signIn, user, loading } = useAuth();
@@ -92,11 +93,23 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Smart ATS</CardTitle>
-          <CardDescription>
-            Welcome to your professional ATS solution
-          </CardDescription>
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img 
+              src={genezxLogo} 
+              alt="geneZx" 
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-bold text-primary">Smart ATS</CardTitle>
+            <CardDescription className="text-base leading-relaxed">
+              Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
+            </CardDescription>
+            <p className="text-xs text-muted-foreground">
+              Powered by <a href="https://genezx.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">geneZx</a>
+            </p>
+          </div>
         </CardHeader>
         
         <CardContent>
