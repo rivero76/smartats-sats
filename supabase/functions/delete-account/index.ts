@@ -65,7 +65,7 @@ serve(async (req) => {
                      'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // CRITICAL: Revoke all user sessions BEFORE soft delete
+    // CRITICAL: Revoke all user sessions BEFORE deletion
     // This ensures the token is still valid when we revoke sessions
     console.log('Revoking user sessions before account deletion...');
     const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global');
@@ -92,6 +92,42 @@ serve(async (req) => {
     }
 
     console.log('Account soft delete successful:', deletionResult);
+
+    // Phase 2: HARD DELETE from auth.users to allow re-signup with same email
+    // This must be done AFTER soft delete and session revocation
+    console.log('Performing hard delete from auth.users to allow re-signup...');
+    const { error: hardDeleteError } = await supabase.auth.admin.deleteUser(user.id);
+    
+    if (hardDeleteError) {
+      console.error('Hard delete from auth.users failed:', hardDeleteError);
+      // Log the error but don't fail the entire deletion process
+      // The soft delete already succeeded
+      await supabase.from('account_deletion_logs').insert({
+        user_id: user.id,
+        action: 'hard_delete_failed',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        deletion_reason: reason,
+        data_deleted: {
+          error: hardDeleteError.message,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } else {
+      console.log('Hard delete from auth.users successful');
+      // Log successful hard deletion
+      await supabase.from('account_deletion_logs').insert({
+        user_id: user.id,
+        action: 'hard_deleted',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        deletion_reason: reason,
+        data_deleted: {
+          deletion_method: 'complete_user_deletion',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
 
     // Log additional audit information
     await supabase.from('account_deletion_logs').insert({
