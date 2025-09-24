@@ -65,7 +65,19 @@ serve(async (req) => {
                      'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Call the soft delete function
+    // CRITICAL: Revoke all user sessions BEFORE soft delete
+    // This ensures the token is still valid when we revoke sessions
+    console.log('Revoking user sessions before account deletion...');
+    const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global');
+    
+    if (signOutError) {
+      console.error('Failed to sign out user globally:', signOutError);
+      throw new Error(`Failed to revoke sessions: ${signOutError.message}`);
+    }
+    
+    console.log('User sessions revoked successfully');
+
+    // Now call the soft delete function
     const { data: deletionResult, error: deletionError } = await supabase.rpc(
       'soft_delete_user', 
       {
@@ -93,16 +105,6 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       }
     });
-
-    // Revoke all user sessions
-    const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global');
-    
-    if (signOutError) {
-      console.error('Failed to sign out user globally:', signOutError);
-      // Don't throw here as the account is already soft deleted
-    } else {
-      console.log('User sessions revoked successfully');
-    }
 
     // TODO: Send confirmation email (implement email service)
     console.log('TODO: Send deletion confirmation email to:', user.email);

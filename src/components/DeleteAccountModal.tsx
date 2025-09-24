@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export const DeleteAccountModal = ({ isOpen, onClose, onSuccess }: DeleteAccount
   const [reason, setReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const handleClose = () => {
     setStep(1);
@@ -85,6 +87,10 @@ export const DeleteAccountModal = ({ isOpen, onClose, onSuccess }: DeleteAccount
         title: "Account Scheduled for Deletion",
         description: `Your account will be permanently deleted on ${new Date(data.permanent_deletion_date).toLocaleDateString()}. You have 30 days to cancel this request.`,
       });
+
+      // Automatically sign out the user since their session was revoked
+      console.log("Account deletion successful, signing out user...");
+      await signOut();
 
       onSuccess();
       handleClose();
