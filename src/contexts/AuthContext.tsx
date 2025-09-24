@@ -87,17 +87,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("AuthProvider: Initializing authentication...");
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("AuthProvider: Auth state changed", { event, session: !!session, userId: session?.user?.id });
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Fetch SATS user data when user logs in
-        if (session?.user) {
+        // Handle different authentication events
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log("AuthProvider: User signed in successfully");
           setTimeout(() => {
             fetchSATSUser(session.user.id);
           }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          console.log("AuthProvider: User signed out");
+          setSatsUser(null);
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          console.log("AuthProvider: Token refreshed");
+          // Don't refetch SATS user on token refresh if we already have it
+          if (!satsUser) {
+            setTimeout(() => {
+              fetchSATSUser(session.user.id);
+            }, 0);
+          }
+        } else if (session?.user) {
+          // For any other event with a valid session, fetch SATS user if we don't have it
+          if (!satsUser) {
+            setTimeout(() => {
+              fetchSATSUser(session.user.id);
+            }, 0);
+          }
         } else {
           setSatsUser(null);
         }
@@ -106,16 +129,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchSATSUser(session.user.id);
+    // Handle URL fragments for email verification redirects
+    const handleAuthFromUrl = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("AuthProvider: Error getting session from URL:", error);
+      } else if (data.session) {
+        console.log("AuthProvider: Session recovered from URL");
+        setSession(data.session);
+        setUser(data.session.user);
+        setTimeout(() => {
+          fetchSATSUser(data.session.user.id);
+        }, 0);
       }
       setLoading(false);
-    });
+    };
+
+    // Check for existing session and handle URL fragments
+    handleAuthFromUrl();
 
     return () => subscription.unsubscribe();
   }, []);
