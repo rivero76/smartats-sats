@@ -412,6 +412,7 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
       const errorMessage = `Resume content is unreadable or corrupted. Error: ${error.message}`;
       console.error('Returning error message:', errorMessage);
       return errorMessage;
+    }
   }
   
   return `Resume content for ${resume.name} could not be accessed.`;
