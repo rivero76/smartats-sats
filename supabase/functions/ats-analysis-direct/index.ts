@@ -130,7 +130,7 @@ serve(async (req) => {
 
     // Store results in database
     const updateData = {
-      status: 'complete',
+      status: 'completed',
       ats_score: Math.round(analysisResult.match_score * 100),
       matched_skills: analysisResult.keywords_found,
       missing_skills: analysisResult.keywords_missing,
