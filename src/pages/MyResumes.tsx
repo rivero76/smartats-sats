@@ -8,10 +8,16 @@ import { useResumes, useDeleteResume, Resume } from '@/hooks/useResumes'
 import { ResumeModal } from '@/components/ResumeModal'
 import { ResumePreview } from '@/components/ResumePreview'
 import { Skeleton } from '@/components/ui/skeleton'
+import { HelpButton } from "@/components/help/HelpButton"
+import { HelpModal } from "@/components/help/HelpModal"
+import { getHelpContent } from "@/data/helpContent"
+import { HelpTooltip } from "@/components/help/HelpTooltip"
 
 const MyResumes = () => {
   const { data: resumes = [], isLoading, error } = useResumes()
   const deleteResume = useDeleteResume()
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('resumes')
 
   const handleDelete = async (id: string) => {
     try {
@@ -49,7 +55,15 @@ const MyResumes = () => {
               Upload, manage, and optimize your resumes for ATS compatibility.
             </p>
           </div>
-          <ResumeModal />
+          <div className="flex items-center space-x-2">
+            <ResumeModal />
+            {helpContent && (
+              <HelpButton 
+                onClick={() => setShowHelp(true)}
+                tooltip="Learn how to manage your resumes effectively"
+              />
+            )}
+          </div>
         </div>
         
         <Card>
@@ -75,15 +89,35 @@ const MyResumes = () => {
             Upload, manage, and optimize your resumes for ATS compatibility.
           </p>
         </div>
-        <ResumeModal />
+        <div className="flex items-center space-x-2">
+          <ResumeModal />
+          {helpContent && (
+            <HelpButton 
+              onClick={() => setShowHelp(true)}
+              tooltip="Learn how to manage your resumes effectively"
+            />
+          )}
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Your Resumes</CardTitle>
-          <CardDescription>
-            Manage your uploaded resumes and view ATS compatibility scores.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Your Resumes</CardTitle>
+              <CardDescription>
+                Manage your uploaded resumes and view ATS compatibility scores.
+              </CardDescription>
+            </div>
+            {helpContent && (
+              <HelpButton 
+                onClick={() => setShowHelp(true)}
+                size="icon"
+                variant="ghost"
+                tooltip="Get help with resume management"
+              />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -115,10 +149,26 @@ const MyResumes = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>File</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Descriptive name you gave to this resume version">
+                      Name
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Date when this resume was uploaded to the system">
+                      Created
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Download the original file you uploaded">
+                      File
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <HelpTooltip content="Edit resume details or delete from your collection">
+                      Actions
+                    </HelpTooltip>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,6 +241,15 @@ const MyResumes = () => {
       </Card>
 
       <ResumePreview />
+
+      {/* Help Modal */}
+      {helpContent && (
+        <HelpModal 
+          open={showHelp}
+          onOpenChange={setShowHelp}
+          content={helpContent}
+        />
+      )}
     </div>
   )
 }

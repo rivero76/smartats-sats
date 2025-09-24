@@ -9,11 +9,17 @@ import { FileText, Search, Plus, Edit, Trash2, Building, MapPin, File, Type, Ext
 import { useJobDescriptions, useDeleteJobDescription, JobDescription } from '@/hooks/useJobDescriptions'
 import { JobDescriptionModal } from '@/components/JobDescriptionModal'
 import { Skeleton } from '@/components/ui/skeleton'
+import { HelpButton } from "@/components/help/HelpButton"
+import { HelpModal } from "@/components/help/HelpModal"
+import { getHelpContent } from "@/data/helpContent"
+import { HelpTooltip } from "@/components/help/HelpTooltip"
 
 const JobDescriptions = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const { data: jobDescriptions = [], isLoading, error } = useJobDescriptions()
   const deleteJobDescription = useDeleteJobDescription()
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('jobDescriptions')
 
   const filteredJobDescriptions = jobDescriptions.filter(jd =>
     jd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -82,7 +88,15 @@ const JobDescriptions = () => {
             Create and manage job descriptions for ATS analysis.
           </p>
         </div>
-        <JobDescriptionModal />
+        <div className="flex items-center space-x-2">
+          <JobDescriptionModal />
+          {helpContent && (
+            <HelpButton 
+              onClick={() => setShowHelp(true)}
+              tooltip="Learn how to create and manage job descriptions"
+            />
+          )}
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -153,12 +167,36 @@ const JobDescriptions = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>
+                    <HelpTooltip content="The job title or position name for this role">
+                      Job Title
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Company or organization offering this position">
+                      Company
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Geographic location for this job">
+                      Location
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="Whether this was uploaded as a file or entered as text">
+                      Type
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead>
+                    <HelpTooltip content="When this job description was created">
+                      Created
+                    </HelpTooltip>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <HelpTooltip content="Edit job details, download files, or delete from your collection">
+                      Actions
+                    </HelpTooltip>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -265,6 +303,15 @@ const JobDescriptions = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Help Modal */}
+      {helpContent && (
+        <HelpModal 
+          open={showHelp}
+          onOpenChange={setShowHelp}
+          content={helpContent}
+        />
+      )}
     </div>
   )
 }

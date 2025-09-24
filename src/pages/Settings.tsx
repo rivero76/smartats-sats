@@ -14,6 +14,9 @@ import { useProfile, type ProfileFormData } from "@/hooks/useProfile"
 import { useAccountDeletion } from "@/hooks/useAccountDeletion"
 import { DeleteAccountModal } from "@/components/DeleteAccountModal"
 import { useEffect, useState } from "react"
+import { HelpButton } from "@/components/help/HelpButton"
+import { HelpModal } from "@/components/help/HelpModal"
+import { getHelpContent } from "@/data/helpContent"
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -30,6 +33,8 @@ const Settings = () => {
   const { loading, saving, getFormData, saveProfile } = useProfile();
   const { deletionStatus, isLoading: isDeletionLoading, isCancelling, cancelDeletion, refreshStatus } = useAccountDeletion();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('profileSettings');
   
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -59,11 +64,19 @@ const Settings = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account preferences, notifications, and application settings.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your account preferences, notifications, and application settings.
+          </p>
+        </div>
+        {helpContent && (
+          <HelpButton 
+            onClick={() => setShowHelp(true)}
+            tooltip="Learn how to configure your profile and settings"
+          />
+        )}
       </div>
 
       {/* Profile Settings */}
@@ -402,6 +415,15 @@ const Settings = () => {
           // User will be signed out automatically by the edge function
         }}
       />
+
+      {/* Help Modal */}
+      {helpContent && (
+        <HelpModal 
+          open={showHelp}
+          onOpenChange={setShowHelp}
+          content={helpContent}
+        />
+      )}
     </div>
   )
 }

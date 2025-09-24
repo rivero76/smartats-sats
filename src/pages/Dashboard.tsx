@@ -7,11 +7,17 @@ import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock, Target, C
 import { useResumes } from "@/hooks/useResumes";
 import { useJobDescriptions } from "@/hooks/useJobDescriptions";
 import { useATSAnalyses, useATSAnalysisStats } from "@/hooks/useATSAnalyses";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { HelpButton } from "@/components/help/HelpButton";
+import { HelpModal } from "@/components/help/HelpModal";
+import { getHelpContent } from "@/data/helpContent";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 
 const Dashboard = () => {
   const { satsUser } = useAuth();
   const navigate = useNavigate();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('dashboard');
   
   // Fetch data using existing hooks
   const { data: resumes, isLoading: resumesLoading } = useResumes();
@@ -83,13 +89,21 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome, {satsUser?.name || 'User'} 👋
-        </h1>
-        <p className="text-muted-foreground">
-          Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome, {satsUser?.name || 'User'} 👋
+          </h1>
+          <p className="text-muted-foreground">
+            Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
+          </p>
+        </div>
+        {helpContent && (
+          <HelpButton 
+            onClick={() => setShowHelp(true)}
+            tooltip="Learn how to use your dashboard effectively"
+          />
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -97,7 +111,17 @@ const Dashboard = () => {
         {stats.map((stat) => (
           <Card key={stat.title} className="transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <HelpTooltip 
+                content={
+                  stat.title === "Total Resumes" ? "Number of resumes you've uploaded and can use for ATS analysis" :
+                  stat.title === "Job Descriptions" ? "Number of job postings you've created for matching against resumes" :
+                  stat.title === "ATS Analyses" ? "Total number of resume-job compatibility analyses you've run" :
+                  stat.title === "Match Rate" ? "Average compatibility score across all your analyses - higher is better"
+                  : stat.description
+                }
+              >
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              </HelpTooltip>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
@@ -301,6 +325,15 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Help Modal */}
+      {helpContent && (
+        <HelpModal 
+          open={showHelp}
+          onOpenChange={setShowHelp}
+          content={helpContent}
+        />
+      )}
     </div>
   )
 }

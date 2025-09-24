@@ -10,12 +10,17 @@ import { Progress } from "@/components/ui/progress"
 import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis, ATSAnalysis } from '@/hooks/useATSAnalyses'
 import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
-
+import { HelpButton } from "@/components/help/HelpButton"
+import { HelpModal } from "@/components/help/HelpModal"
+import { getHelpContent } from "@/data/helpContent"
+import { HelpTooltip } from "@/components/help/HelpTooltip"
 import { formatDistanceToNow } from 'date-fns'
 
 const ATSAnalyses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [debugAnalysis, setDebugAnalysis] = useState<ATSAnalysis | null>(null)
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('atsAnalysis')
   
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
@@ -56,6 +61,12 @@ const ATSAnalyses = () => {
             <Plus className="mr-2 h-4 w-4" />
             New Analysis
           </Button>
+          {helpContent && (
+            <HelpButton 
+              onClick={() => setShowHelp(true)}
+              tooltip="Learn how to run and interpret ATS analyses"
+            />
+          )}
         </div>
       </div>
 
@@ -234,23 +245,27 @@ const ATSAnalyses = () => {
 
                   {/* Analysis Results */}
                   {analysis.status === 'completed' && analysis.ats_score !== null && (
-                    <div className="space-y-4 mt-6">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">ATS Compatibility Score</span>
-                        <span className={`text-2xl font-bold ${getScoreColor(analysis.ats_score)}`}>
-                          {analysis.ats_score}%
-                        </span>
-                      </div>
-                      <Progress value={analysis.ats_score} className="h-2" />
-                      
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {/* Matched Skills */}
-                        {analysis.matched_skills.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                              <span className="text-sm font-medium">Matched Skills</span>
-                            </div>
+                      <div className="space-y-4 mt-6">
+                        <div className="flex items-center justify-between">
+                          <HelpTooltip content="Score from 0-100% showing how well your resume matches the job requirements. 80%+ is excellent.">
+                            <span className="text-sm font-medium">ATS Compatibility Score</span>
+                          </HelpTooltip>
+                          <span className={`text-2xl font-bold ${getScoreColor(analysis.ats_score)}`}>
+                            {analysis.ats_score}%
+                          </span>
+                        </div>
+                        <Progress value={analysis.ats_score} className="h-2" />
+                        
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {/* Matched Skills */}
+                          {analysis.matched_skills.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <HelpTooltip content="Skills from the job description that were found in your resume">
+                                  <span className="text-sm font-medium">Matched Skills</span>
+                                </HelpTooltip>
+                              </div>
                             <div className="flex flex-wrap gap-1">
                               {analysis.matched_skills.slice(0, 6).map((skill, index) => (
                                 <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
@@ -266,13 +281,15 @@ const ATSAnalyses = () => {
                           </div>
                         )}
 
-                        {/* Missing Skills */}
-                        {analysis.missing_skills.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <AlertCircle className="h-4 w-4 text-red-600" />
-                              <span className="text-sm font-medium">Missing Skills</span>
-                            </div>
+                          {/* Missing Skills */}
+                          {analysis.missing_skills.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                <HelpTooltip content="Skills mentioned in the job description that weren't found in your resume - consider adding these">
+                                  <span className="text-sm font-medium">Missing Skills</span>
+                                </HelpTooltip>
+                              </div>
                             <div className="flex flex-wrap gap-1">
                               {analysis.missing_skills.slice(0, 6).map((skill, index) => (
                                 <Badge key={index} variant="secondary" className="bg-red-100 text-red-800">
@@ -319,6 +336,15 @@ const ATSAnalyses = () => {
         onOpenChange={(open) => !open && setDebugAnalysis(null)}
         analysis={debugAnalysis}
       />
+
+      {/* Help Modal */}
+      {helpContent && (
+        <HelpModal 
+          open={showHelp}
+          onOpenChange={setShowHelp}
+          content={helpContent}
+        />
+      )}
     </div>
   )
 }
