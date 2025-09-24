@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FileUpload } from '@/components/FileUpload'
 import { useCreateResume, useUpdateResume, Resume } from '@/hooks/useResumes'
+import { useCreateDocumentExtraction } from '@/hooks/useDocumentExtractions'
 import { Plus, Edit, User } from 'lucide-react'
 import { extractResumeInfo, generateResumeNameSuggestions } from '@/utils/contentExtraction'
-import { useCreateDocumentExtraction } from '@/hooks/useDocumentExtractions'
 import { ExtractedContent } from '@/services/documentProcessor'
 import { useToast } from '@/hooks/use-toast'
 
@@ -23,11 +23,13 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
   const [fileUrl, setFileUrl] = useState(resume?.file_url || '')
   const [showExtracted, setShowExtracted] = useState(false)
   const [extractedData, setExtractedData] = useState<any>(null)
+  const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null)
   const [nameSuggestions, setNameSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   
   const createResume = useCreateResume()
   const updateResume = useUpdateResume()
+  const createExtraction = useCreateDocumentExtraction()
   const { toast } = useToast()
 
   const isEditing = !!resume
@@ -46,10 +48,27 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
           file_url: fileUrl || null
         })
       } else {
-        await createResume.mutateAsync({
+        const newResume = await createResume.mutateAsync({
           name: name.trim(),
           file_url: fileUrl || null
         })
+        
+        // Store extracted text if available (only for new resumes)
+        if (extractedContent && newResume.id) {
+          try {
+            await createExtraction.mutateAsync({
+              resume_id: newResume.id,
+              extracted_text: extractedContent.text,
+              word_count: extractedContent.wordCount,
+              extraction_method: extractedContent.method,
+              warnings: extractedContent.warnings || [],
+              metadata: extractedContent.metadata || {},
+            })
+          } catch (extractionError) {
+            console.error('Failed to store document extraction:', extractionError)
+            // Don't fail the entire resume creation if extraction storage fails
+          }
+        }
       }
       
       setOpen(false)
@@ -94,13 +113,15 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
     }
   };
 
-  const handleFileUpload = (url: string, fileName: string, extractedContent?: any) => {
+  const handleFileUpload = (url: string, fileName: string, extractedContent?: ExtractedContent) => {
     setFileUrl(url)
     
-    // Process extracted text if available, otherwise generate suggestions from filename
+    // Store extracted content for later database insertion
     if (extractedContent?.text) {
+      setExtractedContent(extractedContent)
       processResumeContent(extractedContent.text, fileName);
     } else {
+      setExtractedContent(null)
       // Generate suggestions based on filename when no content is extracted
       const suggestions = generateResumeNameSuggestions(null, fileName);
       setNameSuggestions(suggestions);
@@ -120,6 +141,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
       setFileUrl(resume?.file_url || '')
       setShowExtracted(false)
       setExtractedData(null)
+      setExtractedContent(null)
       setNameSuggestions([])
       setShowSuggestions(false)
     }

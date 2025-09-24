@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,7 +93,7 @@ serve(async (req) => {
       .eq('id', analysis_id);
 
     // Get and optimize content
-    const resumeContent = await getResumeContent(resume);
+    const resumeContent = await getResumeContent(resume, supabase);
     const jobContent = jobDescription.pasted_text || '';
     
     // Build optimized prompt
@@ -327,30 +328,163 @@ function coerceToStringArray(value: any): string[] {
   return [];
 }
 
-async function getResumeContent(resume: any): Promise<string> {
-  // Try to fetch actual resume content from storage if available
+async function getResumeContent(resume: any, supabase: any): Promise<string> {
+  // First, check if we already have extracted text in document_extractions table
+  const { data: extraction, error: extractionError } = await supabase
+    .from('document_extractions')
+    .select('extracted_text, warnings')
+    .eq('resume_id', resume.id)
+    .single();
+
+  if (!extractionError && extraction?.extracted_text) {
+    console.log('Using pre-extracted text, length:', extraction.extracted_text.length);
+    return extraction.extracted_text;
+  }
+
+  // No pre-extracted text found, extract from file
   if (resume.file_url) {
     try {
       console.log('Attempting to fetch resume content from:', resume.file_url);
       const response = await fetch(resume.file_url);
       if (response.ok) {
-        const text = await response.text();
-        console.log('Retrieved resume content, length:', text.length);
+        const buffer = await response.arrayBuffer();
+        console.log('Retrieved resume content, length:', buffer.byteLength);
         
-        // Clean up the content to remove excessive whitespace and optimize tokens
-        const cleanedText = text
-          .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
-          .replace(/\n\s*\n/g, '\n') // Remove empty lines
-          .trim();
-          
-        console.log('Cleaned resume content, new length:', cleanedText.length);
-        return cleanedText;
+        // Extract text based on file type
+        const extractedText = await extractTextFromBuffer(buffer, resume.name);
+        
+        // Store the extracted text for future use
+        try {
+          await supabase
+            .from('document_extractions')
+            .upsert({
+              resume_id: resume.id,
+              extracted_text: extractedText,
+              extraction_method: 'edge-function',
+              word_count: extractedText.split(/\s+/).filter(w => w.length > 0).length,
+              warnings: []
+            });
+        } catch (storeError) {
+          console.warn('Failed to store extracted text:', storeError);
+        }
+        
+        return extractedText;
       }
     } catch (error) {
       console.error('Failed to fetch resume content:', error);
+      return `Resume content is unreadable or corrupted. Error: ${error.message}`;
     }
   }
   
-  // Fallback - return placeholder for now
-  return `Resume content for ${resume.name} (placeholder - actual file extraction would be implemented here)`;
+  return `Resume content for ${resume.name} could not be accessed.`;
+}
+
+async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Promise<string> {
+  const uint8Array = new Uint8Array(buffer);
+  const fileExtension = filename.split('.').pop()?.toLowerCase();
+  
+  try {
+    switch (fileExtension) {
+      case 'docx':
+        return await extractFromDOCX(buffer);
+      case 'pdf':
+        return await extractFromPDF(buffer);
+      case 'txt':
+        return new TextDecoder('utf-8').decode(buffer);
+      case 'html':
+      case 'htm':
+        return await extractFromHTML(buffer);
+      default:
+        // Try to detect if it's plain text
+        const sample = uint8Array.slice(0, Math.min(512, uint8Array.length));
+        const isText = sample.every(byte => 
+          (byte >= 32 && byte <= 126) || // Printable ASCII
+          byte === 9 || byte === 10 || byte === 13 // Tab, LF, CR
+        );
+        
+        if (isText) {
+          return new TextDecoder('utf-8').decode(buffer);
+        }
+        
+        throw new Error(`Unsupported file format: ${fileExtension}`);
+    }
+  } catch (error) {
+    console.error('Text extraction failed:', error);
+    throw new Error(`Failed to extract text from ${fileExtension} file: ${error.message}`);
+  }
+}
+
+async function extractFromDOCX(buffer: ArrayBuffer): Promise<string> {
+  try {
+    // Import JSZip dynamically for Deno
+    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
+    
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file('word/document.xml')?.async('text');
+    
+    if (!documentXml) {
+      throw new Error('Invalid DOCX file structure - no document.xml found');
+    }
+
+    // Parse XML and extract text using regex
+    const textMatches = documentXml.match(/<w:t[^>]*>([^<]*)</g);
+    if (!textMatches) {
+      throw new Error('No text content found in DOCX file');
+    }
+    
+    const extractedText = textMatches
+      .map(match => {
+        const textMatch = match.match(/<w:t[^>]*>([^<]*)<\/w:t>/);
+        return textMatch ? textMatch[1] : '';
+      })
+      .filter(text => text.length > 0)
+      .join(' ');
+
+    if (!extractedText.trim()) {
+      throw new Error('DOCX file appears to be empty or corrupted');
+    }
+
+    return extractedText.trim();
+  } catch (error) {
+    console.error('DOCX extraction error:', error);
+    throw new Error(`DOCX extraction failed: ${error.message}`);
+  }
+}
+
+async function extractFromPDF(buffer: ArrayBuffer): Promise<string> {
+  try {
+    // Import pdf-parse for Deno - a lightweight PDF parser
+    const pdfParse = (await import('https://esm.sh/pdf-parse@1.1.1')).default;
+    
+    const data = await pdfParse(buffer);
+    
+    if (!data.text || data.text.trim().length === 0) {
+      throw new Error('PDF file appears to be empty or contains only images');
+    }
+    
+    return data.text.trim();
+  } catch (error) {
+    console.error('PDF extraction error:', error);
+    throw new Error(`PDF extraction failed: ${error.message}`);
+  }
+}
+
+async function extractFromHTML(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const decoder = new TextDecoder('utf-8');
+    const htmlContent = decoder.decode(buffer);
+    
+    // Parse HTML and extract text content
+    const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
+    const textContent = doc.body?.textContent || doc.documentElement?.textContent || '';
+    
+    if (!textContent.trim()) {
+      throw new Error('HTML file appears to be empty');
+    }
+    
+    return textContent.trim();
+  } catch (error) {
+    console.error('HTML extraction error:', error);
+    throw new Error(`HTML extraction failed: ${error.message}`);
+  }
 }
