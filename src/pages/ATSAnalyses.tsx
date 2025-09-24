@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
+import ATSDebugModal from '@/components/ATSDebugModal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2, RefreshCw } from "lucide-react"
+import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2, RefreshCw, Bug } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis } from '@/hooks/useATSAnalyses'
+import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis, ATSAnalysis } from '@/hooks/useATSAnalyses'
 import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
 
@@ -14,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns'
 
 const ATSAnalyses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [debugAnalysis, setDebugAnalysis] = useState<ATSAnalysis | null>(null)
   
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
@@ -187,6 +189,15 @@ const ATSAnalyses = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(analysis.status)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDebugAnalysis(analysis)}
+                        className="text-xs"
+                      >
+                        <Bug className="h-3 w-3 mr-1" />
+                        Debug
+                      </Button>
                       {(analysis.status === 'error' || (analysis.status === 'completed' && analysis.ats_score === 0)) && (
                         <Button
                           variant="outline"
@@ -301,6 +312,13 @@ const ATSAnalyses = () => {
 
       {/* Analysis Modal */}
       <ATSAnalysisModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      
+      {/* Debug Modal */}
+      <ATSDebugModal 
+        open={!!debugAnalysis} 
+        onOpenChange={(open) => !open && setDebugAnalysis(null)}
+        analysis={debugAnalysis}
+      />
     </div>
   )
 }

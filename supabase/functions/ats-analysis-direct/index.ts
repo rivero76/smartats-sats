@@ -385,23 +385,33 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
         
         return extractedText;
       }
-  } catch (error) {
-    console.error('Failed to fetch resume content:', error);
-    // If we can't extract, check one more time for any pre-extracted content
-    const { data: fallbackExtraction } = await supabase
-      .from('document_extractions')
-      .select('extracted_text')
-      .eq('resume_id', resume.id)
-      .order('created_at', { ascending: false })
-      .maybeSingle();
+    } catch (error) {
+      console.error('Failed to fetch resume content:', error);
       
-    if (fallbackExtraction?.extracted_text) {
-      console.log('✓ Using fallback pre-extracted text');
-      return fallbackExtraction.extracted_text;
-    }
-    
-    return `Resume content is unreadable or corrupted. Error: ${error.message}`;
-  }
+      // Enhanced error logging
+      console.error('Resume details:', {
+        id: resume.id,
+        name: resume.name,
+        file_url: resume.file_url,
+        user_id: resume.user_id
+      });
+      
+      // If we can't extract, check one more time for any pre-extracted content
+      const { data: fallbackExtraction } = await supabase
+        .from('document_extractions')
+        .select('extracted_text')
+        .eq('resume_id', resume.id)
+        .order('created_at', { ascending: false })
+        .maybeSingle();
+        
+      if (fallbackExtraction?.extracted_text) {
+        console.log('✓ Using fallback pre-extracted text');
+        return fallbackExtraction.extracted_text;
+      }
+      
+      const errorMessage = `Resume content is unreadable or corrupted. Error: ${error.message}`;
+      console.error('Returning error message:', errorMessage);
+      return errorMessage;
   }
   
   return `Resume content for ${resume.name} could not be accessed.`;
@@ -411,8 +421,45 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
   const uint8Array = new Uint8Array(buffer);
   const fileExtension = filename.split('.').pop()?.toLowerCase();
   
+  console.log(`Extracting text from file: ${filename}, detected extension: ${fileExtension}, buffer size: ${buffer.byteLength}`);
+  
   try {
-    switch (fileExtension) {
+    // Enhanced file type detection - check magic bytes for better identification
+    const magicBytes = uint8Array.slice(0, 8);
+    const magicHex = Array.from(magicBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    console.log(`File magic bytes: ${magicHex}`);
+    
+    // Detect file type by magic bytes first, then fall back to extension
+    let detectedType = fileExtension;
+    
+    // DOCX files start with PK (ZIP format)
+    if (magicBytes[0] === 0x50 && magicBytes[1] === 0x4B) {
+      console.log('Detected ZIP/DOCX format from magic bytes');
+      detectedType = 'docx';
+    }
+    // PDF files start with %PDF
+    else if (magicBytes[0] === 0x25 && magicBytes[1] === 0x50 && magicBytes[2] === 0x44 && magicBytes[3] === 0x46) {
+      console.log('Detected PDF format from magic bytes');
+      detectedType = 'pdf';
+    }
+    // Check if it might be plain text
+    else {
+      const sample = uint8Array.slice(0, Math.min(1024, uint8Array.length));
+      const textableBytes = sample.filter(byte => 
+        (byte >= 32 && byte <= 126) || // Printable ASCII
+        byte === 9 || byte === 10 || byte === 13 || // Tab, LF, CR
+        byte === 32 // Space
+      );
+      
+      if (textableBytes.length / sample.length > 0.8) {
+        console.log('Detected text format from content analysis');
+        detectedType = 'txt';
+      }
+    }
+    
+    console.log(`Final detected type: ${detectedType}`);
+    
+    switch (detectedType) {
       case 'docx':
         return await extractFromDOCX(buffer);
       case 'pdf':
@@ -423,56 +470,108 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
       case 'htm':
         return await extractFromHTML(buffer);
       default:
-        // Try to detect if it's plain text
-        const sample = uint8Array.slice(0, Math.min(512, uint8Array.length));
-        const isText = sample.every(byte => 
-          (byte >= 32 && byte <= 126) || // Printable ASCII
-          byte === 9 || byte === 10 || byte === 13 // Tab, LF, CR
-        );
+        // Enhanced fallback - try different extraction methods
+        console.log('Unknown file type, attempting fallback extractions...');
         
-        if (isText) {
-          return new TextDecoder('utf-8').decode(buffer);
+        // Try DOCX first (most common resume format)
+        try {
+          console.log('Attempting DOCX extraction as fallback...');
+          const docxResult = await extractFromDOCX(buffer);
+          console.log('✓ DOCX fallback extraction successful');
+          return docxResult;
+        } catch (docxError) {
+          console.log('DOCX fallback failed:', docxError.message);
         }
         
-        throw new Error(`Unsupported file format: ${fileExtension}`);
+        // Try PDF
+        try {
+          console.log('Attempting PDF extraction as fallback...');
+          const pdfResult = await extractFromPDF(buffer);
+          console.log('✓ PDF fallback extraction successful');
+          return pdfResult;
+        } catch (pdfError) {
+          console.log('PDF fallback failed:', pdfError.message);
+        }
+        
+        // Try plain text
+        try {
+          console.log('Attempting text extraction as fallback...');
+          const textResult = new TextDecoder('utf-8').decode(buffer);
+          if (textResult.trim().length > 10) {
+            console.log('✓ Text fallback extraction successful');
+            return textResult;
+          }
+        } catch (textError) {
+          console.log('Text fallback failed:', textError.message);
+        }
+        
+        throw new Error(`Unsupported file format: ${filename}. Tried DOCX, PDF, and text extraction.`);
     }
   } catch (error) {
     console.error('Text extraction failed:', error);
-    throw new Error(`Failed to extract text from ${fileExtension} file: ${error.message}`);
+    throw new Error(`Failed to extract text from ${filename}: ${error.message}`);
   }
 }
 
 async function extractFromDOCX(buffer: ArrayBuffer): Promise<string> {
   try {
+    console.log('Starting DOCX extraction...');
     // Import JSZip dynamically for Deno
     const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
     
     const zip = await JSZip.loadAsync(buffer);
+    console.log('ZIP loaded successfully, files:', Object.keys(zip.files));
+    
     const documentXml = await zip.file('word/document.xml')?.async('text');
     
     if (!documentXml) {
-      throw new Error('Invalid DOCX file structure - no document.xml found');
+      // List available files for debugging
+      const availableFiles = Object.keys(zip.files);
+      console.log('Available files in ZIP:', availableFiles);
+      throw new Error(`Invalid DOCX file structure - no document.xml found. Available files: ${availableFiles.join(', ')}`);
     }
 
-    // Parse XML and extract text using regex
-    const textMatches = documentXml.match(/<w:t[^>]*>([^<]*)</g);
-    if (!textMatches) {
-      throw new Error('No text content found in DOCX file');
+    console.log('document.xml found, length:', documentXml.length);
+
+    // Enhanced XML parsing - handle more text elements
+    const textElements = [
+      /<w:t[^>]*>([^<]*)<\/w:t>/g,  // Standard text elements
+      /<w:t>([^<]*)<\/w:t>/g,        // Simple text elements
+      /<w:instrText[^>]*>([^<]*)<\/w:instrText>/g  // Instruction text
+    ];
+    
+    let allText: string[] = [];
+    
+    for (const regex of textElements) {
+      let match;
+      while ((match = regex.exec(documentXml)) !== null) {
+        if (match[1] && match[1].trim()) {
+          allText.push(match[1].trim());
+        }
+      }
     }
     
-    const extractedText = textMatches
-      .map(match => {
-        const textMatch = match.match(/<w:t[^>]*>([^<]*)<\/w:t>/);
-        return textMatch ? textMatch[1] : '';
-      })
-      .filter(text => text.length > 0)
-      .join(' ');
+    console.log('Extracted text elements:', allText.length);
+    
+    if (allText.length === 0) {
+      // Fallback: try to extract any text between > and <
+      const fallbackMatches = documentXml.match(/>([^<]+)</g);
+      if (fallbackMatches) {
+        allText = fallbackMatches
+          .map(match => match.substring(1, match.length - 1).trim())
+          .filter(text => text.length > 0 && !text.startsWith('xml') && !text.startsWith('w:'));
+        console.log('Fallback extraction found:', allText.length, 'text elements');
+      }
+    }
+    
+    const extractedText = allText.join(' ').trim();
 
-    if (!extractedText.trim()) {
-      throw new Error('DOCX file appears to be empty or corrupted');
+    if (!extractedText) {
+      throw new Error('DOCX file appears to be empty or corrupted - no readable text found');
     }
 
-    return extractedText.trim();
+    console.log('✓ DOCX extraction successful, text length:', extractedText.length);
+    return extractedText;
   } catch (error) {
     console.error('DOCX extraction error:', error);
     throw new Error(`DOCX extraction failed: ${error.message}`);
