@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import React from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
@@ -9,7 +10,7 @@ export interface ATSAnalysis {
   user_id: string
   resume_id: string
   jd_id: string
-  status: 'initial' | 'processing' | 'complete' | 'error'
+  status: 'initial' | 'processing' | 'completed' | 'error'
   ats_score?: number
   matched_skills: string[]
   missing_skills: string[]
@@ -45,11 +46,12 @@ export interface ATSAnalysisStats {
   needImprovement: number
 }
 
-// Fetch all ATS analyses for the current user
+// Fetch all ATS analyses for the current user with real-time updates
 export const useATSAnalyses = () => {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   
-  return useQuery({
+  const query = useQuery({
     queryKey: ['ats-analyses'],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated')
@@ -79,6 +81,34 @@ export const useATSAnalyses = () => {
     },
     enabled: !!user,
   })
+
+  // Set up real-time subscription
+  React.useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('ats-analyses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sats_analyses',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Invalidate and refetch when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['ats-analyses'] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, queryClient])
+
+  return query
 }
 
 // Calculate statistics for ATS analyses
@@ -97,7 +127,7 @@ export const useATSAnalysisStats = () => {
         }
       }
       
-      const completedAnalyses = analyses.filter(a => a.status === 'complete' && a.ats_score !== null)
+      const completedAnalyses = analyses.filter(a => a.status === 'completed' && a.ats_score !== null)
       const totalAnalyses = analyses.length
       
       let averageScore = 0

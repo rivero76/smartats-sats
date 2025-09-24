@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +27,7 @@ const ATSAnalyses = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'complete':
+      case 'completed':
         return <Badge variant="secondary" className="bg-green-100 text-green-800">Complete</Badge>
       case 'processing':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Processing</Badge>
@@ -191,9 +192,12 @@ const ATSAnalyses = () => {
                     </div>
                   </div>
 
+                  {/* Analysis Progress and Results */}
+                  <ATSAnalysisProgress analysis={analysis} />
+
                   {/* Analysis Results */}
-                  {analysis.status === 'complete' && analysis.ats_score !== null ? (
-                    <div className="space-y-4">
+                  {analysis.status === 'completed' && analysis.ats_score !== null && (
+                    <div className="space-y-4 mt-6">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">ATS Compatibility Score</span>
                         <span className={`text-2xl font-bold ${getScoreColor(analysis.ats_score)}`}>
@@ -260,25 +264,6 @@ const ATSAnalyses = () => {
                       <Button className="w-full" disabled>
                         Add Missing Experience (Coming Soon)
                       </Button>
-                    </div>
-                   ) : analysis.status === 'processing' ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                       <span className="text-muted-foreground">
-                          Processing analysis via OpenAI...
-                        </span>
-                      </div>
-                    </div>
-                  ) : analysis.status === 'error' ? (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800">
-                        Analysis failed to process. Please try running it again.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center py-8">
-                      <span className="text-muted-foreground">Analysis queued for processing...</span>
                     </div>
                   )}
                 </div>
