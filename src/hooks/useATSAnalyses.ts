@@ -32,6 +32,12 @@ export interface ATSAnalysis {
       name: string
     }
   }
+  user?: {
+    id: string
+    name: string
+    auth_user_id: string
+    email?: string
+  }
 }
 
 export interface CreateATSAnalysisData {
@@ -77,7 +83,34 @@ export const useATSAnalyses = () => {
         .order('created_at', { ascending: false })
       
       if (error) throw error
-      return data as ATSAnalysis[]
+
+      // Fetch user details separately for each analysis
+      const analysesWithUserData = await Promise.all(
+        (data || []).map(async (analysis) => {
+          const { data: userData, error: userError } = await supabase
+            .from('sats_users_public')
+            .select('id, name, auth_user_id')
+            .eq('auth_user_id', analysis.user_id)
+            .single()
+          
+          // Also fetch email from profiles table
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('user_id', analysis.user_id)
+            .single()
+          
+          return {
+            ...analysis,
+            user: userError ? null : {
+              ...userData,
+              email: profileData?.email
+            }
+          }
+        })
+      )
+      
+      return analysesWithUserData as ATSAnalysis[]
     },
     enabled: !!user,
   })

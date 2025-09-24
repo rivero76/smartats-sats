@@ -161,6 +161,14 @@ const ATSAnalyses = () => {
                         <h3 className="font-medium">{analysis.resume?.name}</h3>
                         <span className="text-muted-foreground">vs</span>
                         <span className="font-medium">{analysis.job_description?.name}</span>
+                        {analysis.user?.name && (
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                            by {analysis.user.name}
+                            {analysis.user.email && (
+                              <span className="text-xs ml-1">({analysis.user.email})</span>
+                            )}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
