@@ -51,38 +51,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data) {
         setSatsUser(data as SATSUser);
       } else {
-        // Handle case where SATS user record doesn't exist - try to create it
-        console.warn("SATS user record not found for user:", userId);
-        try {
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const fallbackName = userData.user.user_metadata?.name || 
-                               userData.user.user_metadata?.full_name || 
-                               userData.user.email?.split('@')[0] || 'User';
-            
-            const { data: newSatsUser, error: insertError } = await supabase
+        // SATS user record should be created automatically by database triggers
+        // If it doesn't exist, this indicates a trigger failure or timing issue
+        console.error("SATS user record not found for user:", userId, "- database triggers may have failed");
+        
+        // Wait a moment and retry once in case of timing issues
+        setTimeout(async () => {
+          console.log("Retrying SATS user fetch after delay...");
+          try {
+            const { data: retryData, error: retryError } = await supabase
               .from("sats_users_public")
-              .insert({
-                auth_user_id: userId,
-                name: fallbackName,
-                role: 'user'
-              })
-              .select()
-              .single();
+              .select("*")
+              .eq("auth_user_id", userId)
+              .maybeSingle();
             
-            if (!insertError && newSatsUser) {
-              setSatsUser(newSatsUser as SATSUser);
+            if (!retryError && retryData) {
+              setSatsUser(retryData as SATSUser);
+              console.log("Successfully fetched SATS user on retry");
             } else {
-              console.error("Failed to create SATS user record:", insertError);
+              console.error("SATS user still not found after retry - this requires investigation");
               setSatsUser(null);
             }
-          } else {
+          } catch (retryError) {
+            console.error("Error retrying SATS user fetch:", retryError);
             setSatsUser(null);
           }
-        } catch (createError) {
-          console.error("Error creating fallback SATS user:", createError);
-          setSatsUser(null);
-        }
+        }, 2000);
+        
+        setSatsUser(null);
       }
     } catch (error) {
       console.error("Error fetching SATS user:", error);
