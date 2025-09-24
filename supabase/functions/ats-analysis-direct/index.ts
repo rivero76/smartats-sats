@@ -219,13 +219,30 @@ serve(async (req) => {
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
+        // Log detailed error for debugging but don't store sensitive details in analysis_data
+        await supabase
+          .from('error_logs')
+          .insert({
+            error_source: 'ats_analysis_edge_function',
+            error_type: 'analysis_failure',
+            error_message: 'ATS analysis processing failed',
+            error_details: {
+              analysis_id: requestBody.analysis_id,
+              error_type: error.constructor.name,
+              timestamp: new Date().toISOString(),
+              // Only log safe error details, not full stack traces
+              safe_message: error.message?.substring(0, 200)
+            }
+          });
+        
         await supabase
           .from('sats_analyses')
           .update({
             status: 'error',
             analysis_data: {
-              error_message: error.message,
-              error_timestamp: new Date().toISOString()
+              error_timestamp: new Date().toISOString(),
+              // Don't store detailed error message in user-accessible data
+              error_occurred: true
             }
           })
           .eq('id', requestBody.analysis_id);
@@ -236,7 +253,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: 'Analysis processing failed. Please try again or contact support if the issue persists.',
+      analysis_id: requestBody?.analysis_id 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
