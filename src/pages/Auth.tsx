@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import genezxLogo from "@/assets/genezx-logo.png";
+import { authEvents } from "@/lib/authLogger";
 
 const Auth = () => {
   const { signUp, signIn, user, loading, resendConfirmation } = useAuth();
@@ -38,15 +39,21 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate passwords match
+    const validationErrors: string[] = [];
     if (signUpData.password !== signUpData.confirmPassword) {
+      validationErrors.push("Passwords do not match");
       toast({
         title: "Error",
         description: "Passwords do not match",
         variant: "destructive",
       });
+      await authEvents.formSubmission('signup', signUpData.email, validationErrors);
       return;
     }
 
+    // Log form submission
+    await authEvents.formSubmission('signup', signUpData.email);
     setIsLoading(true);
     
     const { error, data } = await signUp(signUpData.email, signUpData.password, signUpData.name);
@@ -57,36 +64,46 @@ const Auth = () => {
           error.message?.includes("already been registered")) {
         setExistingUserEmail(signUpData.email);
         setShowResendConfirmation(true);
+        const toastMessage = "An account with this email already exists. Try signing in or resend confirmation email.";
         toast({
           title: "Account Already Exists",
-          description: "An account with this email already exists. Try signing in or resend confirmation email.",
+          description: toastMessage,
           variant: "default",
         });
+        await authEvents.toastShown('info', toastMessage, 'signup_existing_user');
       } else {
+        const toastMessage = error.message;
         toast({
           title: "Sign up failed",
-          description: error.message,
+          description: toastMessage,
           variant: "destructive",
         });
+        await authEvents.toastShown('error', toastMessage, 'signup_error');
       }
     } else {
       // Check if user was created or just reactivated
       if (data?.user && !data.user.email_confirmed_at) {
+        const toastMessage = "Check your email to verify your account";
         toast({
           title: "Success!",
-          description: "Check your email to verify your account",
+          description: toastMessage,
         });
+        await authEvents.toastShown('success', toastMessage, 'signup_success_new_user');
       } else if (data?.user && data.user.email_confirmed_at) {
         // User was reactivated (already confirmed)
+        const toastMessage = "Your account has been reactivated. You can now sign in.";
         toast({
           title: "Welcome back!",
-          description: "Your account has been reactivated. You can now sign in.",
+          description: toastMessage,
         });
+        await authEvents.toastShown('success', toastMessage, 'signup_success_reactivated');
       } else {
+        const toastMessage = "Check your email to verify your account";
         toast({
           title: "Success!",
-          description: "Check your email to verify your account",
+          description: toastMessage,
         });
+        await authEvents.toastShown('success', toastMessage, 'signup_success_default');
       }
     }
     
@@ -100,16 +117,20 @@ const Auth = () => {
     const { error } = await resendConfirmation(existingUserEmail);
     
     if (error) {
+      const toastMessage = error.message;
       toast({
         title: "Error",
-        description: error.message,
+        description: toastMessage,
         variant: "destructive",
       });
+      await authEvents.toastShown('error', toastMessage, 'resend_confirmation_error');
     } else {
+      const toastMessage = "Check your email for the confirmation link";
       toast({
         title: "Confirmation Email Sent!",
-        description: "Check your email for the confirmation link",
+        description: toastMessage,
       });
+      await authEvents.toastShown('success', toastMessage, 'resend_confirmation_success');
       setShowResendConfirmation(false);
     }
     
@@ -118,16 +139,21 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Log form submission
+    await authEvents.formSubmission('signin', signInData.email);
     setIsLoading(true);
     
     const { error } = await signIn(signInData.email, signInData.password);
     
     if (error) {
+      const toastMessage = error.message;
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: toastMessage,
         variant: "destructive",
       });
+      await authEvents.toastShown('error', toastMessage, 'signin_error');
     }
     
     setIsLoading(false);

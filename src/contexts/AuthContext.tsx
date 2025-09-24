@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { authEvents } from "@/lib/authLogger";
 
 interface SATSUser {
   id: string;
@@ -56,16 +57,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (reactivateError) {
           console.error('Error reactivating user:', reactivateError);
+          await authEvents.userReactivation(userId, false, reactivateError);
           return false;
         }
         
         console.log('User reactivated successfully:', data);
+        await authEvents.userReactivation(userId, true);
         return true;
       }
       
       return false; // User was not soft-deleted
     } catch (error) {
       console.error('Error checking user reactivation status:', error);
+      await authEvents.userReactivation(userId, false, error);
       return false;
     }
   };
@@ -85,10 +89,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data) {
         setSatsUser(data as SATSUser);
+        await authEvents.satsUserFetch(userId, true);
       } else {
         // SATS user record should be created automatically by database triggers
         // If it doesn't exist, this indicates a trigger failure or timing issue
         console.error("SATS user record not found for user:", userId, "- database triggers may have failed");
+        await authEvents.satsUserFetch(userId, false, false, new Error("SATS user record not found - database triggers may have failed"));
         
         // Wait a moment and retry once in case of timing issues
         setTimeout(async () => {
@@ -103,13 +109,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (!retryError && retryData) {
               setSatsUser(retryData as SATSUser);
               console.log("Successfully fetched SATS user on retry");
+              await authEvents.satsUserFetch(userId, true, true);
             } else {
               console.error("SATS user still not found after retry - this requires investigation");
               setSatsUser(null);
+              await authEvents.satsUserFetch(userId, false, true, retryError || new Error("SATS user still not found after retry"));
             }
           } catch (retryError) {
             console.error("Error retrying SATS user fetch:", retryError);
             setSatsUser(null);
+            await authEvents.satsUserFetch(userId, false, true, retryError);
           }
         }, 2000);
         
@@ -118,6 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Error fetching SATS user:", error);
       setSatsUser(null);
+      await authEvents.satsUserFetch(userId, false, false, error);
     }
   };
 
@@ -128,6 +138,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("AuthProvider: Auth state changed", { event, session: !!session, userId: session?.user?.id });
+        
+        // Log session state changes
+        setTimeout(() => {
+          authEvents.sessionStateChange(event, session?.user?.id, { 
+            has_session: !!session,
+            session_expires_at: session?.expires_at 
+          });
+        }, 0);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -143,6 +161,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setSatsUser(null);
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           console.log("AuthProvider: Token refreshed");
+          setTimeout(() => {
+            authEvents.tokenRefresh(session.user.id, true);
+          }, 0);
           // Don't refetch SATS user on token refresh if we already have it
           if (!satsUser) {
             setTimeout(() => {
@@ -169,13 +190,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error("AuthProvider: Error getting session from URL:", error);
+        await authEvents.sessionRecovery(undefined, false, error);
       } else if (data.session) {
         console.log("AuthProvider: Session recovered from URL");
+        await authEvents.sessionRecovery(data.session.user.id, true);
         setSession(data.session);
         setUser(data.session.user);
         setTimeout(() => {
           fetchSATSUser(data.session.user.id);
         }, 0);
+      } else {
+        await authEvents.sessionRecovery(undefined, false, new Error("No session found in URL"));
       }
       setLoading(false);
     };
@@ -187,6 +212,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
+    await authEvents.signUpAttempt(email, { name, redirect_url: window.location.origin });
+    
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -198,20 +225,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
     
+    if (error) {
+      await authEvents.signUpError(email, error);
+    } else if (data.user) {
+      const isReactivation = data.user.email_confirmed_at !== null;
+      await authEvents.signUpSuccess(data.user.id, email, isReactivation);
+    }
+    
     return { error, data };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    await authEvents.signInAttempt(email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    if (error) {
+      await authEvents.signInError(email, error);
+    } else if (data.user) {
+      await authEvents.signInSuccess(data.user.id, email);
+    }
     
     return { error };
   };
 
   const signOut = async () => {
     try {
+      const currentUserId = user?.id;
+      await authEvents.signOutAttempt(currentUserId);
+      
       console.log("AuthProvider: Starting sign-out process...");
       
       // Clear local state immediately to prevent UI confusion
@@ -222,6 +267,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         console.error("AuthProvider: Sign-out error:", error);
+        await authEvents.signOutError(currentUserId, error);
         // Even if sign-out fails on server, clear local state for security
         setSession(null);
         setUser(null);
@@ -231,11 +277,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("AuthProvider: Sign-out successful");
+      await authEvents.signOutSuccess(currentUserId);
       // State will be cleared by the onAuthStateChange listener
       return { error: null };
       
     } catch (error) {
       console.error("AuthProvider: Sign-out failed:", error);
+      await authEvents.signOutError(user?.id, error);
       // Force clear local state even on error for security
       setSession(null);
       setUser(null);  
@@ -246,16 +294,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
+    await authEvents.passwordResetAttempt(email);
+    
     const redirectUrl = `${window.location.origin}/reset-password`;
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });
     
+    if (error) {
+      await authEvents.passwordResetError(email, error);
+    } else {
+      await authEvents.passwordResetSuccess(email);
+    }
+    
     return { error };
   };
 
   const resendConfirmation = async (email: string) => {
+    await authEvents.resendConfirmationAttempt(email);
+    
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.resend({
@@ -265,6 +323,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         emailRedirectTo: redirectUrl,
       }
     });
+    
+    if (error) {
+      await authEvents.resendConfirmationError(email, error);
+    } else {
+      await authEvents.resendConfirmationSuccess(email);
+    }
     
     return { error };
   };
