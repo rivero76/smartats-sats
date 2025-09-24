@@ -1,10 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Plus, Lightbulb, Zap, Star, Wand2 } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Sparkles, Plus, Lightbulb, Zap, Star, Wand2, Construction, AlertTriangle } from "lucide-react"
 
 const EnrichedExperiences = () => {
   return (
     <div className="space-y-6">
+      {/* Development Status Warning */}
+      <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+        <Construction className="h-4 w-4" />
+        <AlertTitle>Feature Under Development</AlertTitle>
+        <AlertDescription>
+          The Experience Enrichment feature is currently being developed and is not yet functional. 
+          We're working hard to bring you AI-powered resume enhancement capabilities. 
+          Please check back soon for updates on this exciting new feature.
+        </AlertDescription>
+      </Alert>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Enriched Experiences</h1>
@@ -12,10 +25,19 @@ const EnrichedExperiences = () => {
             Enhance your resume experiences with AI-powered suggestions and optimizations.
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Enrich Experience
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button disabled>
+                <Plus className="mr-2 h-4 w-4" />
+                Enrich Experience
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Feature coming soon - currently under development</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Feature Overview */}
@@ -144,10 +166,19 @@ const EnrichedExperiences = () => {
             <p className="text-muted-foreground mb-4">
               Upload a resume or manually add work experiences to start the AI enhancement process.
             </p>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Start Enriching Your Experiences
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button disabled>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Start Enriching Your Experiences
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Feature coming soon - currently under development</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
