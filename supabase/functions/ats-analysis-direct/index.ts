@@ -27,6 +27,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse request body once to avoid "Body already consumed" error
+  let requestBody: ATSAnalysisRequest;
+  try {
+    requestBody = await req.json();
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: 'Invalid request body' 
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -39,7 +53,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { analysis_id, resume_id, jd_id }: ATSAnalysisRequest = await req.json();
+    const { analysis_id, resume_id, jd_id } = requestBody;
     console.log(`Starting ATS analysis: ${analysis_id} for resume ${resume_id} vs job ${jd_id}`);
 
     // Fetch resume and job description data
@@ -77,17 +91,21 @@ serve(async (req) => {
       })
       .eq('id', analysis_id);
 
-    // Build prompt using the sophisticated logic from the local solution
+    // Get and optimize content
+    const resumeContent = await getResumeContent(resume);
+    const jobContent = jobDescription.pasted_text || '';
+    
+    // Build optimized prompt
     const prompt = buildATSPrompt(
       jobDescription.name,
-      jobDescription.pasted_text || '',
+      jobContent,
       resume.name,
-      await getResumeContent(resume)
+      resumeContent
     );
 
     console.log('Calling OpenAI API with prompt length:', prompt.length);
     
-    // Call OpenAI API
+    // Call OpenAI API with gpt-4o-mini for better token efficiency
     const startTime = Date.now();
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -96,7 +114,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         temperature: 0.2,
         messages: [
           {
@@ -116,6 +134,12 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenAI API error:', errorText);
+      
+      // Handle specific rate limit errors
+      if (response.status === 429 && errorText.includes('rate_limit_exceeded')) {
+        throw new Error('Request too large. Please try with a shorter resume or job description.');
+      }
+      
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
@@ -139,7 +163,7 @@ serve(async (req) => {
         processing_completed_at: new Date().toISOString(),
         processing_time_ms: latencyMs,
         token_usage: data.usage,
-        model_used: 'gpt-4o',
+        model_used: 'gpt-4o-mini',
         resume_warnings: analysisResult.resume_warnings,
         raw_llm_response: {
           content: rawContent,
@@ -183,10 +207,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ATS analysis function:', error);
     
-    // Try to update analysis status to error if we have the analysis_id
+    // Try to update analysis status to error using the already parsed request body
     try {
-      const requestBody = await req.json();
-      if (requestBody.analysis_id) {
+      if (requestBody?.analysis_id) {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -217,35 +240,34 @@ serve(async (req) => {
 });
 
 function buildATSPrompt(jdTitle: string, jdText: string, resumeTitle: string, resumeText: string): string {
-  return `# Role
-You are an ATS (Applicant Tracking System) simulator and career coach in one. Compare the candidate's resume against the job description and produce an ATS-style analysis.
+  // Truncate content if too long to avoid token limits
+  const maxJobLength = 15000; // ~3750 tokens
+  const maxResumeLength = 25000; // ~6250 tokens
+  
+  const truncatedJobText = jdText.length > maxJobLength 
+    ? jdText.substring(0, maxJobLength) + '...[truncated]'
+    : jdText;
+    
+  const truncatedResumeText = resumeText.length > maxResumeLength
+    ? resumeText.substring(0, maxResumeLength) + '...[truncated]'
+    : resumeText;
 
-# Objectives
-1) Compute an ATS-style match score (0.0–1.0). Target ≥0.85 for a strong match.
-2) Identify keywords/skills found and missing (prioritize those emphasized by the JD).
-3) Provide resume formatting warnings (ATS-compat concerns).
-4) Provide actionable recommendations to improve match and recruiter alignment.
-5) Keep reasoning internal; return ONLY the final structured JSON.
+  return `Role: ATS simulator. Compare resume vs job description.
 
-# Output (STRICT JSON ONLY — no prose, no markdown, no code fences)
-Return a single JSON object with:
+Output STRICT JSON (no fences):
 {
-  "match_score": 0.0,                    // float in [0,1]
-  "keywords_found": ["..."],             // strings
-  "keywords_missing": ["..."],           // strings
-  "resume_warnings": ["..."],            // e.g., tables, graphics, headers/footers, missing sections
-  "recommendations": ["..."]             // concrete edits to increase the score
+  "match_score": 0.0,
+  "keywords_found": ["..."],
+  "keywords_missing": ["..."],
+  "resume_warnings": ["..."],
+  "recommendations": ["..."]
 }
 
-# Hints
-- Prioritize JD requirements, certifications, and location/citizenship constraints.
-- Normalize synonym/acronym mismatches (e.g., AI vs. Artificial Intelligence).
+Job: ${jdTitle}
+${truncatedJobText}
 
-# Job Description: ${jdTitle}
-"""${jdText}"""
-
-# Resume: ${resumeTitle}
-"""${resumeText}"""`.trim();
+Resume: ${resumeTitle}  
+${truncatedResumeText}`.trim();
 }
 
 function parseATSResponse(rawResponse: string): ATSAnalysisResult {
@@ -314,7 +336,15 @@ async function getResumeContent(resume: any): Promise<string> {
       if (response.ok) {
         const text = await response.text();
         console.log('Retrieved resume content, length:', text.length);
-        return text;
+        
+        // Clean up the content to remove excessive whitespace and optimize tokens
+        const cleanedText = text
+          .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
+          .replace(/\n\s*\n/g, '\n') // Remove empty lines
+          .trim();
+          
+        console.log('Cleaned resume content, new length:', cleanedText.length);
+        return cleanedText;
       }
     } catch (error) {
       console.error('Failed to fetch resume content:', error);
