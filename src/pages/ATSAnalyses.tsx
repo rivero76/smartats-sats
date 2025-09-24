@@ -3,16 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2, Settings } from "lucide-react"
+import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis } from '@/hooks/useATSAnalyses'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
-import N8NTestModal from '@/components/N8NTestModal'
+
 import { formatDistanceToNow } from 'date-fns'
 
 const ATSAnalyses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isN8NModalOpen, setIsN8NModalOpen] = useState(false)
+  
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
   const deleteAnalysis = useDeleteATSAnalysis()
@@ -47,13 +47,6 @@ const ATSAnalyses = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsN8NModalOpen(true)}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Test N8N
-          </Button>
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Analysis
@@ -272,8 +265,8 @@ const ATSAnalyses = () => {
                     <div className="flex items-center justify-center py-8">
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-muted-foreground">
-                          Processing analysis via N8N workflow...
+                       <span className="text-muted-foreground">
+                          Processing analysis via OpenAI...
                         </span>
                       </div>
                     </div>
@@ -297,9 +290,6 @@ const ATSAnalyses = () => {
 
       {/* Analysis Modal */}
       <ATSAnalysisModal open={isModalOpen} onOpenChange={setIsModalOpen} />
-      
-      {/* N8N Test Modal */}
-      <N8NTestModal open={isN8NModalOpen} onOpenChange={setIsN8NModalOpen} />
     </div>
   )
 }

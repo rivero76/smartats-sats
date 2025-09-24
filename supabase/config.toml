@@ -1,1 +1,4 @@
 project_id = "nkgscksbgmzhizohobhg"
+
+[functions.ats-analysis-direct]
+verify_jwt = true
