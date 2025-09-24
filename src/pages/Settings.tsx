@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
@@ -54,11 +55,13 @@ const Settings = () => {
   useEffect(() => {
     if (!loading) {
       const formData = getFormData();
+      console.log('Settings: Resetting form with data:', formData);
       form.reset(formData);
     }
-  }, [loading, getFormData, form]);
+  }, [loading, form.reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
+    console.log('Settings: Form submitted with data:', data);
     await saveProfile(data);
   };
 
@@ -177,7 +180,11 @@ const Settings = () => {
                     <FormItem>
                       <FormLabel>Professional Summary (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Brief professional summary" {...field} />
+                        <Textarea 
+                          placeholder="Brief professional summary" 
+                          className="min-h-[100px]"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
