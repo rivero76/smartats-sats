@@ -4,9 +4,54 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Settings as SettingsIcon, User, Bell, Shield, Database, Key } from "lucide-react"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Settings as SettingsIcon, User, Bell, Shield, Database, Key, Loader2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { useProfile, type ProfileFormData } from "@/hooks/useProfile"
+import { useEffect } from "react"
+
+const profileFormSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string(),
+  location: z.string(),
+  professional_summary: z.string(),
+  linkedin_url: z.string().refine((val) => !val || z.string().url().safeParse(val).success, "Please enter a valid URL"),
+  portfolio_url: z.string().refine((val) => !val || z.string().url().safeParse(val).success, "Please enter a valid URL"),
+});
 
 const Settings = () => {
+  const { loading, saving, getFormData, saveProfile } = useProfile();
+  
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      location: "",
+      professional_summary: "",
+      linkedin_url: "",
+      portfolio_url: "",
+    },
+  });
+
+  // Update form when profile data is loaded
+  useEffect(() => {
+    if (!loading) {
+      const formData = getFormData();
+      form.reset(formData);
+    }
+  }, [loading, getFormData, form]);
+
+  const onSubmit = async (data: ProfileFormData) => {
+    await saveProfile(data);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -27,26 +72,135 @@ const Settings = () => {
             Update your personal information and preferences.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" placeholder="Enter your first name" />
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Loading profile...</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" placeholder="Enter your last name" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input id="email" type="email" placeholder="Enter your email" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="company">Company (Optional)</Label>
-            <Input id="company" placeholder="Enter your company name" />
-          </div>
-          <Button>Save Changes</Button>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your first name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter your email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your location" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="professional_summary"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Professional Summary (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Brief professional summary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="linkedin_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="portfolio_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Portfolio URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://yourportfolio.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </form>
+            </Form>
+          )}
         </CardContent>
       </Card>
 
