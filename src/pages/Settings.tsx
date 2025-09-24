@@ -4,13 +4,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Settings as SettingsIcon, User, Bell, Shield, Database, Key, Loader2 } from "lucide-react"
+import { Settings as SettingsIcon, User, Bell, Shield, Database, Key, Loader2, AlertTriangle } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useProfile, type ProfileFormData } from "@/hooks/useProfile"
-import { useEffect } from "react"
+import { useAccountDeletion } from "@/hooks/useAccountDeletion"
+import { DeleteAccountModal } from "@/components/DeleteAccountModal"
+import { useEffect, useState } from "react"
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -25,6 +28,8 @@ const profileFormSchema = z.object({
 
 const Settings = () => {
   const { loading, saving, getFormData, saveProfile } = useProfile();
+  const { deletionStatus, isLoading: isDeletionLoading, isCancelling, cancelDeletion, refreshStatus } = useAccountDeletion();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -321,14 +326,51 @@ const Settings = () => {
             </div>
             <Button variant="outline" disabled>Export <span className="ml-2 text-xs">(Coming Soon)</span></Button>
           </div>
-          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
               <h4 className="font-medium">Delete Account</h4>
               <p className="text-sm text-muted-foreground">
                 Permanently delete your account and all associated data
               </p>
             </div>
-            <Button variant="outline" disabled>Delete <span className="ml-2 text-xs">(Coming Soon)</span></Button>
+            {deletionStatus.isScheduledForDeletion ? (
+              <div className="text-right space-y-2">
+                <Alert className="border-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-1">
+                      <p className="font-medium text-destructive text-xs">
+                        Account scheduled for deletion
+                      </p>
+                      <p className="text-xs">
+                        Permanent deletion: {new Date(deletionStatus.permanentDeletionDate!).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs">
+                        Days remaining: {deletionStatus.daysRemaining}
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={cancelDeletion} 
+                  disabled={isCancelling}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Cancel Deletion
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeletionLoading}
+              >
+                {isDeletionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Account
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -351,6 +393,15 @@ const Settings = () => {
           <Button disabled>Generate API Key</Button>
         </CardContent>
       </Card>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onSuccess={() => {
+          refreshStatus();
+          // User will be signed out automatically by the edge function
+        }}
+      />
     </div>
   )
 }

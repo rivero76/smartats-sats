@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_logs: {
+        Row: {
+          action: string
+          created_at: string
+          data_deleted: Json | null
+          deletion_reason: string | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          data_deleted?: Json | null
+          deletion_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          data_deleted?: Json | null
+          deletion_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ats_derivatives: {
         Row: {
           bucket: string
@@ -138,6 +171,7 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string | null
+          deleted_at: string | null
           description: string
           full_description: string | null
           id: string
@@ -149,6 +183,7 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description: string
           full_description?: string | null
           id?: string
@@ -160,6 +195,7 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string
           full_description?: string | null
           id?: string
@@ -174,6 +210,7 @@ export type Database = {
         Row: {
           bucket: string
           created_at: string | null
+          deleted_at: string | null
           file_name: string
           id: string
           mime: string
@@ -186,6 +223,7 @@ export type Database = {
         Insert: {
           bucket?: string
           created_at?: string | null
+          deleted_at?: string | null
           file_name: string
           id?: string
           mime: string
@@ -198,6 +236,7 @@ export type Database = {
         Update: {
           bucket?: string
           created_at?: string | null
+          deleted_at?: string | null
           file_name?: string
           id?: string
           mime?: string
@@ -213,6 +252,7 @@ export type Database = {
         Row: {
           attempts: number | null
           created_at: string | null
+          deleted_at: string | null
           error: string | null
           finished_at: string | null
           id: string
@@ -231,6 +271,7 @@ export type Database = {
         Insert: {
           attempts?: number | null
           created_at?: string | null
+          deleted_at?: string | null
           error?: string | null
           finished_at?: string | null
           id?: string
@@ -249,6 +290,7 @@ export type Database = {
         Update: {
           attempts?: number | null
           created_at?: string | null
+          deleted_at?: string | null
           error?: string | null
           finished_at?: string | null
           id?: string
@@ -436,6 +478,9 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deletion_requested_at: string | null
+          deletion_scheduled_for: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -449,6 +494,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          deletion_scheduled_for?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -462,6 +510,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          deletion_scheduled_for?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -480,6 +531,7 @@ export type Database = {
           analysis_data: Json | null
           ats_score: number | null
           created_at: string
+          deleted_at: string | null
           enriched_by_user: boolean
           id: string
           jd_id: string
@@ -495,6 +547,7 @@ export type Database = {
           analysis_data?: Json | null
           ats_score?: number | null
           created_at?: string
+          deleted_at?: string | null
           enriched_by_user?: boolean
           id?: string
           jd_id: string
@@ -510,6 +563,7 @@ export type Database = {
           analysis_data?: Json | null
           ats_score?: number | null
           created_at?: string
+          deleted_at?: string | null
           enriched_by_user?: boolean
           id?: string
           jd_id?: string
@@ -569,6 +623,7 @@ export type Database = {
         Row: {
           company_id: string | null
           created_at: string
+          deleted_at: string | null
           file_url: string | null
           id: string
           location_id: string | null
@@ -580,6 +635,7 @@ export type Database = {
         Insert: {
           company_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           file_url?: string | null
           id?: string
           location_id?: string | null
@@ -591,6 +647,7 @@ export type Database = {
         Update: {
           company_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           file_url?: string | null
           id?: string
           location_id?: string | null
@@ -682,6 +739,7 @@ export type Database = {
       sats_resumes: {
         Row: {
           created_at: string
+          deleted_at: string | null
           file_url: string | null
           id: string
           name: string
@@ -690,6 +748,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           file_url?: string | null
           id?: string
           name: string
@@ -698,6 +757,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           file_url?: string | null
           id?: string
           name?: string
@@ -712,6 +772,7 @@ export type Database = {
           analysis_id: string | null
           company_id: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           job_title: string | null
@@ -725,6 +786,7 @@ export type Database = {
           analysis_id?: string | null
           company_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           job_title?: string | null
@@ -738,6 +800,7 @@ export type Database = {
           analysis_id?: string | null
           company_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           job_title?: string | null
@@ -794,6 +857,7 @@ export type Database = {
       sats_user_skills: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           last_used_date: string | null
           notes: string | null
@@ -805,6 +869,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           last_used_date?: string | null
           notes?: string | null
@@ -816,6 +881,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           last_used_date?: string | null
           notes?: string | null
@@ -839,6 +905,9 @@ export type Database = {
         Row: {
           auth_user_id: string
           created_at: string
+          deleted_at: string | null
+          deletion_requested_at: string | null
+          deletion_scheduled_for: string | null
           id: string
           name: string
           role: string
@@ -847,6 +916,9 @@ export type Database = {
         Insert: {
           auth_user_id: string
           created_at?: string
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          deletion_scheduled_for?: string | null
           id?: string
           name: string
           role?: string
@@ -855,6 +927,9 @@ export type Database = {
         Update: {
           auth_user_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          deletion_scheduled_for?: string | null
           id?: string
           name?: string
           role?: string
@@ -1021,6 +1096,7 @@ export type Database = {
           action: string
           company_or_project: string
           created_at: string
+          deleted_at: string | null
           end_date: string | null
           id: string
           is_current: boolean | null
@@ -1040,6 +1116,7 @@ export type Database = {
           action: string
           company_or_project: string
           created_at?: string
+          deleted_at?: string | null
           end_date?: string | null
           id?: string
           is_current?: boolean | null
@@ -1059,6 +1136,7 @@ export type Database = {
           action?: string
           company_or_project?: string
           created_at?: string
+          deleted_at?: string | null
           end_date?: string | null
           id?: string
           is_current?: boolean | null
@@ -1080,6 +1158,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_account_deletion: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       create_first_admin_role: {
         Args: { target_user_id: string }
         Returns: Json
@@ -1109,6 +1191,10 @@ export type Database = {
           target_email?: string
           target_user_id?: string
         }
+        Returns: Json
+      }
+      soft_delete_user: {
+        Args: { deletion_reason?: string; target_user_id: string }
         Returns: Json
       }
       update_service_status: {
