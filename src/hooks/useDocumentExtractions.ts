@@ -41,7 +41,7 @@ export function useDocumentExtraction(resumeId: string | null) {
         .from('document_extractions')
         .select('*')
         .eq('resume_id', resumeId)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
         throw error;
@@ -62,7 +62,10 @@ export function useCreateDocumentExtraction() {
     mutationFn: async (data: CreateExtractionData) => {
       const { data: result, error } = await supabase
         .from('document_extractions')
-        .insert([data])
+        .upsert([data], { 
+          onConflict: 'resume_id',
+          ignoreDuplicates: false 
+        })
         .select()
         .single();
 

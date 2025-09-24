@@ -425,7 +425,15 @@ export type Database = {
           warnings?: Json | null
           word_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "document_extractions_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: true
+            referencedRelation: "sats_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       error_logs: {
         Row: {

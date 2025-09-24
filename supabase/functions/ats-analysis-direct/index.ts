@@ -340,7 +340,8 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
     .from('document_extractions')
     .select('extracted_text, warnings, word_count, extraction_method')
     .eq('resume_id', resume.id)
-    .single();
+    .order('created_at', { ascending: false })
+    .maybeSingle();
 
   console.log('Document extraction query result:', { 
     found: !extractionError, 
@@ -391,7 +392,8 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
       .from('document_extractions')
       .select('extracted_text')
       .eq('resume_id', resume.id)
-      .single();
+      .order('created_at', { ascending: false })
+      .maybeSingle();
       
     if (fallbackExtraction?.extracted_text) {
       console.log('✓ Using fallback pre-extracted text');
