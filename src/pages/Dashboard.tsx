@@ -1,51 +1,85 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock, Target, CheckCircle, Clock4 } from "lucide-react"
+import { useResumes } from "@/hooks/useResumes";
+import { useJobDescriptions } from "@/hooks/useJobDescriptions";
+import { useATSAnalyses, useATSAnalysisStats } from "@/hooks/useATSAnalyses";
+import { useMemo } from "react";
 
 const Dashboard = () => {
   const { satsUser } = useAuth();
   const navigate = useNavigate();
   
-  const stats = [
+  // Fetch data using existing hooks
+  const { data: resumes, isLoading: resumesLoading } = useResumes();
+  const { data: jobDescriptions, isLoading: jobsLoading } = useJobDescriptions();
+  const { data: analyses, isLoading: analysesLoading } = useATSAnalyses();
+  const { data: analysisStats, isLoading: statsLoading } = useATSAnalysisStats();
+
+  // Calculate dynamic stats
+  const stats = useMemo(() => [
     {
       title: "Total Resumes",
-      value: "0",
+      value: resumesLoading ? "..." : (resumes?.length || 0).toString(),
       description: "Resumes uploaded and analyzed",
       icon: FileText,
-      color: "text-blue-600"
+      color: "text-blue-600",
+      loading: resumesLoading
     },
     {
       title: "Job Descriptions",
-      value: "0", 
+      value: jobsLoading ? "..." : (jobDescriptions?.length || 0).toString(),
       description: "Job postings created",
       icon: BriefcaseIcon,
-      color: "text-green-600"
+      color: "text-green-600",
+      loading: jobsLoading
     },
     {
       title: "ATS Analyses",
-      value: "0",
+      value: analysesLoading ? "..." : (analysisStats?.totalAnalyses || 0).toString(),
       description: "Resume-job matches analyzed",
       icon: BarChart3,
-      color: "text-purple-600"
+      color: "text-purple-600",
+      loading: analysesLoading
     },
     {
       title: "Match Rate",
-      value: "0%",
+      value: statsLoading ? "..." : `${analysisStats?.averageScore || 0}%`,
       description: "Average ATS compatibility",
       icon: TrendingUp,
-      color: "text-orange-600"
+      color: "text-orange-600",
+      loading: statsLoading
     }
-  ]
+  ], [resumes, jobDescriptions, analysisStats, resumesLoading, jobsLoading, analysesLoading, statsLoading]);
 
-  const recentActivity = [
-    {
-      action: "Welcome to Smart ATS!",
-      time: "Just now",
-      description: "Get started by uploading your first resume or creating a job description."
+  // Generate recent activity from actual data
+  const recentActivity = useMemo(() => {
+    if (analysesLoading || !analyses) {
+      return [{
+        action: "Welcome to Smart ATS!",
+        time: "Just now",
+        description: "Get started by uploading your first resume or creating a job description."
+      }];
     }
-  ]
+
+    if (analyses.length === 0) {
+      return [{
+        action: "Welcome to Smart ATS!",
+        time: "Just now",
+        description: "Get started by uploading your first resume or creating a job description."
+      }];
+    }
+
+    // Show recent analyses
+    return analyses.slice(0, 3).map(analysis => ({
+      action: `ATS Analysis ${analysis.status === 'completed' ? 'Completed' : 'Processing'}`,
+      time: new Date(analysis.created_at).toLocaleDateString(),
+      description: `Resume "${analysis.resume?.name}" analyzed against "${analysis.job_description?.name}"${analysis.ats_score ? ` - Score: ${analysis.ats_score}%` : ''}`
+    }));
+  }, [analyses, analysesLoading]);
 
   return (
     <div className="space-y-6">
@@ -67,7 +101,11 @@ const Dashboard = () => {
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {stat.loading ? (
+                <Skeleton className="h-8 w-16 mb-1" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               <p className="text-xs text-muted-foreground">{stat.description}</p>
             </CardContent>
           </Card>
