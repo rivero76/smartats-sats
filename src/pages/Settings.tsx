@@ -209,13 +209,13 @@ const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Bell className="h-5 w-5" />
-            <span>Notification Preferences</span>
+            <span>Notification Preferences <span className="text-sm text-muted-foreground">(Coming Soon)</span></span>
           </CardTitle>
           <CardDescription>
             Choose what notifications you'd like to receive.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 opacity-60">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-base">Analysis Complete</Label>
@@ -223,7 +223,7 @@ const Settings = () => {
                 Get notified when your ATS analysis is ready
               </p>
             </div>
-            <Switch />
+            <Switch disabled />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -233,7 +233,7 @@ const Settings = () => {
                 Stay updated on new Smart ATS features and improvements
               </p>
             </div>
-            <Switch />
+            <Switch disabled />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -243,7 +243,7 @@ const Settings = () => {
                 Receive weekly summaries of your ATS activities
               </p>
             </div>
-            <Switch />
+            <Switch disabled />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -253,7 +253,7 @@ const Settings = () => {
                 Receive tips and insights about resume optimization
               </p>
             </div>
-            <Switch />
+            <Switch disabled />
           </div>
         </CardContent>
       </Card>
@@ -270,30 +270,32 @@ const Settings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
-            <Input id="currentPassword" type="password" placeholder="Enter current password" />
+          <div className="space-y-4 opacity-60">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input id="currentPassword" type="password" placeholder="Enter current password" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input id="newPassword" type="password" placeholder="Enter new password" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input id="confirmPassword" type="password" placeholder="Confirm new password" disabled />
+            </div>
+            <Button disabled>Update Password <span className="ml-2 text-xs">(Coming Soon)</span></Button>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password</Label>
-            <Input id="newPassword" type="password" placeholder="Enter new password" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
-            <Input id="confirmPassword" type="password" placeholder="Confirm new password" />
-          </div>
-          <Button>Update Password</Button>
           
           <Separator className="my-6" />
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between opacity-60">
             <div className="space-y-0.5">
               <Label className="text-base">Two-Factor Authentication</Label>
               <p className="text-sm text-muted-foreground">
                 Add an extra layer of security to your account
               </p>
             </div>
-            <Button variant="outline">Enable 2FA</Button>
+            <Button variant="outline" disabled>Enable 2FA <span className="ml-2 text-xs">(Coming Soon)</span></Button>
           </div>
         </CardContent>
       </Card>
@@ -310,23 +312,23 @@ const Settings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
             <div>
               <h4 className="font-medium">Export Data</h4>
               <p className="text-sm text-muted-foreground">
                 Download all your resumes, analyses, and job descriptions
               </p>
             </div>
-            <Button variant="outline">Export</Button>
+            <Button variant="outline" disabled>Export <span className="ml-2 text-xs">(Coming Soon)</span></Button>
           </div>
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
             <div>
               <h4 className="font-medium">Delete Account</h4>
               <p className="text-sm text-muted-foreground">
                 Permanently delete your account and all associated data
               </p>
             </div>
-            <Button variant="destructive">Delete</Button>
+            <Button variant="outline" disabled>Delete <span className="ml-2 text-xs">(Coming Soon)</span></Button>
           </div>
         </CardContent>
       </Card>
