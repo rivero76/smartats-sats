@@ -23,6 +23,10 @@ interface ATSAnalysisResult {
 }
 
 serve(async (req) => {
+  // Add version logging for deployment tracking
+  const FUNCTION_VERSION = '2.1.0-2024-09-24';
+  console.log(`ATS Analysis Direct Function v${FUNCTION_VERSION} - Request received`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -329,15 +333,25 @@ function coerceToStringArray(value: any): string[] {
 }
 
 async function getResumeContent(resume: any, supabase: any): Promise<string> {
+  console.log(`Checking for pre-extracted text for resume ${resume.id}`);
+  
   // First, check if we already have extracted text in document_extractions table
   const { data: extraction, error: extractionError } = await supabase
     .from('document_extractions')
-    .select('extracted_text, warnings')
+    .select('extracted_text, warnings, word_count, extraction_method')
     .eq('resume_id', resume.id)
     .single();
 
-  if (!extractionError && extraction?.extracted_text) {
-    console.log('Using pre-extracted text, length:', extraction.extracted_text.length);
+  console.log('Document extraction query result:', { 
+    found: !extractionError, 
+    textLength: extraction?.extracted_text?.length || 0,
+    wordCount: extraction?.word_count || 0,
+    method: extraction?.extraction_method || 'none',
+    error: extractionError?.message || 'none'
+  });
+
+  if (!extractionError && extraction?.extracted_text && extraction.extracted_text.trim().length > 0) {
+    console.log('✓ Using pre-extracted text, length:', extraction.extracted_text.length, 'words:', extraction.word_count);
     return extraction.extracted_text;
   }
 
@@ -370,10 +384,22 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
         
         return extractedText;
       }
-    } catch (error) {
-      console.error('Failed to fetch resume content:', error);
-      return `Resume content is unreadable or corrupted. Error: ${error.message}`;
+  } catch (error) {
+    console.error('Failed to fetch resume content:', error);
+    // If we can't extract, check one more time for any pre-extracted content
+    const { data: fallbackExtraction } = await supabase
+      .from('document_extractions')
+      .select('extracted_text')
+      .eq('resume_id', resume.id)
+      .single();
+      
+    if (fallbackExtraction?.extracted_text) {
+      console.log('✓ Using fallback pre-extracted text');
+      return fallbackExtraction.extracted_text;
     }
+    
+    return `Resume content is unreadable or corrupted. Error: ${error.message}`;
+  }
   }
   
   return `Resume content for ${resume.name} could not be accessed.`;

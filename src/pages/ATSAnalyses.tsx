@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2 } from "lucide-react"
+import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2, RefreshCw } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis } from '@/hooks/useATSAnalyses'
+import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
 
 import { formatDistanceToNow } from 'date-fns'
@@ -17,6 +18,7 @@ const ATSAnalyses = () => {
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
   const deleteAnalysis = useDeleteATSAnalysis()
+  const retryAnalysis = useRetryATSAnalysis()
 
   const getScoreColor = (score?: number) => {
     if (!score) return 'text-muted-foreground'
@@ -185,6 +187,22 @@ const ATSAnalyses = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(analysis.status)}
+                      {(analysis.status === 'error' || (analysis.status === 'completed' && analysis.ats_score === 0)) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => retryAnalysis.mutate(analysis.id)}
+                          disabled={retryAnalysis.isPending}
+                          className="text-xs"
+                        >
+                          {retryAnalysis.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                          )}
+                          Retry
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
