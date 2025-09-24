@@ -135,16 +135,16 @@ const Dashboard = () => {
               </Button>
               
               <Button 
-                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed" 
+                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed relative" 
                 variant="outline"
                 disabled
               >
-                <div className="flex flex-col items-start space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4" />
-                    <span className="font-medium">Advanced Reports</span>
-                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
+                <div className="flex flex-col items-start space-y-1 w-full min-w-0">
+                  <div className="flex items-center space-x-2 w-full">
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium truncate">Advanced Reports</span>
                   </div>
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded self-start">Coming Soon</span>
                   <span className="text-xs text-muted-foreground">
                     Detailed analytics and performance metrics
                   </span>
