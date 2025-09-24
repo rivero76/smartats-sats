@@ -39,8 +39,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [satsUser, setSatsUser] = useState<SATSUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check and reactivate soft-deleted user
+  const checkAndReactivateUser = async (userId: string) => {
+    try {
+      // Check if user is soft-deleted
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('deleted_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profile?.deleted_at) {
+        console.log('User is soft-deleted, attempting reactivation...');
+        const { data, error: reactivateError } = await supabase
+          .rpc('reactivate_soft_deleted_user', { target_user_id: userId });
+        
+        if (reactivateError) {
+          console.error('Error reactivating user:', reactivateError);
+          return false;
+        }
+        
+        console.log('User reactivated successfully:', data);
+        return true;
+      }
+      
+      return false; // User was not soft-deleted
+    } catch (error) {
+      console.error('Error checking user reactivation status:', error);
+      return false;
+    }
+  };
+
   const fetchSATSUser = async (userId: string) => {
     try {
+      // First check and reactivate if needed
+      await checkAndReactivateUser(userId);
+      
       const { data, error } = await supabase
         .from("sats_users_public")
         .select("*")

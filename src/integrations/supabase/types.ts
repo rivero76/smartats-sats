@@ -1193,6 +1193,10 @@ export type Database = {
         }
         Returns: Json
       }
+      reactivate_soft_deleted_user: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       soft_delete_user: {
         Args: { deletion_reason?: string; target_user_id: string }
         Returns: Json

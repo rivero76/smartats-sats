@@ -39,7 +39,7 @@ export const useProfile = () => {
     try {
       setLoading(true);
       
-      // Try to get existing profile
+      // Try to get existing profile (including soft-deleted ones)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -49,6 +49,50 @@ export const useProfile = () => {
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
         throw profileError;
+      }
+
+      // Check if profile is soft-deleted and attempt reactivation
+      if (profileData?.deleted_at) {
+        console.log('Profile is soft-deleted, attempting reactivation...');
+        try {
+          const { data: reactivateResult, error: reactivateError } = await supabase
+            .rpc('reactivate_soft_deleted_user', { target_user_id: user.id });
+          
+          if (reactivateError) {
+            console.error('Error reactivating profile:', reactivateError);
+            throw new Error('Your account appears to be deactivated. Please contact support.');
+          }
+          
+          console.log('Profile reactivated successfully:', reactivateResult);
+          
+          // Retry fetching the profile after reactivation
+          const { data: reactivatedProfile, error: refetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (refetchError) {
+            console.error('Error refetching reactivated profile:', refetchError);
+            throw refetchError;
+          }
+          
+          setProfile(reactivatedProfile);
+          toast({
+            title: "Account reactivated",
+            description: "Your account has been successfully restored."
+          });
+          return;
+          
+        } catch (reactivationError) {
+          console.error('Reactivation failed:', reactivationError);
+          toast({
+            variant: "destructive",
+            title: "Account reactivation failed",
+            description: "Could not restore your account. Please contact support."
+          });
+          return;
+        }
       }
 
       // If no profile exists, create one with basic info
@@ -76,10 +120,11 @@ export const useProfile = () => {
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
+      const errorMessage = error instanceof Error ? error.message : "Could not load your profile information.";
       toast({
         variant: "destructive",
         title: "Error loading profile",
-        description: "Could not load your profile information."
+        description: errorMessage
       });
     } finally {
       setLoading(false);
