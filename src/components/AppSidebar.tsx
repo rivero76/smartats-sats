@@ -12,6 +12,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "@/hooks/use-toast"
+import { useUserRole } from "@/hooks/useUserRole"
 
 import {
   Sidebar,
@@ -43,6 +44,7 @@ const adminItems = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const { satsUser, signOut } = useAuth()
+  const { isAdmin } = useUserRole()
   const location = useLocation()
   const currentPath = location.pathname
 
@@ -125,7 +127,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {satsUser?.role === "admin" && (
+        {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/70">
               {!isCollapsed && "Administration"}
