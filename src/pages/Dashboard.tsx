@@ -85,16 +85,16 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 overflow-hidden">
               <Button 
                 className="h-auto p-4 justify-start" 
                 variant="outline"
                 onClick={() => navigate('/resumes')}
               >
-                <div className="flex flex-col items-start space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Manage Resumes</span>
+                <div className="flex flex-col items-start space-y-1 w-full min-w-0">
+                  <div className="flex items-center space-x-2 w-full">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium truncate">Manage Resumes</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     Upload and manage your resume collection
@@ -107,10 +107,10 @@ const Dashboard = () => {
                 variant="outline"
                 onClick={() => navigate('/jobs')}
               >
-                <div className="flex flex-col items-start space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <BriefcaseIcon className="h-4 w-4" />
-                    <span className="font-medium">Job Descriptions</span>
+                <div className="flex flex-col items-start space-y-1 w-full min-w-0">
+                  <div className="flex items-center space-x-2 w-full">
+                    <BriefcaseIcon className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium truncate">Job Descriptions</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     Create and manage job descriptions
@@ -123,10 +123,10 @@ const Dashboard = () => {
                 variant="outline"
                 onClick={() => navigate('/analyses')}
               >
-                <div className="flex flex-col items-start space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="font-medium">ATS Analysis</span>
+                <div className="flex flex-col items-start space-y-1 w-full min-w-0">
+                  <div className="flex items-center space-x-2 w-full">
+                    <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium truncate">ATS Analysis</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     Analyze resume-job compatibility
