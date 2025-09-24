@@ -18,7 +18,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
@@ -176,7 +176,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      console.log("AuthProvider: Starting sign-out process...");
+      
+      // Clear local state immediately to prevent UI confusion
+      setLoading(true);
+      
+      // Attempt sign-out with Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("AuthProvider: Sign-out error:", error);
+        // Even if sign-out fails on server, clear local state for security
+        setSession(null);
+        setUser(null);
+        setSatsUser(null);
+        setLoading(false);
+        return { error };
+      }
+      
+      console.log("AuthProvider: Sign-out successful");
+      // State will be cleared by the onAuthStateChange listener
+      return { error: null };
+      
+    } catch (error) {
+      console.error("AuthProvider: Sign-out failed:", error);
+      // Force clear local state even on error for security
+      setSession(null);
+      setUser(null);  
+      setSatsUser(null);
+      setLoading(false);
+      return { error };
+    }
   };
 
   const resetPassword = async (email: string) => {

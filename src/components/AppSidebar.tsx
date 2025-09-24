@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "@/hooks/use-toast"
 
 import {
   Sidebar,
@@ -44,6 +45,32 @@ export function AppSidebar() {
   const { satsUser, signOut } = useAuth()
   const location = useLocation()
   const currentPath = location.pathname
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await signOut()
+      if (error) {
+        console.error("Sign-out failed:", error)
+        toast({
+          title: "Sign-out failed",
+          description: "There was an issue signing you out. Please try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Signed out successfully",
+          description: "You have been signed out of your account.",
+        })
+      }
+    } catch (error) {
+      console.error("Unexpected sign-out error:", error)
+      toast({
+        title: "Sign-out failed",
+        description: "An unexpected error occurred. Please refresh the page and try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -142,7 +169,7 @@ export function AppSidebar() {
               
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={signOut} 
+                  onClick={handleSignOut} 
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 group"
                 >
                   <LogOut className="h-4 w-4 flex-shrink-0" />
