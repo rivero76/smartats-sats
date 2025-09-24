@@ -228,10 +228,10 @@ serve(async (req) => {
             error_message: 'ATS analysis processing failed',
             error_details: {
               analysis_id: requestBody.analysis_id,
-              error_type: error.constructor.name,
+              error_type: error instanceof Error ? error.constructor.name : 'Unknown',
               timestamp: new Date().toISOString(),
               // Only log safe error details, not full stack traces
-              safe_message: error.message?.substring(0, 200)
+              safe_message: error instanceof Error ? error.message?.substring(0, 200) : String(error)
             }
           });
         
@@ -427,7 +427,7 @@ async function getResumeContent(resume: any, supabase: any): Promise<string> {
         return fallbackExtraction.extracted_text;
       }
       
-      const errorMessage = `Resume content is unreadable or corrupted. Error: ${error.message}`;
+      const errorMessage = `Resume content is unreadable or corrupted. Error: ${error instanceof Error ? error.message : String(error)}`;
       console.error('Returning error message:', errorMessage);
       return errorMessage;
     }
@@ -499,7 +499,7 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
           console.log('✓ DOCX fallback extraction successful');
           return docxResult;
         } catch (docxError) {
-          console.log('DOCX fallback failed:', docxError.message);
+          console.log('DOCX fallback failed:', docxError instanceof Error ? docxError.message : String(docxError));
         }
         
         // Try PDF
@@ -509,7 +509,7 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
           console.log('✓ PDF fallback extraction successful');
           return pdfResult;
         } catch (pdfError) {
-          console.log('PDF fallback failed:', pdfError.message);
+          console.log('PDF fallback failed:', pdfError instanceof Error ? pdfError.message : String(pdfError));
         }
         
         // Try plain text
@@ -521,14 +521,14 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
             return textResult;
           }
         } catch (textError) {
-          console.log('Text fallback failed:', textError.message);
+          console.log('Text fallback failed:', textError instanceof Error ? textError.message : String(textError));
         }
         
         throw new Error(`Unsupported file format: ${filename}. Tried DOCX, PDF, and text extraction.`);
     }
   } catch (error) {
     console.error('Text extraction failed:', error);
-    throw new Error(`Failed to extract text from ${filename}: ${error.message}`);
+    throw new Error(`Failed to extract text from ${filename}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -593,7 +593,7 @@ async function extractFromDOCX(buffer: ArrayBuffer): Promise<string> {
     return extractedText;
   } catch (error) {
     console.error('DOCX extraction error:', error);
-    throw new Error(`DOCX extraction failed: ${error.message}`);
+    throw new Error(`DOCX extraction failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -611,7 +611,7 @@ async function extractFromPDF(buffer: ArrayBuffer): Promise<string> {
     return data.text.trim();
   } catch (error) {
     console.error('PDF extraction error:', error);
-    throw new Error(`PDF extraction failed: ${error.message}`);
+    throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -622,7 +622,7 @@ async function extractFromHTML(buffer: ArrayBuffer): Promise<string> {
     
     // Parse HTML and extract text content
     const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
-    const textContent = doc.body?.textContent || doc.documentElement?.textContent || '';
+    const textContent = doc?.body?.textContent || doc?.documentElement?.textContent || '';
     
     if (!textContent.trim()) {
       throw new Error('HTML file appears to be empty');
@@ -631,6 +631,6 @@ async function extractFromHTML(buffer: ArrayBuffer): Promise<string> {
     return textContent.trim();
   } catch (error) {
     console.error('HTML extraction error:', error);
-    throw new Error(`HTML extraction failed: ${error.message}`);
+    throw new Error(`HTML extraction failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
