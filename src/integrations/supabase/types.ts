@@ -483,6 +483,114 @@ export type Database = {
         }
         Relationships: []
       }
+      log_cleanup_policies: {
+        Row: {
+          auto_cleanup_enabled: boolean | null
+          created_at: string | null
+          id: string
+          max_entries: number | null
+          retention_days: number | null
+          script_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_cleanup_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_entries?: number | null
+          retention_days?: number | null
+          script_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_cleanup_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_entries?: number | null
+          retention_days?: number | null
+          script_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      log_entries: {
+        Row: {
+          created_at: string | null
+          id: string
+          log_level: string
+          message: string
+          metadata: Json | null
+          request_id: string | null
+          script_name: string
+          session_id: string | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          log_level: string
+          message: string
+          metadata?: Json | null
+          request_id?: string | null
+          script_name: string
+          session_id?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          log_level?: string
+          message?: string
+          metadata?: Json | null
+          request_id?: string | null
+          script_name?: string
+          session_id?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      log_settings: {
+        Row: {
+          created_at: string | null
+          debug_enabled: boolean | null
+          description: string | null
+          id: string
+          log_level: string | null
+          logging_enabled: boolean | null
+          script_name: string
+          trace_enabled: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          debug_enabled?: boolean | null
+          description?: string | null
+          id?: string
+          log_level?: string | null
+          logging_enabled?: boolean | null
+          script_name: string
+          trace_enabled?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          debug_enabled?: boolean | null
+          description?: string | null
+          id?: string
+          log_level?: string | null
+          logging_enabled?: boolean | null
+          script_name?: string
+          trace_enabled?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
