@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { FileUpload } from '@/components/FileUpload'
 import { useCreateResume, useUpdateResume, Resume } from '@/hooks/useResumes'
 import { Plus, Edit, User } from 'lucide-react'
-import { extractResumeInfo } from '@/utils/contentExtraction'
+import { extractResumeInfo, generateResumeNameSuggestions } from '@/utils/contentExtraction'
 import { useCreateDocumentExtraction } from '@/hooks/useDocumentExtractions'
 import { ExtractedContent } from '@/services/documentProcessor'
 import { useToast } from '@/hooks/use-toast'
@@ -23,6 +23,8 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
   const [fileUrl, setFileUrl] = useState(resume?.file_url || '')
   const [showExtracted, setShowExtracted] = useState(false)
   const [extractedData, setExtractedData] = useState<any>(null)
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   
   const createResume = useCreateResume()
   const updateResume = useUpdateResume()
@@ -59,23 +61,28 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
     }
   }
 
-  const processResumeContent = (content: string) => {
+  const processResumeContent = (content: string, fileName?: string) => {
     if (!content.trim()) return;
     
     try {
       const extracted = extractResumeInfo(content);
       setExtractedData(extracted);
       
+      // Generate intelligent resume name suggestions
+      const suggestions = generateResumeNameSuggestions(extracted, fileName || '');
+      setNameSuggestions(suggestions);
+      
       // Auto-populate name if available and not already set
-      if (extracted.name && !name.trim()) {
-        setName(extracted.name);
+      if (!name.trim() && suggestions.length > 0) {
+        setName(suggestions[0]); // Use the best suggestion
+        setShowSuggestions(true);
       }
       
       setShowExtracted(true);
       
       toast({
         title: "Resume Information Extracted",
-        description: "Resume details auto-populated! Please review and adjust as needed.",
+        description: "Smart name suggestions generated! Click to use a suggestion.",
       });
     } catch (error) {
       console.error('Error extracting resume content:', error);
@@ -90,15 +97,18 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
   const handleFileUpload = (url: string, fileName: string, extractedContent?: any) => {
     setFileUrl(url)
     
-    // Auto-fill name from filename if not set
-    if (!name.trim()) {
-      const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
-      setName(nameWithoutExtension)
-    }
-    
-    // Process extracted text if available
+    // Process extracted text if available, otherwise generate suggestions from filename
     if (extractedContent?.text) {
-      processResumeContent(extractedContent.text);
+      processResumeContent(extractedContent.text, fileName);
+    } else {
+      // Generate suggestions based on filename when no content is extracted
+      const suggestions = generateResumeNameSuggestions(null, fileName);
+      setNameSuggestions(suggestions);
+      
+      if (!name.trim() && suggestions.length > 0) {
+        setName(suggestions[0]);
+        setShowSuggestions(true);
+      }
     }
   }
 
@@ -110,6 +120,8 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
       setFileUrl(resume?.file_url || '')
       setShowExtracted(false)
       setExtractedData(null)
+      setNameSuggestions([])
+      setShowSuggestions(false)
     }
   }
 
@@ -146,11 +158,37 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value)
+                setShowSuggestions(false)
+              }}
               placeholder="Enter resume name"
               required
               disabled={isLoading}
             />
+            
+            {/* Smart Name Suggestions */}
+            {showSuggestions && nameSuggestions.length > 0 && (
+              <div className="bg-muted p-3 rounded-lg space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Suggested names:</p>
+                <div className="flex flex-wrap gap-2">
+                  {nameSuggestions.map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setName(suggestion)
+                        setShowSuggestions(false)
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -221,6 +259,21 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ resume, trigger, onClo
                   <div className="flex justify-between">
                     <span className="font-medium">Experience:</span>
                     <span className="text-right text-xs">{extractedData.experience}</span>
+                  </div>
+                )}
+                {extractedData.currentJobTitle && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Current Role:</span>
+                    <span className="text-right text-xs">{extractedData.currentJobTitle}</span>
+                  </div>
+                )}
+                {extractedData.recentJobTitles && extractedData.recentJobTitles.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Recent Roles:</span>
+                    <span className="text-right text-xs">
+                      {extractedData.recentJobTitles.slice(0, 2).join(", ")}
+                      {extractedData.recentJobTitles.length > 2 && ` +${extractedData.recentJobTitles.length - 2} more`}
+                    </span>
                   </div>
                 )}
               </div>

@@ -22,6 +22,8 @@ export interface ResumeInfo {
   skills: string[]
   experience: string | null
   education: string | null
+  currentJobTitle: string | null
+  recentJobTitles: string[]
 }
 
 const COMMON_SKILLS = [
@@ -59,7 +61,9 @@ export function extractResumeInfo(content: string): ResumeInfo {
     location: extractPersonLocation(content, lines),
     skills: extractSkills(content),
     experience: extractExperience(content, lines),
-    education: extractEducation(content, lines)
+    education: extractEducation(content, lines),
+    currentJobTitle: extractCurrentJobTitle(content, lines),
+    recentJobTitles: extractRecentJobTitles(content, lines)
   }
 }
 
@@ -331,4 +335,137 @@ function extractEducation(content: string, lines: string[]): string | null {
   }
   
   return null
+}
+
+function extractCurrentJobTitle(content: string, lines: string[]): string | null {
+  const titlePatterns = [
+    // Look for current job title patterns in resume
+    /(?:current\s+)?(?:position|role|title):\s*(.+)/i,
+    /(?:currently|presently)\s+(?:working as|employed as)?\s*(.+)/i,
+    /^(.+?)\s*\|\s*[A-Z][a-zA-Z\s&,.-]+\s*\|\s*(?:current|present|\d{4}\s*-\s*(?:present|current))/im,
+    /^(.+?)\s*at\s+[A-Z][a-zA-Z\s&,.-]+\s*(?:current|present|\d{4}\s*-\s*(?:present|current))/im
+  ]
+  
+  for (const pattern of titlePatterns) {
+    const match = content.match(pattern)
+    if (match && match[1]) {
+      const title = match[1].trim()
+      if (isValidJobTitle(title)) {
+        return title
+      }
+    }
+  }
+  
+  // Look in work experience section for current roles
+  const workSectionMatch = content.match(/(?:work\s+experience|professional\s+experience|employment):(.*?)(?:\n\n|education:|skills:|$)/is)
+  if (workSectionMatch) {
+    const workSection = workSectionMatch[1]
+    const currentJobMatch = workSection.match(/(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*.*?(?:present|current|\d{4}\s*-\s*(?:present|current))/im)
+    if (currentJobMatch && currentJobMatch[1]) {
+      const title = currentJobMatch[1].trim()
+      if (isValidJobTitle(title)) {
+        return title
+      }
+    }
+  }
+  
+  return null
+}
+
+function extractRecentJobTitles(content: string, lines: string[]): string[] {
+  const jobTitles = new Set<string>()
+  
+  // Common job title patterns for resumes
+  const titlePatterns = [
+    /^(.+?(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior|architect|consultant|designer|administrator))\s*(?:\||@|at)/im,
+    /(?:^|\n)(.+?(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior|architect|consultant|designer|administrator))\s*[-–]\s*[A-Z]/gm
+  ]
+  
+  for (const pattern of titlePatterns) {
+    let match
+    while ((match = pattern.exec(content)) !== null) {
+      const title = match[1].trim()
+      if (isValidJobTitle(title)) {
+        jobTitles.add(title)
+      }
+    }
+  }
+  
+  // Look for structured work experience entries
+  const workEntries = content.match(/(?:^|\n)(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*(?:\||•|\n|\d{4})/gm)
+  if (workEntries) {
+    workEntries.forEach(entry => {
+      const titleMatch = entry.match(/(?:^|\n)(.+?)(?:\s*(?:\||@|at))/i)
+      if (titleMatch && titleMatch[1]) {
+        const title = titleMatch[1].trim()
+        if (isValidJobTitle(title)) {
+          jobTitles.add(title)
+        }
+      }
+    })
+  }
+  
+  return Array.from(jobTitles).slice(0, 5)
+}
+
+function isValidJobTitle(title: string): boolean {
+  if (!title || title.length < 3 || title.length > 80) return false
+  
+  // Filter out common false positives
+  const invalidPatterns = [
+    /^\d+/, // Starts with number
+    /@/, // Contains email
+    /^(the|a|an|and|or|but|in|on|at|to|for|of|with|by)$/i, // Common words
+    /^(experience|education|skills|contact|phone|email|address)$/i, // Resume sections
+    /\.(com|org|net|edu|gov)/i // URLs
+  ]
+  
+  return !invalidPatterns.some(pattern => pattern.test(title))
+}
+
+// Generate smart resume name suggestions
+export function generateResumeNameSuggestions(
+  extractedData: ResumeInfo | null, 
+  fileName: string
+): string[] {
+  const suggestions: string[] = []
+  
+  if (extractedData?.currentJobTitle) {
+    // Priority 1: Current job title
+    suggestions.push(`${extractedData.currentJobTitle} Resume`)
+    if (extractedData.name) {
+      suggestions.push(`${extractedData.name} - ${extractedData.currentJobTitle}`)
+    }
+  }
+  
+  if (extractedData?.recentJobTitles && extractedData.recentJobTitles.length > 0) {
+    // Priority 2: Recent job titles
+    const recentTitle = extractedData.recentJobTitles[0]
+    if (!suggestions.some(s => s.includes(recentTitle))) {
+      suggestions.push(`${recentTitle} Resume`)
+    }
+  }
+  
+  // Priority 3: Filename-based suggestion
+  if (fileName) {
+    const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
+    if (!suggestions.some(s => s.toLowerCase().includes(cleanFileName.toLowerCase()))) {
+      suggestions.push(cleanFileName)
+    }
+  }
+  
+  // Priority 4: Name-based suggestion
+  if (extractedData?.name) {
+    const nameSuggestion = `${extractedData.name} Resume`
+    if (!suggestions.includes(nameSuggestion)) {
+      suggestions.push(nameSuggestion)
+    }
+  }
+  
+  // Priority 5: Generic fallback
+  if (suggestions.length === 0) {
+    suggestions.push('Professional Resume')
+  }
+  
+  return suggestions.slice(0, 3) // Limit to 3 suggestions
 }
