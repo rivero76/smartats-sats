@@ -1,10 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock } from "lucide-react"
+import { useNavigate } from "react-router-dom";
+import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock, Target, CheckCircle, Clock4 } from "lucide-react"
 
 const Dashboard = () => {
   const { satsUser } = useAuth();
+  const navigate = useNavigate();
   
   const stats = [
     {
@@ -84,50 +86,67 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Button className="h-auto p-4 justify-start" variant="outline">
+              <Button 
+                className="h-auto p-4 justify-start" 
+                variant="outline"
+                onClick={() => navigate('/resumes')}
+              >
                 <div className="flex flex-col items-start space-y-1">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-4 w-4" />
-                    <span className="font-medium">Upload Resume</span>
+                    <span className="font-medium">Manage Resumes</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Upload and analyze your resume for ATS compatibility
+                    Upload and manage your resume collection
                   </span>
                 </div>
               </Button>
               
-              <Button className="h-auto p-4 justify-start" variant="outline">
+              <Button 
+                className="h-auto p-4 justify-start" 
+                variant="outline"
+                onClick={() => navigate('/jobs')}
+              >
                 <div className="flex flex-col items-start space-y-1">
                   <div className="flex items-center space-x-2">
                     <BriefcaseIcon className="h-4 w-4" />
-                    <span className="font-medium">Create Job Description</span>
+                    <span className="font-medium">Job Descriptions</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Build optimized job descriptions for better matching
+                    Create and manage job descriptions
                   </span>
                 </div>
               </Button>
               
-              <Button className="h-auto p-4 justify-start" variant="outline">
+              <Button 
+                className="h-auto p-4 justify-start" 
+                variant="outline"
+                onClick={() => navigate('/analyses')}
+              >
                 <div className="flex flex-col items-start space-y-1">
                   <div className="flex items-center space-x-2">
                     <BarChart3 className="h-4 w-4" />
-                    <span className="font-medium">Run ATS Analysis</span>
+                    <span className="font-medium">ATS Analysis</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Analyze resume-job compatibility and get insights
+                    Analyze resume-job compatibility
                   </span>
                 </div>
               </Button>
               
-              <Button className="h-auto p-4 justify-start" variant="outline">
+              <Button 
+                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed" 
+                variant="outline"
+                disabled
+              >
                 <div className="flex flex-col items-start space-y-1">
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4" />
-                    <span className="font-medium">View Reports</span>
+                    <span className="font-medium">Advanced Reports</span>
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Access detailed analytics and performance metrics
+                    Detailed analytics and performance metrics
                   </span>
                 </div>
               </Button>
@@ -162,6 +181,88 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* System Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Target className="h-5 w-5" />
+            <span>System Information</span>
+          </CardTitle>
+          <CardDescription>
+            Learn about Smart ATS objectives, current capabilities, and future enhancements
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* System Objectives */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Target className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold">System Objectives</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• Streamline recruitment processes</li>
+                <li>• Improve ATS compatibility scores</li>
+                <li>• Provide data-driven hiring insights</li>
+                <li>• Optimize resume-job matching</li>
+              </ul>
+            </div>
+
+            {/* Working Features */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <h3 className="font-semibold">Working Features</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Resume Upload & Management</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Job Description Creation</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>ATS Compatibility Analysis</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>User Profile Management</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Future Features */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Clock4 className="h-4 w-4 text-orange-600" />
+                <h3 className="font-semibold">Future Features</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>Advanced Analytics Dashboard</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>AI-Powered Experience Enhancement</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>Email Notifications System</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>Data Export/Import Tools</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
