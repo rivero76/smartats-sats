@@ -1223,6 +1223,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      validate_profile_access: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "user" | "admin"
