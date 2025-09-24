@@ -148,12 +148,26 @@ serve(async (req) => {
       }
     };
 
-    await supabase
+    console.log('Updating database with:', JSON.stringify(updateData, null, 2));
+
+    const { data: updateResult, error: updateError } = await supabase
       .from('sats_analyses')
       .update(updateData)
-      .eq('id', analysis_id);
+      .eq('id', analysis_id)
+      .select('*')
+      .single();
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      throw new Error(`Failed to update analysis: ${updateError.message}`);
+    }
+
+    console.log('Database update successful:', updateResult?.status, updateResult?.ats_score);
 
     console.log(`Analysis completed successfully: ${analysis_id}, score: ${updateData.ats_score}%`);
+
+    // Force a small delay to ensure database consistency
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -292,7 +306,21 @@ function coerceToStringArray(value: any): string[] {
 }
 
 async function getResumeContent(resume: any): Promise<string> {
-  // For now, return a placeholder - in production this would fetch from storage
-  // or extract text from the uploaded file
-  return `Resume content for ${resume.name} (file extraction would be implemented here)`;
+  // Try to fetch actual resume content from storage if available
+  if (resume.file_url) {
+    try {
+      console.log('Attempting to fetch resume content from:', resume.file_url);
+      const response = await fetch(resume.file_url);
+      if (response.ok) {
+        const text = await response.text();
+        console.log('Retrieved resume content, length:', text.length);
+        return text;
+      }
+    } catch (error) {
+      console.error('Failed to fetch resume content:', error);
+    }
+  }
+  
+  // Fallback - return placeholder for now
+  return `Resume content for ${resume.name} (placeholder - actual file extraction would be implemented here)`;
 }
