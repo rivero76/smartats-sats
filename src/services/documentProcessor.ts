@@ -2,9 +2,34 @@ import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { convert as htmlToText } from 'html-to-text';
+import { 
+  documentProcessingLogger, 
+  pdfWorkerLogger, 
+  logProcessingStage,
+  logProcessingError,
+  generateProcessingSessionId 
+} from '@/lib/documentLogger';
 
-// Set up PDF.js worker for browser compatibility
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Fix PDF.js worker configuration - use local worker instead of CDN
+const setupPDFWorker = () => {
+  try {
+    // Try to use local worker first (more reliable)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.js',
+      import.meta.url
+    ).toString();
+    pdfWorkerLogger.info('PDF worker configured with local worker');
+  } catch (error) {
+    // Fallback to CDN if local worker fails
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    pdfWorkerLogger.info('PDF worker configured with CDN fallback', { 
+      cdnUrl: pdfjsLib.GlobalWorkerOptions.workerSrc 
+    });
+  }
+};
+
+// Initialize PDF worker on module load
+setupPDFWorker();
 
 export interface ExtractedContent {
   text: string;
@@ -77,34 +102,65 @@ function detectFileType(buffer: ArrayBuffer, filename?: string): string {
   }
 }
 
-async function extractFromPDF(buffer: ArrayBuffer): Promise<ExtractedContent> {
+async function extractFromPDF(buffer: ArrayBuffer, sessionId?: string): Promise<ExtractedContent> {
+  const session = sessionId || generateProcessingSessionId();
+  
   try {
+    pdfWorkerLogger.info('Starting PDF extraction', { sessionId: session, fileSize: buffer.byteLength });
+    
     // Load PDF document using pdfjs-dist
     const uint8Array = new Uint8Array(buffer);
+    
+    logProcessingStage(session, 'pdf-loading', 'started');
+    
     const loadingTask = pdfjsLib.getDocument({
       data: uint8Array,
       cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
       cMapPacked: true,
+      verbosity: 0, // Reduce PDF.js console output
     });
     
+    // Add promise rejection handler for better error reporting
+    loadingTask.onPassword = () => {
+      pdfWorkerLogger.error('PDF requires password', { sessionId: session });
+      throw new Error('PDF is password protected and cannot be processed');
+    };
+    
     const pdf = await loadingTask.promise;
+    logProcessingStage(session, 'pdf-loading', 'completed', { numPages: pdf.numPages });
     const totalPages = pdf.numPages;
+    
+    logProcessingStage(session, 'pdf-text-extraction', 'started', { totalPages });
     
     // Extract text from all pages
     const pagePromises: Promise<string>[] = [];
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       const pagePromise = pdf.getPage(pageNum).then(async (page) => {
-        const textContent = await page.getTextContent();
-        return textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
+        try {
+          const textContent = await page.getTextContent();
+          return textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+        } catch (pageError) {
+          pdfWorkerLogger.debug(`Failed to extract text from page ${pageNum}`, { 
+            sessionId: session, 
+            pageNum, 
+            error: pageError instanceof Error ? pageError.message : String(pageError) 
+          });
+          return ''; // Skip problematic pages
+        }
       });
       pagePromises.push(pagePromise);
     }
     
     const pageTexts = await Promise.all(pagePromises);
     const fullText = pageTexts.join('\n').trim();
+    
+    logProcessingStage(session, 'pdf-text-extraction', 'completed', { 
+      extractedLength: fullText.length,
+      successfulPages: pageTexts.filter(text => text.length > 0).length 
+    });
     
     const warnings: string[] = [];
     
@@ -126,12 +182,29 @@ async function extractFromPDF(buffer: ArrayBuffer): Promise<ExtractedContent> {
       },
     };
   } catch (error) {
+    logProcessingError(session, 'pdf-extraction', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid PDF structure') || error.message.includes('PDF header')) {
+        throw new Error(`PDF file appears to be corrupted or invalid: ${error.message}`);
+      } else if (error.message.includes('worker')) {
+        pdfWorkerLogger.error('PDF worker failed to load', { sessionId: session, error: error.message });
+        throw new Error(`PDF processing failed: Unable to load PDF worker. This may be due to network issues or browser compatibility.`);
+      } else if (error.message.includes('password')) {
+        throw new Error(`PDF extraction failed: Document is password protected`);
+      }
+    }
+    
     throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
-async function extractFromDOCX(buffer: ArrayBuffer): Promise<ExtractedContent> {
+async function extractFromDOCX(buffer: ArrayBuffer, sessionId?: string): Promise<ExtractedContent> {
+  const session = sessionId || generateProcessingSessionId();
+  
   try {
+    logProcessingStage(session, 'docx-extraction', 'started', { fileSize: buffer.byteLength });
     // Try primary extraction with mammoth
     const uint8Array = new Uint8Array(buffer);
     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
@@ -152,17 +225,24 @@ async function extractFromDOCX(buffer: ArrayBuffer): Promise<ExtractedContent> {
       },
     };
   } catch (error) {
+    logProcessingError(session, 'docx-mammoth-extraction', error);
+    
     // Fallback to manual DOCX parsing
     try {
-      return await extractFromDOCXFallback(buffer);
+      documentProcessingLogger.info('Attempting DOCX fallback extraction', { sessionId: session });
+      return await extractFromDOCXFallback(buffer, session);
     } catch (fallbackError) {
+      logProcessingError(session, 'docx-fallback-extraction', fallbackError);
       throw new Error(`DOCX extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
 
-async function extractFromDOCXFallback(buffer: ArrayBuffer): Promise<ExtractedContent> {
+async function extractFromDOCXFallback(buffer: ArrayBuffer, sessionId?: string): Promise<ExtractedContent> {
+  const session = sessionId || generateProcessingSessionId();
+  
   try {
+    logProcessingStage(session, 'docx-fallback', 'started');
     const zip = await JSZip.loadAsync(buffer);
     const documentXml = await zip.file('word/document.xml')?.async('text');
     
@@ -191,8 +271,11 @@ async function extractFromDOCXFallback(buffer: ArrayBuffer): Promise<ExtractedCo
   }
 }
 
-async function extractFromHTML(buffer: ArrayBuffer): Promise<ExtractedContent> {
+async function extractFromHTML(buffer: ArrayBuffer, sessionId?: string): Promise<ExtractedContent> {
+  const session = sessionId || generateProcessingSessionId();
+  
   try {
+    logProcessingStage(session, 'html-extraction', 'started', { fileSize: buffer.byteLength });
     const decoder = new TextDecoder('utf-8');
     const htmlContent = decoder.decode(buffer);
     
@@ -217,8 +300,11 @@ async function extractFromHTML(buffer: ArrayBuffer): Promise<ExtractedContent> {
   }
 }
 
-async function extractFromText(buffer: ArrayBuffer): Promise<ExtractedContent> {
+async function extractFromText(buffer: ArrayBuffer, sessionId?: string): Promise<ExtractedContent> {
+  const session = sessionId || generateProcessingSessionId();
+  
   try {
+    logProcessingStage(session, 'text-extraction', 'started', { fileSize: buffer.byteLength });
     const decoder = new TextDecoder('utf-8');
     const text = decoder.decode(buffer);
 
@@ -241,7 +327,15 @@ export async function extractTextFromDocument(
   file: File | Blob,
   filename?: string
 ): Promise<ExtractedContent> {
+  const sessionId = generateProcessingSessionId();
+  
   try {
+    documentProcessingLogger.info('Starting document extraction', {
+      sessionId,
+      fileName: filename || (file as File).name || 'unknown',
+      fileSize: file.size,
+      fileType: file.type,
+    });
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
       const error: ProcessingError = {
@@ -257,28 +351,57 @@ export async function extractTextFromDocument(
     // Detect file type
     const detectedMimeType = detectFileType(buffer, filename || (file as File).name);
     
+    documentProcessingLogger.info('File type detected', { 
+      sessionId, 
+      detectedMimeType, 
+      originalType: file.type 
+    });
+    
     // Route to appropriate extractor
+    let result: ExtractedContent;
     switch (detectedMimeType) {
       case 'application/pdf':
-        return await extractFromPDF(buffer);
+        result = await extractFromPDF(buffer, sessionId);
+        break;
       
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        return await extractFromDOCX(buffer);
+        result = await extractFromDOCX(buffer, sessionId);
+        break;
       
       case 'text/html':
-        return await extractFromHTML(buffer);
+        result = await extractFromHTML(buffer, sessionId);
+        break;
       
       case 'text/plain':
-        return await extractFromText(buffer);
+        result = await extractFromText(buffer, sessionId);
+        break;
       
       default:
+        logProcessingError(sessionId, 'format-detection', { 
+          code: 'UNSUPPORTED_FORMAT', 
+          detectedMimeType 
+        });
         const error: ProcessingError = {
           code: 'UNSUPPORTED_FORMAT',
           message: `Unsupported file format: ${detectedMimeType}. Supported formats: PDF, DOCX, HTML, TXT.`,
         };
         throw error;
     }
+    
+    // Log successful extraction
+    documentProcessingLogger.info('Document extraction completed successfully', {
+      sessionId,
+      method: result.method,
+      wordCount: result.wordCount,
+      hasWarnings: result.warnings.length > 0,
+      processingTime: Date.now() - parseInt(sessionId.split('_')[1]),
+    });
+    
+    return result;
   } catch (error) {
+    // Log the error before re-throwing
+    logProcessingError(sessionId, 'document-extraction', error);
+    
     if ('code' in (error as any)) {
       throw error; // Re-throw ProcessingError
     }

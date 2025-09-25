@@ -7,6 +7,13 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { extractTextFromDocument, isProcessingError, ExtractedContent } from '@/services/documentProcessor'
+import { 
+  fileUploadLogger, 
+  logFileMetadata, 
+  logProcessingStage,
+  generateProcessingSessionId,
+  logProcessingError 
+} from '@/lib/documentLogger'
 
 interface FileUploadProps {
   bucket: string
@@ -33,60 +40,112 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const { toast } = useToast()
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!user || acceptedFiles.length === 0) return
+    if (!user || acceptedFiles.length === 0) {
+      fileUploadLogger.debug('Upload cancelled: no user or files', { 
+        hasUser: !!user, 
+        fileCount: acceptedFiles.length 
+      });
+      return;
+    }
 
-    const file = acceptedFiles[0]
-    setUploading(true)
-    setProgress(0)
+    const file = acceptedFiles[0];
+    const sessionId = generateProcessingSessionId();
+    
+    // Log file upload initiation
+    logFileMetadata(sessionId, file, 'upload-initiated');
+    
+    setUploading(true);
+    setProgress(0);
 
     try {
       // Create unique file path with user ID
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${user.id}/${fileName}`
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
-      setProgress(25)
+      logProcessingStage(sessionId, 'file-upload-preparation', 'completed', {
+        fileName,
+        filePath,
+        fileExtension: fileExt,
+      });
+
+      setProgress(25);
 
       // Upload file to Supabase Storage
+      fileUploadLogger.info('Starting Supabase storage upload', { 
+        sessionId, 
+        bucket, 
+        filePath 
+      });
+      
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
-        })
+        });
 
-      if (error) throw error
+      if (error) {
+        logProcessingError(sessionId, 'supabase-storage-upload', error);
+        throw error;
+      }
 
-      setProgress(50)
+      logProcessingStage(sessionId, 'supabase-storage-upload', 'completed', {
+        uploadedPath: data.path,
+      });
+
+      setProgress(50);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
-        .getPublicUrl(filePath)
+        .getPublicUrl(filePath);
 
-      setProgress(75)
+      fileUploadLogger.info('Public URL generated', { sessionId, publicUrl });
+
+      setProgress(75);
 
       // Extract text content using document processor
+      fileUploadLogger.info('Starting text extraction', { sessionId });
       let extractedContent: ExtractedContent | undefined;
       try {
-        extractedContent = await extractTextFromDocument(file, file.name)
+        extractedContent = await extractTextFromDocument(file, file.name);
+        
+        fileUploadLogger.info('Text extraction completed successfully', {
+          sessionId,
+          method: extractedContent.method,
+          wordCount: extractedContent.wordCount,
+          hasWarnings: extractedContent.warnings.length > 0,
+        });
         
         // Show warnings if any
         if (extractedContent.warnings.length > 0) {
+          fileUploadLogger.debug('Extraction warnings', { 
+            sessionId, 
+            warnings: extractedContent.warnings 
+          });
           toast({
             title: "Extraction completed with warnings",
             description: extractedContent.warnings.join(' '),
             variant: "default",
-          })
+          });
         }
       } catch (error) {
+        logProcessingError(sessionId, 'text-extraction', error);
+        
         if (isProcessingError(error)) {
           // Handle known processing errors
+          fileUploadLogger.error('Known processing error during extraction', {
+            sessionId,
+            errorCode: error.code,
+            errorMessage: error.message,
+          });
+          
           toast({
             title: "Text extraction failed",
             description: error.message,
             variant: "destructive",
-          })
+          });
           
           // For unsupported formats, still allow upload without text extraction
           if (error.code === 'UNSUPPORTED_FORMAT') {
@@ -96,34 +155,53 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }
         } else {
           // Handle unexpected errors
-          console.error('Unexpected extraction error:', error)
+          fileUploadLogger.error('Unexpected extraction error', { 
+            sessionId, 
+            error: error instanceof Error ? error.message : String(error) 
+          });
+          
           toast({
             title: "Text extraction failed",
             description: "An unexpected error occurred during text extraction",
             variant: "destructive",
-          })
+          });
         }
       }
 
       // Store extracted content globally for later use
       if (extractedContent) {
         (window as any).__lastExtractedContent = extractedContent;
+        fileUploadLogger.debug('Extracted content stored globally', { sessionId });
       }
 
-      onUpload(publicUrl, file.name, extractedContent)
+      onUpload(publicUrl, file.name, extractedContent);
+      
+      fileUploadLogger.info('Upload process completed successfully', {
+        sessionId,
+        fileName: file.name,
+        hasExtraction: !!extractedContent,
+      });
       
       toast({
         title: "File uploaded successfully",
         description: `${file.name} has been uploaded${extractedContent ? ` and text extracted (${extractedContent.wordCount} words)` : ''}.`
-      })
+      });
 
-      setProgress(100)
+      setProgress(100);
     } catch (error: any) {
+      logProcessingError(sessionId, 'file-upload-process', error);
+      
+      fileUploadLogger.error('Upload process failed', {
+        sessionId,
+        errorMessage: error.message || 'Unknown error',
+        errorType: error.constructor?.name || 'UnknownError',
+      });
+      
       toast({
         variant: "destructive",
         title: "Upload failed",
         description: error.message || "Failed to upload file"
-      })
+      });
     } finally {
       setUploading(true)
       setTimeout(() => {
