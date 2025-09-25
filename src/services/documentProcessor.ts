@@ -10,24 +10,90 @@ import {
   generateProcessingSessionId 
 } from '@/lib/documentLogger';
 
-// PDF.js worker configuration with reliable CDN sources
+// PDF.js worker configuration with multiple fallback sources
 const PDF_WORKER_SOURCES = [
   `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`,
   `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
 ];
 
-const setupPDFWorker = () => {
-  // Use primary CDN source (most reliable in browser environments)
-  pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SOURCES[0];
-  pdfWorkerLogger.info('PDF worker configured with primary CDN', { 
-    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    version: pdfjsLib.version
+let currentWorkerIndex = 0;
+let workerInitialized = false;
+
+// Test if a worker source is accessible
+const testWorkerSource = async (workerSrc: string, timeout = 5000): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      resolve(false);
+    }, timeout);
+
+    fetch(workerSrc, { 
+      method: 'HEAD',
+      signal: controller.signal,
+      mode: 'no-cors' // Allow CORS issues but still detect network connectivity
+    })
+      .then(() => {
+        clearTimeout(timeoutId);
+        resolve(true);
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        resolve(false);
+      });
   });
 };
 
-// Initialize PDF worker on module load
-setupPDFWorker();
+// Dynamic PDF worker setup with fallbacks
+const setupPDFWorkerWithFallback = async (): Promise<boolean> => {
+  for (let i = currentWorkerIndex; i < PDF_WORKER_SOURCES.length; i++) {
+    const workerSrc = PDF_WORKER_SOURCES[i];
+    
+    pdfWorkerLogger.info(`Testing PDF worker source ${i + 1}/${PDF_WORKER_SOURCES.length}`, { 
+      workerSrc,
+      attempt: i + 1
+    });
+
+    try {
+      const isAccessible = await testWorkerSource(workerSrc);
+      
+      if (isAccessible) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+        currentWorkerIndex = i;
+        workerInitialized = true;
+        
+        pdfWorkerLogger.info('PDF worker successfully configured', { 
+          workerSrc,
+          sourceIndex: i,
+          version: pdfjsLib.version
+        });
+        
+        return true;
+      } else {
+        pdfWorkerLogger.warn(`PDF worker source ${i + 1} not accessible, trying next`, { workerSrc });
+      }
+    } catch (error) {
+      pdfWorkerLogger.warn(`PDF worker source ${i + 1} failed`, { workerSrc, error });
+    }
+  }
+  
+  pdfWorkerLogger.error('All PDF worker sources failed', { 
+    attemptedSources: PDF_WORKER_SOURCES.length,
+    sources: PDF_WORKER_SOURCES
+  });
+  
+  return false;
+};
+
+// Initialize with first source immediately, test in background
+pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SOURCES[0];
+workerInitialized = true;
+
+// Test worker sources in background and switch if needed
+setupPDFWorkerWithFallback().catch(() => {
+  // Fallback initialization already handled in the function
+});
 
 export interface ExtractedContent {
   text: string;

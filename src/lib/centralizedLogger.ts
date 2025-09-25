@@ -95,5 +95,13 @@ export function createScriptLogger(scriptName: string, options?: { userId?: stri
         session_id: options?.sessionId,
         metadata 
       }),
+      
+    warn: (message: string, metadata?: any) => 
+      centralizedLogger.info(message, { 
+        script_name: scriptName, 
+        user_id: options?.userId,
+        session_id: options?.sessionId,
+        metadata 
+      }),
   };
 }

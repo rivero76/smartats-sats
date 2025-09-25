@@ -141,17 +141,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             errorMessage: error.message,
           });
           
+          // Enhanced error messages for better user experience
+          let errorTitle = "Text extraction failed";
+          let errorDescription = error.message;
+          let shouldAllowUpload = false;
+          
+          if (error.code === 'EXTRACTION_FAILED' && file.type === 'application/pdf') {
+            errorTitle = "PDF processing issue";
+            errorDescription = "There was an issue processing your PDF. This could be due to network connectivity or the PDF format. You can still upload the file and add content manually, or try converting it to Word/Text format.";
+            shouldAllowUpload = true;
+          } else if (error.code === 'EXTRACTION_FAILED') {
+            errorDescription = error.message + " You can still upload the file and add content manually.";
+            shouldAllowUpload = true;
+          } else if (error.code === 'UNSUPPORTED_FORMAT') {
+            errorDescription = error.message + " The file will be uploaded but you'll need to add content manually.";
+            shouldAllowUpload = true;
+            extractedContent = undefined;
+          }
+          
           toast({
-            title: "Text extraction failed",
-            description: error.message,
-            variant: "destructive",
+            title: errorTitle,
+            description: errorDescription,
+            variant: shouldAllowUpload ? "default" : "destructive",
           });
           
-          // For unsupported formats, still allow upload without text extraction
-          if (error.code === 'UNSUPPORTED_FORMAT') {
-            extractedContent = undefined; // No text extraction for unsupported files
-          } else {
-            throw error; // Re-throw other processing errors
+          if (!shouldAllowUpload) {
+            throw error; // Re-throw critical errors that should stop the upload
           }
         } else {
           // Handle unexpected errors
@@ -180,12 +195,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         sessionId,
         fileName: file.name,
         hasExtraction: !!extractedContent,
+        wordCount: extractedContent?.wordCount || 0,
       });
       
-      toast({
-        title: "File uploaded successfully",
-        description: `${file.name} has been uploaded${extractedContent ? ` and text extracted (${extractedContent.wordCount} words)` : ''}.`
-      });
+      // Show success message only if we haven't already shown an error/warning message
+      const hasWarningsOrErrors = extractedContent?.warnings && extractedContent.warnings.length > 0;
+      if (!hasWarningsOrErrors) {
+        toast({
+          title: "File uploaded successfully",
+          description: `${file.name} has been uploaded${extractedContent ? ` and ${extractedContent.wordCount} words extracted` : ''}.`
+        });
+      }
 
       setProgress(100);
     } catch (error: any) {
