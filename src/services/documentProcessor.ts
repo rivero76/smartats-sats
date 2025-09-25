@@ -10,22 +10,20 @@ import {
   generateProcessingSessionId 
 } from '@/lib/documentLogger';
 
-// Fix PDF.js worker configuration - use local worker instead of CDN
+// PDF.js worker configuration with reliable CDN sources
+const PDF_WORKER_SOURCES = [
+  `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`,
+  `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+];
+
 const setupPDFWorker = () => {
-  try {
-    // Try to use local worker first (more reliable)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.js',
-      import.meta.url
-    ).toString();
-    pdfWorkerLogger.info('PDF worker configured with local worker');
-  } catch (error) {
-    // Fallback to CDN if local worker fails
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    pdfWorkerLogger.info('PDF worker configured with CDN fallback', { 
-      cdnUrl: pdfjsLib.GlobalWorkerOptions.workerSrc 
-    });
-  }
+  // Use primary CDN source (most reliable in browser environments)
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SOURCES[0];
+  pdfWorkerLogger.info('PDF worker configured with primary CDN', { 
+    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+    version: pdfjsLib.version
+  });
 };
 
 // Initialize PDF worker on module load
