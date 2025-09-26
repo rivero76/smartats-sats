@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
+import { 
+  JobDescriptionSession, 
+  logJobDescriptionCreation, 
+  logCompanyLocationOperation 
+} from '@/lib/jobDescriptionLogger'
 
 export interface Company {
   id: string
@@ -113,23 +118,47 @@ export const useCreateJobDescription = () => {
   
   return useMutation({
     mutationFn: async (data: CreateJobDescriptionData): Promise<JobDescription> => {
-      if (!user) throw new Error('Not authenticated')
+      const session = new JobDescriptionSession()
       
-      const { data: jobDescription, error } = await supabase
-        .from('sats_job_descriptions')
-        .insert({
-          ...data,
-          user_id: user.id
+      try {
+        if (!user) throw new Error('Not authenticated')
+        
+        session.startProcess('job-description-creation', {
+          inputData: {
+            hasName: !!data.name,
+            hasCompany: !!data.company_id,
+            hasLocation: !!data.location_id,
+            inputMethod: data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown'
+          }
         })
-        .select(`
-          *,
-          company:sats_companies(*),
-          location:sats_locations(*)
-        `)
-        .single()
-      
-      if (error) throw error
-      return jobDescription
+
+        logJobDescriptionCreation(data, session.getSessionId())
+
+        const { data: jobDescription, error } = await supabase
+          .from('sats_job_descriptions')
+          .insert({
+            ...data,
+            user_id: user.id
+          })
+          .select(`
+            *,
+            company:sats_companies(*),
+            location:sats_locations(*)
+          `)
+          .single()
+        
+        if (error) throw error
+
+        session.completeProcess('job-description-creation', {
+          resultId: jobDescription.id,
+          finalData: jobDescription
+        })
+
+        return jobDescription
+      } catch (error) {
+        session.errorProcess('job-description-creation', error as Error)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-descriptions'] })
@@ -221,14 +250,42 @@ export const useCreateCompany = () => {
   
   return useMutation({
     mutationFn: async (data: { name: string; industry?: string; website?: string }): Promise<Company> => {
-      const { data: company, error } = await supabase
-        .from('sats_companies')
-        .insert(data)
-        .select()
-        .single()
+      const session = new JobDescriptionSession()
       
-      if (error) throw error
-      return company
+      try {
+        session.startProcess('company-creation', { companyName: data.name })
+
+        // Check if company exists first
+        const { data: existingCompany } = await supabase
+          .from('sats_companies')
+          .select('*')
+          .ilike('name', `%${data.name}%`)
+          .limit(1)
+
+        if (existingCompany && existingCompany.length > 0) {
+          logCompanyLocationOperation('lookup', 'company', data, existingCompany[0], session.getSessionId())
+          session.info('Company already exists, returning existing', { 
+            existingCompany: existingCompany[0] 
+          })
+          return existingCompany[0]
+        }
+
+        const { data: company, error } = await supabase
+          .from('sats_companies')
+          .insert(data)
+          .select()
+          .single()
+        
+        if (error) throw error
+
+        logCompanyLocationOperation('create', 'company', data, company, session.getSessionId())
+        session.completeProcess('company-creation', { resultId: company.id })
+
+        return company
+      } catch (error) {
+        session.errorProcess('company-creation', error as Error)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
@@ -253,14 +310,42 @@ export const useCreateLocation = () => {
   
   return useMutation({
     mutationFn: async (data: { city?: string; state?: string; country?: string }): Promise<Location> => {
-      const { data: location, error } = await supabase
-        .from('sats_locations')
-        .insert(data)
-        .select()
-        .single()
+      const session = new JobDescriptionSession()
       
-      if (error) throw error
-      return location
+      try {
+        session.startProcess('location-creation', { locationData: data })
+
+        // Check if similar location exists
+        const { data: existingLocation } = await supabase
+          .from('sats_locations')
+          .select('*')
+          .or(`city.ilike.%${data.city || ''}%,state.ilike.%${data.state || ''}%,country.ilike.%${data.country || ''}%`)
+          .limit(1)
+
+        if (existingLocation && existingLocation.length > 0) {
+          logCompanyLocationOperation('lookup', 'location', data, existingLocation[0], session.getSessionId())
+          session.info('Location already exists, returning existing', { 
+            existingLocation: existingLocation[0] 
+          })
+          return existingLocation[0]
+        }
+
+        const { data: location, error } = await supabase
+          .from('sats_locations')
+          .insert(data)
+          .select()
+          .single()
+        
+        if (error) throw error
+
+        logCompanyLocationOperation('create', 'location', data, location, session.getSessionId())
+        session.completeProcess('location-creation', { resultId: location.id })
+
+        return location
+      } catch (error) {
+        session.errorProcess('location-creation', error as Error)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })

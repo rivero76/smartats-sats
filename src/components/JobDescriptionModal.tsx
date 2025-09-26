@@ -19,6 +19,7 @@ import {
 import { Plus, Edit, Building, MapPin } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { extractJobDescriptionInfo } from '@/utils/contentExtraction'
+import { JobDescriptionSession } from '@/lib/jobDescriptionLogger'
 
 interface JobDescriptionModalProps {
   jobDescription?: JobDescription
@@ -50,6 +51,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   // Auto-population states
   const [showExtracted, setShowExtracted] = useState(false)
   const [extractedData, setExtractedData] = useState<any>(null)
+  const [session] = useState(() => new JobDescriptionSession())
   
   const createJobDescription = useCreateJobDescription()
   const updateJobDescription = useUpdateJobDescription()
@@ -108,8 +110,13 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   const processContent = (content: string) => {
     if (!content.trim()) return;
     
+    session.info('Processing content for extraction', {
+      contentLength: content.length,
+      inputMethod: inputMethod
+    });
+
     try {
-      const extracted = extractJobDescriptionInfo(content);
+      const extracted = extractJobDescriptionInfo(content, session.getSessionId());
       setExtractedData(extracted);
       
       // Auto-populate fields

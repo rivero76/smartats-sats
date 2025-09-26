@@ -1,4 +1,5 @@
 // Pattern-based content extraction utilities (no AI)
+import { logContentExtraction, createContentExtractionLogger } from '@/lib/jobDescriptionLogger'
 
 export interface JobInfo {
   title: string | null
@@ -36,19 +37,74 @@ const COMMON_SKILLS = [
   'Project Management', 'Agile', 'Scrum', 'JIRA', 'Confluence', 'Slack', 'Teams'
 ]
 
-export function extractJobDescriptionInfo(content: string): JobInfo {
+export function extractJobDescriptionInfo(content: string, sessionId?: string): JobInfo {
+  const logger = createContentExtractionLogger(sessionId)
+  
+  if (!content || content.trim().length < 10) {
+    logger.info('Content extraction skipped - insufficient content', { 
+      contentLength: content?.length || 0 
+    })
+    return {
+      title: null,
+      company: null,
+      location: null,
+      skills: [],
+      employmentType: null,
+      department: null,
+      salaryRange: null
+    }
+  }
+
+  logger.info('Starting job description content extraction', {
+    contentLength: content.length,
+    contentPreview: content.substring(0, 200) + (content.length > 200 ? '...' : '')
+  })
+
+  const startTime = Date.now()
   const lines = content.split('\n').map(line => line.trim()).filter(Boolean)
   const text = content.toLowerCase()
   
-  return {
-    title: extractJobTitle(content, lines),
-    company: extractCompany(content, lines),
-    location: extractLocation(content, lines),
-    skills: extractSkills(content),
-    employmentType: extractEmploymentType(text),
-    department: extractDepartment(content, lines),
-    salaryRange: extractSalaryRange(content)
+  const title = extractJobTitle(content, lines)
+  const company = extractCompany(content, lines)
+  const location = extractLocation(content, lines)
+  const skills = extractSkills(content)
+  const employmentType = extractEmploymentType(text)
+  const department = extractDepartment(content, lines)
+  const salaryRange = extractSalaryRange(content)
+
+  const result: JobInfo = {
+    title,
+    company,
+    location,
+    skills,
+    employmentType,
+    department,
+    salaryRange
   }
+
+  const extractionTime = Date.now() - startTime
+  
+  logger.info('Content extraction completed', {
+    extractionTime,
+    extractedFields: {
+      title: !!result.title,
+      company: !!result.company,
+      location: !!result.location,
+      skills: result.skills?.length || 0,
+      employmentType: !!result.employmentType,
+      department: !!result.department,
+      salaryRange: !!result.salaryRange
+    },
+    extractionQuality: {
+      hasCore: !!(result.title && result.company),
+      completeness: [result.title, result.company, result.location, result.skills?.length, result.employmentType].filter(Boolean).length
+    }
+  })
+
+  // Log the content extraction for debugging and analytics
+  logContentExtraction(content, result, sessionId)
+
+  return result
 }
 
 export function extractResumeInfo(content: string): ResumeInfo {

@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { LogViewer } from './LogViewer';
 import { LogCleanupManager } from './LogCleanupManager';
+import { JobDescriptionLoggingPanel } from './JobDescriptionLoggingPanel';
 
 interface LogSetting {
   id: string;
@@ -134,6 +135,10 @@ export const LoggingControlPanel = () => {
             <Trash2 className="h-4 w-4" />
             Cleanup
           </TabsTrigger>
+          <TabsTrigger value="job-descriptions" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Job Descriptions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -221,6 +226,10 @@ export const LoggingControlPanel = () => {
 
         <TabsContent value="cleanup">
           <LogCleanupManager />
+        </TabsContent>
+
+        <TabsContent value="job-descriptions" className="space-y-4">
+          <JobDescriptionLoggingPanel />
         </TabsContent>
       </Tabs>
     </div>
