@@ -1,6 +1,8 @@
 /**
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS direct edge function updates and added timestamped file header tracking.
+ * 2026-02-20 23:22:57 | P1: Added centralized structured logging hooks for ATS analysis queue, completion, and failures.
+ * 2026-02-20 23:29:40 | P2: Added request_id propagation for end-to-end ATS trace correlation.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -34,6 +36,7 @@ interface ATSAnalysisRequest {
   analysis_id: string
   resume_id: string
   jd_id: string
+  request_id?: string
 }
 
 interface ATSAnalysisResult {
@@ -42,6 +45,45 @@ interface ATSAnalysisResult {
   keywords_missing: string[]
   resume_warnings: string[]
   recommendations: string[]
+}
+
+async function logEvent(
+  level: 'ERROR' | 'INFO' | 'DEBUG' | 'TRACE',
+  message: string,
+  metadata: Record<string, unknown>,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  requestId?: string
+) {
+  const functionsBaseUrl =
+    Deno.env.get('SUPABASE_FUNCTIONS_URL') ||
+    supabaseUrl.replace('.supabase.co', '.functions.supabase.co')
+  const loggingEndpoint = `${functionsBaseUrl}/functions/v1/centralized-logging`
+
+  try {
+    await fetch(loggingEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        script_name: 'ats-analysis-direct',
+        log_level: level,
+        message,
+        metadata: {
+          event_name: 'ats_analysis.lifecycle',
+          component: 'ats-analysis-direct',
+          operation: 'analysis_execution',
+          outcome: level === 'ERROR' ? 'failure' : 'info',
+          ...metadata,
+        },
+        request_id: requestId,
+      }),
+    })
+  } catch (_error) {
+    // Do not block ATS processing due to telemetry failures
+  }
 }
 
 serve(async (req) => {
@@ -64,7 +106,7 @@ serve(async (req) => {
     )
   }
 
-  const { analysis_id, resume_id, jd_id } = requestBody
+  const { analysis_id, resume_id, jd_id, request_id } = requestBody
 
   if (!analysis_id || !resume_id || !jd_id) {
     return new Response(
@@ -76,6 +118,16 @@ serve(async (req) => {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
   if (!openAIApiKey) {
     console.error('OpenAI API key not configured')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    await logEvent(
+      'ERROR',
+      'OpenAI API key not configured',
+      { operation: 'configuration_check' },
+      supabaseUrl,
+      supabaseServiceKey,
+      request_id
+    )
     return new Response(
       JSON.stringify({ success: false, error: 'Service not configured' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -86,12 +138,37 @@ serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  await logEvent(
+    'INFO',
+    'ATS analysis queued',
+    {
+      operation: 'analysis_queue',
+      analysis_id,
+      resume_id,
+      jd_id,
+    },
+    supabaseUrl,
+    supabaseServiceKey,
+    request_id
+  )
+
   console.log(`Queuing ATS analysis: ${analysis_id} for resume ${resume_id} vs job ${jd_id}`)
 
   // Kick off background processing and return 202 immediately.
   // EdgeRuntime.waitUntil keeps the isolate alive until processAnalysis resolves.
   // @ts-ignore — Supabase EdgeRuntime global
-  EdgeRuntime.waitUntil(processAnalysis(analysis_id, resume_id, jd_id, supabase, openAIApiKey))
+  EdgeRuntime.waitUntil(
+    processAnalysis(
+      analysis_id,
+      resume_id,
+      jd_id,
+      supabase,
+      openAIApiKey,
+      supabaseUrl,
+      supabaseServiceKey,
+      request_id
+    )
+  )
 
   return new Response(
     JSON.stringify({ queued: true, analysis_id }),
@@ -108,9 +185,25 @@ async function processAnalysis(
   resume_id: string,
   jd_id: string,
   supabase: any,
-  openAIApiKey: string
+  openAIApiKey: string,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  requestId?: string
 ): Promise<void> {
   console.log(`[processAnalysis] Starting async processing: ${analysis_id}`)
+  await logEvent(
+    'INFO',
+    'ATS analysis processing started',
+    {
+      operation: 'analysis_processing_start',
+      analysis_id,
+      resume_id,
+      jd_id,
+    },
+    supabaseUrl,
+    supabaseServiceKey,
+    requestId
+  )
 
   try {
     // Fetch resume and job description data
@@ -142,7 +235,10 @@ async function processAnalysis(
       .from('sats_analyses')
       .update({
         status: 'processing',
-        analysis_data: { processing_started_at: new Date().toISOString() },
+        analysis_data: {
+          processing_started_at: new Date().toISOString(),
+          request_id: requestId || null,
+        },
       })
       .eq('id', analysis_id)
 
@@ -218,6 +314,7 @@ async function processAnalysis(
         cost_estimate_usd: costEstimateUsd,
         prompts: promptsMetadata,
         prompt_characters: prompt.length,
+        request_id: requestId || null,
         extracted_features: analysisResult.keywords_found,
         resume_warnings: analysisResult.resume_warnings,
         raw_llm_response: {
@@ -244,8 +341,45 @@ async function processAnalysis(
     console.log(
       `[processAnalysis] Analysis completed successfully: ${analysis_id}, score: ${updateData.ats_score}%, db status: ${updateResult?.status}`
     )
+    await logEvent(
+      'INFO',
+      'ATS analysis processing completed',
+      {
+        operation: 'analysis_processing_complete',
+        outcome: 'success',
+        analysis_id,
+        resume_id,
+        jd_id,
+        ats_score: updateData.ats_score,
+        processing_time_ms: latencyMs,
+        duration_ms: latencyMs,
+        model_used: 'gpt-4o-mini',
+        cost_estimate_usd: costEstimateUsd,
+      },
+      supabaseUrl,
+      supabaseServiceKey,
+      requestId
+    )
   } catch (error) {
     console.error('[processAnalysis] Error during analysis:', error)
+    await logEvent(
+      'ERROR',
+      'ATS analysis processing failed',
+      {
+        operation: 'analysis_processing_complete',
+        outcome: 'failure',
+        analysis_id,
+        resume_id,
+        jd_id,
+        error:
+          error instanceof Error
+            ? { type: error.constructor.name, message: error.message }
+            : { message: String(error) },
+      },
+      supabaseUrl,
+      supabaseServiceKey,
+      requestId
+    )
 
     try {
       await supabase.from('error_logs').insert({
@@ -267,6 +401,7 @@ async function processAnalysis(
           analysis_data: {
             error_timestamp: new Date().toISOString(),
             error_occurred: true,
+            request_id: requestId || null,
           },
         })
         .eq('id', analysis_id)

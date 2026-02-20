@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 23:29:40 | P2: Added request_id propagation for enrichment flow correlation.
+ */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -16,6 +20,7 @@ interface EnrichmentRequest {
   matched_skills?: string[]
   missing_skills?: string[]
   master_skills?: string[]
+  request_id?: string
 }
 
 interface EnrichmentSuggestion {
@@ -37,7 +42,8 @@ const loggingEndpoint = `${functionsBaseUrl}/functions/v1/centralized-logging`
 async function logEvent(
   level: 'ERROR' | 'INFO' | 'DEBUG' | 'TRACE',
   message: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  requestId?: string
 ) {
   try {
     await fetch(loggingEndpoint, {
@@ -51,6 +57,7 @@ async function logEvent(
         log_level: level,
         message,
         metadata,
+        request_id: requestId,
       }),
     })
   } catch (error) {
@@ -92,7 +99,7 @@ serve(async (req) => {
       analysis_id: payload.analysis_id,
       resume_id: payload.resume_id,
       jd_id: payload.jd_id,
-    })
+    }, payload.request_id)
 
     const [resumeResult, jobResult] = await Promise.all([
       supabase
@@ -117,14 +124,14 @@ serve(async (req) => {
     ])
 
     if (resumeResult.error) {
-      await logEvent('ERROR', 'Resume fetch failed', { error: resumeResult.error.message })
+      await logEvent('ERROR', 'Resume fetch failed', { error: resumeResult.error.message }, payload.request_id)
       throw new Error(resumeResult.error.message)
     }
 
     const resume = resumeResult.data
     const job = jobResult.data
 
-    const resumeContent = await fetchResumeContent(supabase, payload.resume_id)
+    const resumeContent = await fetchResumeContent(supabase, payload.resume_id, payload.request_id)
     const jobContent = job?.pasted_text || ''
 
     const prompt = buildEnrichmentPrompt({
@@ -166,7 +173,7 @@ serve(async (req) => {
       await logEvent('ERROR', 'OpenAI request failed', {
         status: response.status,
         error: errorText,
-      })
+      }, payload.request_id)
       throw new Error(`OpenAI API error: ${response.status}`)
     }
 
@@ -178,7 +185,7 @@ serve(async (req) => {
       suggestion_count: suggestions.length,
       resume_id: payload.resume_id,
       jd_id: payload.jd_id,
-    })
+    }, payload.request_id)
 
     return new Response(
       JSON.stringify({
@@ -197,7 +204,7 @@ serve(async (req) => {
     console.error('Enrichment function error:', error)
     await logEvent('ERROR', 'Enrichment function error', {
       message: error instanceof Error ? error.message : String(error),
-    })
+    }, payload.request_id)
     return new Response(
       JSON.stringify({
         success: false,
@@ -211,7 +218,11 @@ serve(async (req) => {
   }
 })
 
-async function fetchResumeContent(supabase: ReturnType<typeof createClient>, resumeId: string) {
+async function fetchResumeContent(
+  supabase: ReturnType<typeof createClient>,
+  resumeId: string,
+  requestId?: string
+) {
   const { data, error } = await supabase
     .from('document_extractions')
     .select('extracted_text')
@@ -221,12 +232,12 @@ async function fetchResumeContent(supabase: ReturnType<typeof createClient>, res
 
   if (error) {
     console.error('Failed to fetch resume extraction:', error)
-    await logEvent('ERROR', 'Resume content lookup failed', { resume_id: resumeId, error })
+    await logEvent('ERROR', 'Resume content lookup failed', { resume_id: resumeId, error }, requestId)
     throw new Error('Unable to load resume content for enrichment')
   }
 
   if (!data?.extracted_text) {
-    await logEvent('ERROR', 'Resume extraction missing text', { resume_id: resumeId })
+    await logEvent('ERROR', 'Resume extraction missing text', { resume_id: resumeId }, requestId)
     throw new Error('Resume content unavailable. Please re-upload the resume.')
   }
 

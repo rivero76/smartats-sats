@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { LogViewer } from './LogViewer'
 import { LogCleanupManager } from './LogCleanupManager'
 import { JobDescriptionLoggingPanel } from './JobDescriptionLoggingPanel'
+import { ObservabilityPanel } from './ObservabilityPanel'
 
 interface LogSetting {
   id: string
@@ -131,6 +132,10 @@ export const LoggingControlPanel = () => {
             <Settings className="h-4 w-4" />
             Log Settings
           </TabsTrigger>
+          <TabsTrigger value="observability" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Observability
+          </TabsTrigger>
           <TabsTrigger value="viewer" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
             Log Viewer
@@ -222,6 +227,10 @@ export const LoggingControlPanel = () => {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="observability">
+          <ObservabilityPanel />
         </TabsContent>
 
         <TabsContent value="viewer">

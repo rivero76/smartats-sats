@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 23:29:40 | P2: Added request_id visibility for log correlation in ATS debug modal.
+ */
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -60,6 +64,7 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
   const prompts = analysisData.prompts || {}
   const promptCharacters = analysisData.prompt_characters
   const costEstimate = analysisData.cost_estimate_usd
+  const requestId = analysisData.request_id
   const extractedFeatures =
     (Array.isArray(analysisData.extracted_features)
       ? analysisData.extracted_features
@@ -151,6 +156,14 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Model:</span>
                         <span className="font-mono text-xs">{analysisData.model_used}</span>
+                      </div>
+                    )}
+                    {requestId && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Request ID:</span>
+                        <span className="font-mono text-[10px] text-muted-foreground break-all text-right">
+                          {requestId}
+                        </span>
                       </div>
                     )}
                     {costEstimate !== undefined && costEstimate !== null && (

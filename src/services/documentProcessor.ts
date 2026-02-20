@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 23:29:40 | P2: Added request_id correlation and total-duration telemetry for document extraction.
+ */
 import mammoth from 'mammoth'
 import * as pdfjsLib from 'pdfjs-dist'
 import JSZip from 'jszip'
@@ -9,6 +13,7 @@ import {
   logProcessingError,
   generateProcessingSessionId,
 } from '@/lib/documentLogger'
+import { createRequestId, getDurationMs } from '@/lib/requestContext'
 
 /**
  * PDF.js worker configuration — LOCAL worker served by Vite from /public.
@@ -326,10 +331,13 @@ export async function extractTextFromDocument(
   filename?: string
 ): Promise<ExtractedContent> {
   const sessionId = generateProcessingSessionId()
+  const requestId = createRequestId('doc-extract')
+  const startedAt = Date.now()
 
   try {
     documentProcessingLogger.info('Starting document extraction', {
       sessionId,
+      request_id: requestId,
       fileName: filename || (file as File).name || 'unknown',
       fileSize: file.size,
       fileType: (file as File).type,
@@ -380,15 +388,19 @@ export async function extractTextFromDocument(
 
     documentProcessingLogger.info('Document extraction completed successfully', {
       sessionId,
+      request_id: requestId,
       method: result.method,
       wordCount: result.wordCount,
       hasWarnings: result.warnings.length > 0,
-      processingTime: Date.now() - parseInt(sessionId.split('_')[1]),
+      duration_ms: getDurationMs(startedAt),
     })
 
     return result
   } catch (error) {
-    logProcessingError(sessionId, 'document-extraction', error)
+    logProcessingError(sessionId, 'document-extraction', error, {
+      request_id: requestId,
+      duration_ms: getDurationMs(startedAt),
+    })
 
     if ((error as any)?.code) {
       throw error // Known ProcessingError

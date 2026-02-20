@@ -1,8 +1,14 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 23:29:40 | P2: Added request_id propagation and duration tracking for enrichment generation.
+ * 2026-02-21 00:05:00 | Added full enrich-experiences-client coverage for save workflow logging.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { createScriptLogger } from '@/lib/centralizedLogger'
+import { createRequestId, getDurationMs } from '@/lib/requestContext'
 
 export type SkillType = 'explicit' | 'inferred'
 export type UserAction = 'pending' | 'accepted' | 'edited' | 'rejected'
@@ -50,6 +56,7 @@ interface GeneratePayload {
   matched_skills?: string[]
   missing_skills?: string[]
   master_skills?: string[]
+  request_id?: string
 }
 
 interface SavePayload {
@@ -102,22 +109,51 @@ export const useGenerateEnrichmentSuggestions = () => {
 
   return useMutation({
     mutationFn: async (payload: GeneratePayload): Promise<EnrichmentSuggestion[]> => {
+      const requestId = payload.request_id || createRequestId('enrich')
+      const startedAt = Date.now()
       const { data, error } = await supabase.functions.invoke('enrich-experiences', {
-        body: payload,
+        body: {
+          ...payload,
+          request_id: requestId,
+        },
       })
 
       if (error) {
         console.error('Enrichment function error:', error)
-        logger.error('Edge function invocation failed', { error, payload })
+        logger.error('Edge function invocation failed', {
+          event_name: 'enrichment.invoke_failed',
+          component: 'useGenerateEnrichmentSuggestions',
+          operation: 'invoke_edge_function',
+          outcome: 'failure',
+          request_id: requestId,
+          duration_ms: getDurationMs(startedAt),
+          details: { error: error.message, payload },
+        })
         throw new Error(error.message || 'Failed to generate suggestions')
       }
 
       if (!data?.success) {
-        logger.error('Enrichment function returned failure', { payload, data })
+        logger.error('Enrichment function returned failure', {
+          event_name: 'enrichment.execution_failed',
+          component: 'useGenerateEnrichmentSuggestions',
+          operation: 'generate_suggestions',
+          outcome: 'failure',
+          request_id: requestId,
+          duration_ms: getDurationMs(startedAt),
+          details: { payload, data },
+        })
         throw new Error(data?.error || 'Enrichment failed')
       }
 
-      logger.info('Enrichment suggestions received', { count: data.suggestions?.length || 0 })
+      logger.info('Enrichment suggestions received', {
+        event_name: 'enrichment.suggestions_received',
+        component: 'useGenerateEnrichmentSuggestions',
+        operation: 'generate_suggestions',
+        outcome: 'success',
+        request_id: requestId,
+        duration_ms: getDurationMs(startedAt),
+        details: { count: data.suggestions?.length || 0 },
+      })
       return data.suggestions as EnrichmentSuggestion[]
     },
     onError: (error: any) => {
@@ -135,10 +171,13 @@ export const useSaveEnrichedExperience = () => {
   const { user } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const logger = createScriptLogger('enrich-experiences-client')
 
   return useMutation({
     mutationFn: async (payload: SavePayload) => {
       if (!user) throw new Error('Not authenticated')
+      const requestId = createRequestId('enrich-save')
+      const startedAt = Date.now()
 
       const { data, error } = await supabase
         .from('enriched_experiences')
@@ -162,7 +201,38 @@ export const useSaveEnrichedExperience = () => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        logger.error('Failed to save enriched experience', {
+          event_name: 'enrichment.save_failed',
+          component: 'useSaveEnrichedExperience',
+          operation: 'save_enriched_experience',
+          outcome: 'failure',
+          request_id: requestId,
+          duration_ms: getDurationMs(startedAt),
+          details: {
+            error: error.message,
+            resume_id: payload.resume_id,
+            analysis_id: payload.analysis_id,
+            user_action: payload.user_action,
+          },
+        })
+        throw error
+      }
+
+      logger.info('Enriched experience saved', {
+        event_name: 'enrichment.saved',
+        component: 'useSaveEnrichedExperience',
+        operation: 'save_enriched_experience',
+        outcome: 'success',
+        request_id: requestId,
+        duration_ms: getDurationMs(startedAt),
+        details: {
+          enriched_experience_id: data.id,
+          resume_id: payload.resume_id,
+          analysis_id: payload.analysis_id,
+          user_action: payload.user_action,
+        },
+      })
       return data as EnrichedExperience
     },
     onSuccess: () => {

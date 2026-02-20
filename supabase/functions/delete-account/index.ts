@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 23:22:57 | P1: Integrated centralized structured logging for account deletion lifecycle events.
+ */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -22,6 +26,40 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+    const functionsBaseUrl =
+      Deno.env.get('SUPABASE_FUNCTIONS_URL') ||
+      supabaseUrl.replace('.supabase.co', '.functions.supabase.co')
+    const loggingEndpoint = `${functionsBaseUrl}/functions/v1/centralized-logging`
+
+    const logEvent = async (
+      level: 'ERROR' | 'INFO' | 'DEBUG' | 'TRACE',
+      message: string,
+      metadata: Record<string, unknown> = {}
+    ) => {
+      try {
+        await fetch(loggingEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            script_name: 'delete-account',
+            log_level: level,
+            message,
+            metadata: {
+              event_name: 'account_deletion.lifecycle',
+              component: 'delete-account',
+              operation: 'account_delete',
+              outcome: level === 'ERROR' ? 'failure' : 'info',
+              ...metadata,
+            },
+          }),
+        })
+      } catch (_error) {
+        // Do not break deletion flow due to logging failures
+      }
+    }
 
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
@@ -37,8 +75,16 @@ serve(async (req) => {
     } = await supabase.auth.getUser(token)
 
     if (userError || !user) {
+      await logEvent('ERROR', 'Invalid authentication token for account deletion', {
+        operation: 'auth_validation',
+      })
       throw new Error('Invalid authentication token')
     }
+
+    await logEvent('INFO', 'Delete account request received', {
+      operation: 'request_received',
+      user_id: user.id,
+    })
 
     console.log('Delete account request for user:', user.id)
 
@@ -46,6 +92,10 @@ serve(async (req) => {
     const { password, reason }: DeleteAccountRequest = await req.json()
 
     if (!password) {
+      await logEvent('ERROR', 'Password missing in account deletion request', {
+        operation: 'input_validation',
+        user_id: user.id,
+      })
       throw new Error('Password is required for account deletion')
     }
 
@@ -57,6 +107,11 @@ serve(async (req) => {
 
     if (passwordError) {
       console.error('Password verification failed:', passwordError)
+      await logEvent('ERROR', 'Password verification failed', {
+        operation: 'password_verification',
+        user_id: user.id,
+        details: { error: passwordError.message },
+      })
       throw new Error('Invalid password provided')
     }
 
@@ -73,6 +128,11 @@ serve(async (req) => {
 
     if (signOutError) {
       console.error('Failed to sign out user globally:', signOutError)
+      await logEvent('ERROR', 'Failed to revoke user sessions', {
+        operation: 'session_revocation',
+        user_id: user.id,
+        details: { error: signOutError.message },
+      })
       throw new Error(`Failed to revoke sessions: ${signOutError.message}`)
     }
 
@@ -86,6 +146,11 @@ serve(async (req) => {
 
     if (deletionError) {
       console.error('Soft delete function error:', deletionError)
+      await logEvent('ERROR', 'Soft delete RPC failed', {
+        operation: 'soft_delete',
+        user_id: user.id,
+        details: { error: deletionError.message },
+      })
       throw new Error(`Failed to delete account: ${deletionError.message}`)
     }
 
@@ -98,6 +163,11 @@ serve(async (req) => {
 
     if (hardDeleteError) {
       console.error('Hard delete from auth.users failed:', hardDeleteError)
+      await logEvent('ERROR', 'Hard delete from auth.users failed', {
+        operation: 'hard_delete',
+        user_id: user.id,
+        details: { error: hardDeleteError.message },
+      })
       // Log the error but don't fail the entire deletion process
       // The soft delete already succeeded
       await supabase.from('account_deletion_logs').insert({
@@ -113,6 +183,11 @@ serve(async (req) => {
       })
     } else {
       console.log('Hard delete from auth.users successful')
+      await logEvent('INFO', 'Hard delete from auth.users completed', {
+        operation: 'hard_delete',
+        outcome: 'success',
+        user_id: user.id,
+      })
       // Log successful hard deletion
       await supabase.from('account_deletion_logs').insert({
         user_id: user.id,
@@ -142,6 +217,14 @@ serve(async (req) => {
 
     // TODO: Send confirmation email (implement email service)
     console.log('TODO: Send deletion confirmation email to:', user.email)
+    await logEvent('INFO', 'Account deletion workflow completed', {
+      operation: 'account_delete',
+      outcome: 'success',
+      user_id: user.id,
+      details: {
+        grace_period_days: 30,
+      },
+    })
 
     return new Response(
       JSON.stringify({
@@ -159,12 +242,13 @@ serve(async (req) => {
         },
       }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete account error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to delete account'
 
     return new Response(
       JSON.stringify({
-        error: error.message || 'Failed to delete account',
+        error: message,
         success: false,
       }),
       {
