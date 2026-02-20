@@ -1,11 +1,36 @@
-import { useState } from 'react'
+/**
+ * UPDATE LOG
+ * 2026-02-21 00:40:00 | Added product metrics dashboard, trust signals, and usability framing for enrichment outcomes.
+ * 2026-02-21 00:54:21 | P5: Added enriched experience lifecycle management (id/timestamps, edit, soft-delete).
+ */
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Sparkles, Plus, Lightbulb, Zap, Star, Wand2, AlertTriangle, Copy } from 'lucide-react'
-import { useEnrichedExperiences } from '@/hooks/useEnrichedExperiences'
+import {
+  Sparkles,
+  Plus,
+  Lightbulb,
+  Zap,
+  Star,
+  Wand2,
+  AlertTriangle,
+  Copy,
+  ShieldCheck,
+  Pencil,
+  Save,
+  Trash2,
+  XCircle,
+} from 'lucide-react'
+import {
+  useDeleteEnrichedExperience,
+  useEnrichedExperiences,
+  useUpdateEnrichedExperience,
+  type EnrichedExperience,
+} from '@/hooks/useEnrichedExperiences'
 import { EnrichExperienceModal } from '@/components/EnrichExperienceModal'
 import { useToast } from '@/hooks/use-toast'
 
@@ -22,10 +47,107 @@ const statusStyles: Record<
   pending: { label: 'Pending', variant: 'outline' },
 }
 
+interface ExperienceSource {
+  interview_safe?: boolean
+  decision_reason?: string | null
+  generated_at?: string | null
+  ats_score_before?: number
+  ats_score_after?: number
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const asSource = (experience: EnrichedExperience): ExperienceSource => {
+  if (!isObject(experience.source)) return {}
+  return experience.source as ExperienceSource
+}
+
+const average = (values: number[]): number | null => {
+  if (values.length === 0) return null
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+const formatPct = (value: number | null): string => (value === null ? 'N/A' : `${value.toFixed(1)}%`)
+
+const formatMinutes = (value: number | null): string =>
+  value === null ? 'N/A' : `${value.toFixed(1)} min`
+
+const formatDateTime = (value?: string | null): string => {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleString()
+}
+
 const EnrichedExperiences = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
   const { data: experiences, isLoading } = useEnrichedExperiences()
+  const updateExperience = useUpdateEnrichedExperience()
+  const deleteExperience = useDeleteEnrichedExperience()
   const { toast } = useToast()
+
+  const metrics = useMemo(() => {
+    const rows = experiences || []
+    const accepted = rows.filter((x) => x.user_action === 'accepted').length
+    const edited = rows.filter((x) => x.user_action === 'edited').length
+    const rejected = rows.filter((x) => x.user_action === 'rejected').length
+    const approvedTotal = accepted + edited
+    const reviewedTotal = approvedTotal + rejected
+
+    const acceptanceRate = reviewedTotal > 0 ? (approvedTotal / reviewedTotal) * 100 : null
+    const editBeforeSaveRate = approvedTotal > 0 ? (edited / approvedTotal) * 100 : null
+
+    const reasons = rows
+      .filter((x) => x.user_action === 'rejected')
+      .map((x) => asSource(x).decision_reason)
+      .filter((reason): reason is string => typeof reason === 'string' && reason.length > 0)
+
+    const rejectionReasonCounts = reasons.reduce<Record<string, number>>((acc, reason) => {
+      acc[reason] = (acc[reason] || 0) + 1
+      return acc
+    }, {})
+
+    const rejectionSummary = Object.entries(rejectionReasonCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+
+    const firstApprovedDurations = rows
+      .filter((x) => x.user_action === 'accepted' || x.user_action === 'edited')
+      .map((x) => {
+        const generatedAt = asSource(x).generated_at
+        if (!generatedAt || !x.approved_at) return null
+        const start = new Date(generatedAt).getTime()
+        const end = new Date(x.approved_at).getTime()
+        if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return null
+        return (end - start) / 60000
+      })
+      .filter((x): x is number => x !== null)
+
+    const avgTimeToFirstApproved = average(firstApprovedDurations)
+
+    const scoreDeltas = rows
+      .filter((x) => x.user_action === 'accepted' || x.user_action === 'edited')
+      .map((x) => {
+        const source = asSource(x)
+        if (typeof source.ats_score_before !== 'number' || typeof source.ats_score_after !== 'number') {
+          return null
+        }
+        return source.ats_score_after - source.ats_score_before
+      })
+      .filter((x): x is number => x !== null)
+
+    const avgAtsDelta = average(scoreDeltas)
+
+    return {
+      acceptanceRate,
+      editBeforeSaveRate,
+      rejected,
+      rejectionSummary,
+      avgTimeToFirstApproved,
+      avgAtsDelta,
+    }
+  }, [experiences])
 
   const handleCopy = async (text: string) => {
     try {
@@ -42,6 +164,49 @@ const EnrichedExperiences = () => {
         description: 'Please copy the text manually.',
       })
     }
+  }
+
+  const startEdit = (experience: EnrichedExperience) => {
+    setEditingId(experience.id)
+    setEditDraft(experience.suggestion)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditDraft('')
+  }
+
+  const saveEdit = async (experience: EnrichedExperience) => {
+    const nextText = editDraft.trim()
+    if (!nextText) {
+      toast({
+        variant: 'destructive',
+        title: 'Suggestion is required',
+        description: 'The suggestion text cannot be empty.',
+      })
+      return
+    }
+
+    await updateExperience.mutateAsync({
+      id: experience.id,
+      suggestion: nextText,
+      user_action: 'edited',
+      source: {
+        ...(asSource(experience) as Record<string, unknown>),
+        edited_at: new Date().toISOString(),
+        interview_safe: true,
+      },
+    })
+    cancelEdit()
+  }
+
+  const removeExperience = async (experience: EnrichedExperience) => {
+    const confirmed = window.confirm(
+      'Delete this enriched experience? This will remove it from your active list.'
+    )
+    if (!confirmed) return
+    const reason = window.prompt('Optional reason for deletion:', 'user_deleted') || 'user_deleted'
+    await deleteExperience.mutateAsync({ id: experience.id, reason })
   }
 
   return (
@@ -68,7 +233,64 @@ const EnrichedExperiences = () => {
         </TooltipProvider>
       </div>
 
-      {/* Feature Overview */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Acceptance Rate</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{formatPct(metrics.acceptanceRate)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Edit Before Save</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">
+            {formatPct(metrics.editBeforeSaveRate)}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Rejected</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{metrics.rejected}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Time to Approve</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">
+            {formatMinutes(metrics.avgTimeToFirstApproved)}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Avg ATS Delta</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">
+            {metrics.avgAtsDelta === null ? 'N/A' : `${metrics.avgAtsDelta.toFixed(1)} pts`}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-emerald-200 bg-emerald-50/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-emerald-800">
+            <ShieldCheck className="h-5 w-5" />
+            Honest Experience Guardrails
+          </CardTitle>
+          <CardDescription>
+            Inferred suggestions should be kept interview-safe: verify evidence, avoid inflated
+            metrics, and edit wording when needed.
+          </CardDescription>
+        </CardHeader>
+        {metrics.rejectionSummary.length > 0 && (
+          <CardContent className="text-sm text-emerald-900">
+            Top rejection reasons:{' '}
+            {metrics.rejectionSummary.map(([reason, count]) => `${reason} (${count})`).join(', ')}
+          </CardContent>
+        )}
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="transition-shadow hover:shadow-md">
           <CardHeader>
@@ -116,7 +338,6 @@ const EnrichedExperiences = () => {
         </Card>
       </div>
 
-      {/* Sample Enrichment Example */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -129,7 +350,6 @@ const EnrichedExperiences = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Before */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -139,15 +359,14 @@ const EnrichedExperiences = () => {
                 <h3 className="font-medium mb-2">Software Engineer</h3>
                 <p className="text-sm text-muted-foreground mb-2">TechCorp (2020-2023)</p>
                 <ul className="text-sm space-y-1 text-gray-600">
-                  <li>• Worked on web applications</li>
-                  <li>• Fixed bugs and implemented features</li>
-                  <li>• Collaborated with team members</li>
-                  <li>• Used various programming languages</li>
+                  <li>- Worked on web applications</li>
+                  <li>- Fixed bugs and implemented features</li>
+                  <li>- Collaborated with team members</li>
+                  <li>- Used various programming languages</li>
                 </ul>
               </div>
             </div>
 
-            {/* After */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -158,19 +377,19 @@ const EnrichedExperiences = () => {
                 <p className="text-sm text-muted-foreground mb-2">TechCorp (2020-2023)</p>
                 <ul className="text-sm space-y-1 text-gray-600">
                   <li>
-                    • Architected and developed 5 high-traffic web applications using React,
+                    - Architected and developed 5 high-traffic web applications using React,
                     Node.js, and PostgreSQL, serving 100K+ daily active users
                   </li>
                   <li>
-                    • Reduced production bugs by 40% through implementation of comprehensive testing
-                    strategies and code review processes
+                    - Reduced production bugs by 40% through implementation of comprehensive
+                    testing strategies and code review processes
                   </li>
                   <li>
-                    • Led cross-functional team of 6 developers, designers, and QA engineers to
+                    - Led cross-functional team of 6 developers, designers, and QA engineers to
                     deliver features 25% faster than industry average
                   </li>
                   <li>
-                    • Optimized application performance using Python, JavaScript, and AWS cloud
+                    - Optimized application performance using Python, JavaScript, and AWS cloud
                     services, improving load times by 60%
                   </li>
                 </ul>
@@ -179,28 +398,21 @@ const EnrichedExperiences = () => {
           </div>
 
           <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
-            <h4 className="font-medium text-blue-700 mb-2">✨ AI Enhancement Highlights</h4>
+            <h4 className="font-medium text-blue-700 mb-2">AI Enhancement Highlights</h4>
             <div className="grid gap-2 md:grid-cols-2 text-sm">
               <div>
                 <span className="font-medium">Keywords Added:</span>
-                <span className="text-blue-600">
-                  {' '}
-                  React, Node.js, PostgreSQL, Python, JavaScript, AWS
-                </span>
+                <span className="text-blue-600"> React, Node.js, PostgreSQL, Python, JavaScript, AWS</span>
               </div>
               <div>
                 <span className="font-medium">Metrics Added:</span>
-                <span className="text-blue-600">
-                  {' '}
-                  100K+ users, 40% reduction, 25% faster, 60% improvement
-                </span>
+                <span className="text-blue-600"> 100K+ users, 40% reduction, 25% faster, 60% improvement</span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Your Enriched Experiences */}
       <Card>
         <CardHeader>
           <CardTitle>Your Enriched Experiences</CardTitle>
@@ -221,28 +433,44 @@ const EnrichedExperiences = () => {
             <div className="space-y-4">
               {experiences.map((experience) => {
                 const status = statusStyles[experience.user_action] || statusStyles.pending
+                const source = asSource(experience)
+                const interviewSafe = source.interview_safe === true
+
                 return (
                   <Card key={experience.id} className="border shadow-sm">
                     <CardHeader className="flex flex-row items-start justify-between space-y-0">
                       <div>
-                        <CardTitle className="text-lg">{experience.skill_name}</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {experience.skill_name}
+                          {interviewSafe && <Badge variant="outline">Interview-safe</Badge>}
+                        </CardTitle>
                         <CardDescription>
-                          {experience.resume?.name || 'Resume'} ·{' '}
-                          {experience.job?.name || 'Job Description'}
+                          {experience.resume?.name || 'Resume'} · {experience.job?.name || 'Job Description'}
                         </CardDescription>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          ID: {experience.id.slice(0, 8)} · Created:{' '}
+                          {formatDateTime(experience.created_at)} · Updated:{' '}
+                          {formatDateTime(experience.updated_at || experience.created_at)}
+                        </p>
                       </div>
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {experience.suggestion}
-                      </p>
+                      {editingId === experience.id ? (
+                        <Textarea
+                          value={editDraft}
+                          onChange={(event) => setEditDraft(event.target.value)}
+                          className="min-h-[110px]"
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                          {experience.suggestion}
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         {experience.confidence_score !== null &&
                           experience.confidence_score !== undefined && (
-                            <span>
-                              Confidence {(experience.confidence_score * 100).toFixed(0)}%
-                            </span>
+                            <span>Confidence {(experience.confidence_score * 100).toFixed(0)}%</span>
                           )}
                         {experience.explanation && (
                           <span className="flex items-center gap-1">
@@ -263,6 +491,56 @@ const EnrichedExperiences = () => {
                           <Copy className="mr-1 h-3.5 w-3.5" />
                           Copy text
                         </Button>
+                        {editingId === experience.id ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              disabled={updateExperience.isPending}
+                              onClick={() => saveEdit(experience)}
+                            >
+                              <Save className="mr-1 h-3.5 w-3.5" />
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              disabled={updateExperience.isPending}
+                              onClick={cancelEdit}
+                            >
+                              <XCircle className="mr-1 h-3.5 w-3.5" />
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={() => startEdit(experience)}
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-destructive"
+                              disabled={deleteExperience.isPending}
+                              onClick={() => removeExperience(experience)}
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Delete
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -288,7 +566,6 @@ const EnrichedExperiences = () => {
         </CardContent>
       </Card>
 
-      {/* Enhancement Process */}
       <Card>
         <CardHeader>
           <CardTitle>How Experience Enrichment Works</CardTitle>
@@ -319,8 +596,8 @@ const EnrichedExperiences = () => {
                 title: 'Review & Apply',
                 description: 'Review suggestions and apply the best enhancements',
               },
-            ].map((item, index) => (
-              <div key={index} className="text-center">
+            ].map((item) => (
+              <div key={item.step} className="text-center">
                 <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold mb-2 mx-auto">
                   {item.step}
                 </div>

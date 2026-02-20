@@ -435,6 +435,9 @@ export type Database = {
           approved_at: string | null
           confidence_score: number | null
           created_at: string
+          deleted_at: string | null
+          deleted_reason: string | null
+          edited_by_user: boolean
           explanation: string | null
           id: string
           jd_id: string | null
@@ -452,6 +455,9 @@ export type Database = {
           approved_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_reason?: string | null
+          edited_by_user?: boolean
           explanation?: string | null
           id?: string
           jd_id?: string | null
@@ -469,6 +475,9 @@ export type Database = {
           approved_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_reason?: string | null
+          edited_by_user?: boolean
           explanation?: string | null
           id?: string
           jd_id?: string | null

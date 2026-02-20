@@ -2,6 +2,8 @@
 
 ## Update Log
 - 2026-02-20 22:43:03 | Added concrete implementation plan for logging and debugging modernization for authorization review.
+- 2026-02-21 00:34:53 | Added Phase P5 priorities for enrichment record management and a full account data deletion analysis.
+- 2026-02-21 00:54:21 | Added Phase P6 priorities for modern SDLC operations, automation, documentation gates, and security/compliance controls.
 
 ## 1. Scope and Goals
 1. Remove security and observability risks in current logging pipeline.
@@ -85,6 +87,64 @@ error spikes, repeated failures, abnormal token/cost usage.
 **Estimated effort**
 1. 4-6 days
 
+### Phase P5: Enrichment Lifecycle + User Data Erasure (Next Priority)
+1. Add enriched experience record identity and time metadata in UI:
+- Show short record id.
+- Show `created_at` and `updated_at`.
+2. Add enriched experience update capability:
+- Edit existing suggestion text and metadata.
+- Keep audit metadata (`updated_at`, `edited_by_user` flag).
+3. Add enriched experience delete capability:
+- Soft-delete first (`deleted_at`, `deleted_reason`) with optional restore window.
+- Hard-delete via scheduled purge after retention window.
+4. Add self-serve full account data deletion:
+- One-click user request to delete all personal records.
+- Async job that deletes user-linked rows across all owned tables and storage objects.
+- Confirmation step with irreversible warning.
+5. Add compliance-grade deletion trail:
+- Track request timestamp, completion timestamp, status, and deletion scope summary.
+- Preserve minimal legal/audit artifact without storing recoverable personal data.
+
+**Acceptance criteria**
+1. Users can view id and timestamps for each enriched experience.
+2. Users can edit and delete enriched experiences without admin support.
+3. Users can trigger complete data deletion and receive status feedback.
+4. Deletion removes user-owned rows and files from storage.
+5. Deletion logs are auditable and privacy-safe.
+
+**Estimated effort**
+1. 5-8 days
+
+### Phase P6: Modern SDLC Operations and Product Governance
+1. Create repository automation layer (`ops/`):
+- Start/stop/restart dev and prod services.
+- Verification commands (`lint`, `build`, `test`, smoke checks).
+- Log tail/filter/export commands.
+- Safe git helper commands (`status`, branch checks, guarded push helpers).
+2. Add CI/CD quality gates:
+- Require passing verification pipeline before merge.
+- Require documentation updates for user-facing changes.
+- Add link checks and doc completeness checks.
+3. Enforce docs-as-release-artifact:
+- Product spec, release notes, help updates, and runbook updates included in Definition of Done.
+4. Strengthen observability and alerting operations:
+- Standard alert thresholds and incident runbook linkage.
+- Post-release monitoring checklist.
+5. Strengthen security/compliance workflow:
+- Secrets scanning and no-secrets-in-code policy checks.
+- Data retention/deletion policy enforcement checks.
+- Access/audit review cadence.
+
+**Acceptance criteria**
+1. Team can run common lifecycle tasks from a single `ops` entrypoint.
+2. PRs are blocked when required checks/docs are missing.
+3. Every release includes spec/help/release-note artifacts.
+4. Incident response and rollback steps are documented and tested.
+5. Security/compliance checks run consistently in pipeline.
+
+**Estimated effort**
+1. 4-7 days
+
 ## 3. Technical Work Packages (Concrete)
 
 1. Frontend core
@@ -126,3 +186,45 @@ error spikes, repeated failures, abnormal token/cost usage.
 1. Approve **P0 only** (fast risk reduction).
 2. Approve **P0 + P1 + P2** (production-ready observability baseline).
 3. Approve **Full P0-P4** (complete modernization roadmap).
+4. Approve **P5** (enrichment record lifecycle + full account data erasure).
+5. Approve **P6** (modern SDLC automation, docs quality gates, and governance controls).
+
+## 6. Full Data Deletion Analysis (Subscription Stop / Right to Erasure)
+
+### Why this feature is important
+1. Reduces churn friction by giving users control at subscription end.
+2. Supports privacy expectations and legal obligations.
+3. Builds trust by proving data ownership and portability/deletion rights.
+
+### Recommended product flow
+1. User clicks `Delete all my data` in settings.
+2. User confirms with strong warning and re-authentication.
+3. System creates deletion request with status `queued`.
+4. Background worker executes deletion plan:
+- Revoke sessions/tokens.
+- Delete storage files.
+- Delete user-owned rows from product tables.
+- Optionally anonymize immutable audit rows if required.
+5. System marks request `completed` or `failed` and stores a minimal audit result.
+
+### Deletion scope checklist
+1. Authentication profile and sessions.
+2. Resumes and extracted documents.
+3. Job descriptions, analyses, and enrichment records.
+4. Logging data tied to user id (subject to security retention policy).
+5. Files/blobs in storage buckets.
+
+### Risks and controls
+1. Partial deletion risk:
+- Control: idempotent job + retryable step runner + final verification query.
+2. Irreversible action risk:
+- Control: explicit consent + re-auth + cooling-off option (optional).
+3. Compliance conflict (audit/security retention):
+- Control: define minimal retention policy and anonymize where deletion is not legally allowed.
+4. Support burden:
+- Control: expose deletion status and reason codes in UI.
+
+### Suggested rollout
+1. V1: user request + async execution + completion status.
+2. V2: soft-delete grace window and restore before hard purge.
+3. V3: downloadable deletion report and SLA timers.

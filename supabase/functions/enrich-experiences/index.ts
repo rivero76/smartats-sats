@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-02-20 23:29:40 | P2: Added request_id propagation for enrichment flow correlation.
+ * 2026-02-21 00:15:00 | Hardened provider error handling: avoid raw provider payload logging and return safe messages for 401/429/5xx.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -30,6 +31,34 @@ interface EnrichmentSuggestion {
   explanation: string
   suggestion: string
   derived_context?: string
+}
+
+function mapProviderError(status: number): { safeMessage: string; errorType: string } {
+  if (status === 401 || status === 403) {
+    return {
+      safeMessage: 'AI provider key misconfigured. Please contact support.',
+      errorType: 'provider_auth_error',
+    }
+  }
+
+  if (status === 429) {
+    return {
+      safeMessage: 'AI provider rate limit reached. Please retry shortly.',
+      errorType: 'provider_rate_limited',
+    }
+  }
+
+  if (status >= 500) {
+    return {
+      safeMessage: 'AI provider temporarily unavailable. Please retry shortly.',
+      errorType: 'provider_unavailable',
+    }
+  }
+
+  return {
+    safeMessage: `AI provider request failed (${status}).`,
+    errorType: 'provider_request_error',
+  }
 }
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -168,13 +197,16 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
+      const { safeMessage, errorType } = mapProviderError(response.status)
+      // Consume response body for completeness without logging provider payload.
+      await response.text()
+      console.error('OpenAI API error status:', response.status)
       await logEvent('ERROR', 'OpenAI request failed', {
         status: response.status,
-        error: errorText,
+        safe_message: safeMessage,
+        error_type: errorType,
       }, payload.request_id)
-      throw new Error(`OpenAI API error: ${response.status}`)
+      throw new Error(safeMessage)
     }
 
     const data = await response.json()

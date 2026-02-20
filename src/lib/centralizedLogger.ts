@@ -15,6 +15,7 @@
  * UPDATE LOG
  * 2026-02-20 23:19:37 | P1: Added structured logging schema normalization for frontend log events.
  * 2026-02-20 23:29:40 | P3: Added client-side sampling, throttling, payload truncation, and retry/backoff for log delivery.
+ * 2026-02-21 00:15:00 | Hardened script logger to promote metadata.request_id to top-level request_id.
  */
 
 import { supabase } from '@/integrations/supabase/client'
@@ -381,6 +382,12 @@ function normalizeStructuredMetadata(
   })
 }
 
+function extractRequestId(metadata: unknown): string | undefined {
+  if (!isPlainObject(metadata)) return undefined
+  const candidate = metadata.request_id
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : undefined
+}
+
 /**
  * Dynamic import guard for Node-only local logging.
  * Prevents Vite bundling errors when running in browser.
@@ -552,6 +559,7 @@ export function createScriptLogger(
         script_name: scriptName,
         user_id: options?.userId,
         session_id: options?.sessionId,
+        request_id: extractRequestId(metadata),
         metadata,
       }),
 
@@ -560,6 +568,7 @@ export function createScriptLogger(
         script_name: scriptName,
         user_id: options?.userId,
         session_id: options?.sessionId,
+        request_id: extractRequestId(metadata),
         metadata,
       }),
 
@@ -568,6 +577,7 @@ export function createScriptLogger(
         script_name: scriptName,
         user_id: options?.userId,
         session_id: options?.sessionId,
+        request_id: extractRequestId(metadata),
         metadata,
       }),
 
@@ -576,6 +586,7 @@ export function createScriptLogger(
         script_name: scriptName,
         user_id: options?.userId,
         session_id: options?.sessionId,
+        request_id: extractRequestId(metadata),
         metadata,
       }),
 
@@ -584,6 +595,7 @@ export function createScriptLogger(
         script_name: scriptName,
         user_id: options?.userId,
         session_id: options?.sessionId,
+        request_id: extractRequestId(metadata),
         metadata,
       }),
   }

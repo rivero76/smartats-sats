@@ -7,6 +7,11 @@
 - 2026-02-20 23:29:40 | Implemented P3 reliability controls: policy-driven cleanup automation, sampling/throttling, retry/backoff, and payload truncation.
 - 2026-02-20 23:42:10 | Implemented P4 observability and governance: admin dashboards, threshold alerts, and immutable log settings audit trail.
 - 2026-02-21 00:05:00 | Added full `enrich-experiences-client` logging support (DB provisioning + generate/save workflow telemetry).
+- 2026-02-21 00:15:00 | Hardened enrichment failure handling: safe provider error mapping, no raw provider payload logging, and improved client-side invoke diagnostics.
+- 2026-02-21 00:40:00 | Implemented enrichment product upgrades: evidence checklist, tone controls, batch actions, progress states, and success metrics dashboard.
+- 2026-02-21 00:34:53 | Added P5 roadmap in `PRODUCT_IMPROVEMENTS.md`: enrichment record lifecycle (id/timestamps/update/delete) and full account data deletion analysis.
+- 2026-02-21 00:54:21 | Added P6 roadmap in `PRODUCT_IMPROVEMENTS.md`: modern SDLC automation (`ops`), CI quality gates, docs-as-release artifacts, and governance controls.
+- 2026-02-21 00:54:21 | Implemented P5 lifecycle controls: enriched experience id/timestamps in UI, edit/delete actions, and account-deletion function scope alignment for enrichment records.
 
 SmartATS is a web application for resume management, job description management, ATS scoring, and AI-assisted experience enrichment.
 
@@ -135,3 +140,8 @@ App: `http://localhost:3000`
   - Rule-based alert checks (error spikes, ATS failure-rate, and cost anomaly thresholds).
   - Immutable audit trail for `log_settings` changes via database trigger-backed audit table.
 - Frontend enrichment logging now has explicit `log_settings` provisioning for `enrich-experiences-client`, including both suggestion generation and save workflow events.
+- Enrichment error hardening now maps OpenAI 401/429/5xx to safe user-facing messages and logs only sanitized provider diagnostics (`status`, `error_type`, `safe_message`).
+- Enrichment UX now includes evidence-required validation for inferred skills, one-click claim softening, role relevance vs evidence strength indicators, traceable reasoning, batch save/reject actions, and review progress states.
+- Success metrics tracking now surfaces acceptance rate, edit-before-save rate, rejection reason trends, time-to-approve, and ATS score delta when available.
+- P5 lifecycle controls now allow users to review record metadata (`id`, `created_at`, `updated_at`), edit enriched suggestions in-place, and soft-delete suggestions from the active list.
+- Account deletion/cancellation/reactivation database functions now include `enriched_experiences` in deletion scope handling.
