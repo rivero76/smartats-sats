@@ -374,7 +374,7 @@ export async function extractTextFromDocument(
       case 'text/plain':
         result = await extractFromText(buffer, sessionId)
         break
-      default:
+      default: {
         logProcessingError(sessionId, 'format-detection', {
           code: 'UNSUPPORTED_FORMAT',
           detectedMimeType,
@@ -384,6 +384,7 @@ export async function extractTextFromDocument(
           message: `Unsupported file format: ${detectedMimeType}. Supported formats: PDF, DOCX, HTML, TXT.`,
         }
         throw err
+      }
     }
 
     documentProcessingLogger.info('Document extraction completed successfully', {

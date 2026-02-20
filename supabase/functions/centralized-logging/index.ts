@@ -2,20 +2,50 @@
  * UPDATE LOG
  * 2026-02-20 23:22:57 | P1: Added request validation, payload size limits, and structured metadata normalization.
  * 2026-02-20 23:29:40 | P3: Added metadata/message truncation controls for oversized logging payloads.
+ * 2026-02-21 03:15:00 | SDLC P3 reliability parameterization: moved centralized logging length/size limits to environment-driven configuration.
+ * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0)
+)
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return true
+  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
+}
+
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = ALLOWED_ORIGINS.has('*')
+    ? '*'
+    : origin && ALLOWED_ORIGINS.has(origin)
+      ? origin
+      : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
+}
+
+function getEnvInt(name: string, fallback: number): number {
+  const raw = Deno.env.get(name)
+  if (!raw) return fallback
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isFinite(parsed) ? parsed : fallback
 }
 
 const ALLOWED_LEVELS = ['ERROR', 'INFO', 'DEBUG', 'TRACE'] as const
-const MAX_SCRIPT_NAME_LENGTH = 120
-const MAX_MESSAGE_ACCEPT_LENGTH = 50_000
-const MAX_MESSAGE_STORE_LENGTH = 5000
-const MAX_METADATA_BYTES = 16 * 1024
+const MAX_SCRIPT_NAME_LENGTH = Math.max(20, getEnvInt('LOG_MAX_SCRIPT_NAME_LENGTH', 120))
+const MAX_MESSAGE_ACCEPT_LENGTH = Math.max(1000, getEnvInt('LOG_MAX_MESSAGE_ACCEPT_LENGTH', 50_000))
+const MAX_MESSAGE_STORE_LENGTH = Math.max(256, getEnvInt('LOG_MAX_MESSAGE_STORE_LENGTH', 5000))
+const MAX_METADATA_BYTES = Math.max(1024, getEnvInt('LOG_MAX_METADATA_BYTES', 16 * 1024))
 
 interface LogRequest {
   script_name: string
@@ -28,6 +58,16 @@ interface LogRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = buildCorsHeaders(origin)
+
+  if (!isOriginAllowed(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -50,13 +90,10 @@ serve(async (req) => {
 
     const validationError = validateLogRequest(logRequest)
     if (validationError) {
-      return new Response(
-        JSON.stringify({ error: validationError }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: validationError }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const normalizedMetadata = normalizeStructuredMetadata(logRequest)
@@ -195,7 +232,8 @@ function validateLogRequest(logRequest: Partial<LogRequest>): string | null {
 }
 
 function normalizeStructuredMetadata(logRequest: LogRequest): Record<string, unknown> {
-  const metadata = logRequest.metadata && typeof logRequest.metadata === 'object' ? logRequest.metadata : {}
+  const metadata =
+    logRequest.metadata && typeof logRequest.metadata === 'object' ? logRequest.metadata : {}
   const outcomeFromLevel = logRequest.log_level === 'ERROR' ? 'failure' : 'info'
 
   return {
@@ -223,17 +261,13 @@ function normalizeStructuredMetadata(logRequest: LogRequest): Record<string, unk
         ? metadata.duration_ms
         : null,
     request_id:
-      typeof metadata.request_id === 'string'
-        ? metadata.request_id
-        : logRequest.request_id || null,
+      typeof metadata.request_id === 'string' ? metadata.request_id : logRequest.request_id || null,
     session_id:
-      typeof metadata.session_id === 'string'
-        ? metadata.session_id
-        : logRequest.session_id || null,
-    user_id:
-      typeof metadata.user_id === 'string' ? metadata.user_id : logRequest.user_id || null,
+      typeof metadata.session_id === 'string' ? metadata.session_id : logRequest.session_id || null,
+    user_id: typeof metadata.user_id === 'string' ? metadata.user_id : logRequest.user_id || null,
     details: metadata.details && typeof metadata.details === 'object' ? metadata.details : metadata,
-    timestamp: typeof metadata.timestamp === 'string' ? metadata.timestamp : new Date().toISOString(),
+    timestamp:
+      typeof metadata.timestamp === 'string' ? metadata.timestamp : new Date().toISOString(),
   }
 }
 
@@ -254,8 +288,10 @@ function getPayloadBytes(value: unknown): number {
 
 function truncateUnknown(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[truncated:depth]'
-  if (typeof value === 'string') return value.length > 1024 ? `${value.slice(0, 1024)}...[truncated]` : value
-  if (Array.isArray(value)) return value.slice(0, 40).map((item) => truncateUnknown(item, depth + 1))
+  if (typeof value === 'string')
+    return value.length > 1024 ? `${value.slice(0, 1024)}...[truncated]` : value
+  if (Array.isArray(value))
+    return value.slice(0, 40).map((item) => truncateUnknown(item, depth + 1))
   if (typeof value !== 'object' || value === null) return value
 
   const entries = Object.entries(value as Record<string, unknown>).slice(0, 60)
@@ -270,7 +306,11 @@ function enforceMetadataBudget(metadata: Record<string, unknown>): Record<string
   if (getPayloadBytes(metadata) <= MAX_METADATA_BYTES) return metadata
 
   const truncated = truncateUnknown(metadata)
-  if (typeof truncated === 'object' && truncated !== null && getPayloadBytes(truncated) <= MAX_METADATA_BYTES) {
+  if (
+    typeof truncated === 'object' &&
+    truncated !== null &&
+    getPayloadBytes(truncated) <= MAX_METADATA_BYTES
+  ) {
     return truncated as Record<string, unknown>
   }
 

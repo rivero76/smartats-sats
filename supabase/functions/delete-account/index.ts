@@ -1,13 +1,35 @@
 /**
  * UPDATE LOG
  * 2026-02-20 23:22:57 | P1: Integrated centralized structured logging for account deletion lifecycle events.
+ * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0)
+)
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return true
+  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
+}
+
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = ALLOWED_ORIGINS.has('*')
+    ? '*'
+    : origin && ALLOWED_ORIGINS.has(origin)
+      ? origin
+      : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
 }
 
 interface DeleteAccountRequest {
@@ -16,6 +38,16 @@ interface DeleteAccountRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = buildCorsHeaders(origin)
+
+  if (!isOriginAllowed(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

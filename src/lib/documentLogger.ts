@@ -1,5 +1,44 @@
 import { createScriptLogger } from './centralizedLogger'
 
+type LogMetadata = Record<string, unknown>
+
+interface ExtractionResultLike {
+  wordCount?: number
+  warnings?: unknown[]
+  metadata?: LogMetadata
+}
+
+function toRecord(value: unknown): LogMetadata {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as LogMetadata)
+    : {}
+}
+
+function toErrorLike(error: unknown): {
+  name: string
+  message: string
+  stack: string | null
+  code: string | null
+} {
+  if (error instanceof Error) {
+    const withCode = error as Error & { code?: unknown }
+    return {
+      name: error.name || 'Error',
+      message: error.message || 'Unknown error occurred',
+      stack: error.stack || null,
+      code: typeof withCode.code === 'string' ? withCode.code : null,
+    }
+  }
+
+  const asRecord = toRecord(error)
+  return {
+    name: typeof asRecord.name === 'string' ? asRecord.name : 'UnknownError',
+    message: typeof asRecord.message === 'string' ? asRecord.message : String(error),
+    stack: typeof asRecord.stack === 'string' ? asRecord.stack : null,
+    code: typeof asRecord.code === 'string' ? asRecord.code : null,
+  }
+}
+
 // Specialized loggers for document processing
 export const documentProcessingLogger = createScriptLogger('document-processing')
 export const fileUploadLogger = createScriptLogger('file-upload')
@@ -31,7 +70,7 @@ export function logProcessingStage(
   sessionId: string,
   stage: string,
   status: 'started' | 'completed' | 'failed',
-  metadata?: any
+  metadata?: LogMetadata
 ) {
   const logData = {
     sessionId,
@@ -51,15 +90,23 @@ export function logProcessingStage(
 }
 
 // Helper to log extraction results
-export function logExtractionResult(sessionId: string, result: any, method: string) {
+export function logExtractionResult(
+  sessionId: string,
+  result: ExtractionResultLike,
+  method: string
+) {
+  const resultMetadata = toRecord(result.metadata)
   const metadata = {
     sessionId,
     method,
     wordCount: result.wordCount || 0,
     hasWarnings: result.warnings?.length > 0,
     warningCount: result.warnings?.length || 0,
-    fileSize: result.metadata?.fileSize || 0,
-    detectedMimeType: result.metadata?.detectedMimeType,
+    fileSize: typeof resultMetadata.fileSize === 'number' ? resultMetadata.fileSize : 0,
+    detectedMimeType:
+      typeof resultMetadata.detectedMimeType === 'string'
+        ? resultMetadata.detectedMimeType
+        : undefined,
     timestamp: new Date().toISOString(),
   }
 
@@ -76,7 +123,7 @@ export function logExtractionResult(sessionId: string, result: any, method: stri
 }
 
 // Helper to log PDF worker events
-export function logPDFWorkerEvent(event: string, data?: any) {
+export function logPDFWorkerEvent(event: string, data?: LogMetadata) {
   const metadata = {
     event,
     timestamp: new Date().toISOString(),
@@ -88,14 +135,20 @@ export function logPDFWorkerEvent(event: string, data?: any) {
 }
 
 // Helper to log errors with context
-export function logProcessingError(sessionId: string, stage: string, error: any, context?: any) {
+export function logProcessingError(
+  sessionId: string,
+  stage: string,
+  error: unknown,
+  context?: LogMetadata
+) {
+  const err = toErrorLike(error)
   const errorMetadata = {
     sessionId,
     stage,
-    errorType: error.constructor?.name || 'UnknownError',
-    errorMessage: error.message || 'Unknown error occurred',
-    errorCode: error.code || null,
-    stack: error.stack || null,
+    errorType: err.name,
+    errorMessage: err.message,
+    errorCode: err.code,
+    stack: err.stack,
     timestamp: new Date().toISOString(),
     ...context,
   }

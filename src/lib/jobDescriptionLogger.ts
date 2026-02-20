@@ -1,5 +1,12 @@
 import { createScriptLogger } from '@/lib/centralizedLogger'
-import { useAuth } from '@/contexts/AuthContext'
+
+type LogMetadata = Record<string, unknown>
+
+function toRecord(value: unknown): LogMetadata {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as LogMetadata)
+    : {}
+}
 
 // Create specialized loggers for job description processes
 export const createJobDescriptionLogger = (sessionId?: string) => {
@@ -18,7 +25,7 @@ export const createCompanyLocationLogger = (sessionId?: string) => {
 export class JobDescriptionSession {
   private sessionId: string
   private startTime: number
-  private logger: any
+  private logger: ReturnType<typeof createScriptLogger>
 
   constructor() {
     this.sessionId = `jd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -26,30 +33,38 @@ export class JobDescriptionSession {
     this.logger = createJobDescriptionLogger(this.sessionId)
   }
 
-  log(level: 'info' | 'debug' | 'error', message: string, metadata?: any) {
+  log(level: 'info' | 'debug' | 'error', message: string, metadata?: LogMetadata) {
     const enrichedMetadata = {
-      ...metadata,
+      ...toRecord(metadata),
       sessionId: this.sessionId,
       sessionDuration: Date.now() - this.startTime,
       timestamp: new Date().toISOString(),
     }
 
-    this.logger[level](message, enrichedMetadata)
+    if (level === 'error') {
+      this.logger.error(message, enrichedMetadata)
+      return
+    }
+    if (level === 'debug') {
+      this.logger.debug(message, enrichedMetadata)
+      return
+    }
+    this.logger.info(message, enrichedMetadata)
   }
 
-  info(message: string, metadata?: any) {
+  info(message: string, metadata?: LogMetadata) {
     this.log('info', message, metadata)
   }
 
-  debug(message: string, metadata?: any) {
+  debug(message: string, metadata?: LogMetadata) {
     this.log('debug', message, metadata)
   }
 
-  error(message: string, metadata?: any) {
+  error(message: string, metadata?: LogMetadata) {
     this.log('error', message, metadata)
   }
 
-  startProcess(processName: string, metadata?: any) {
+  startProcess(processName: string, metadata?: LogMetadata) {
     this.info(`Starting ${processName}`, {
       process: processName,
       processStep: 'start',
@@ -57,7 +72,7 @@ export class JobDescriptionSession {
     })
   }
 
-  completeProcess(processName: string, metadata?: any) {
+  completeProcess(processName: string, metadata?: LogMetadata) {
     this.info(`Completed ${processName}`, {
       process: processName,
       processStep: 'complete',
@@ -66,7 +81,7 @@ export class JobDescriptionSession {
     })
   }
 
-  errorProcess(processName: string, error: Error, metadata?: any) {
+  errorProcess(processName: string, error: Error, metadata?: LogMetadata) {
     this.error(`Failed ${processName}`, {
       process: processName,
       processStep: 'error',
@@ -83,50 +98,58 @@ export class JobDescriptionSession {
 }
 
 // Utility functions for common logging scenarios
-export const logJobDescriptionCreation = (data: any, sessionId?: string) => {
+export const logJobDescriptionCreation = (data: unknown, sessionId?: string) => {
+  const payload = toRecord(data)
   const logger = createJobDescriptionLogger(sessionId)
   logger.info('Job description creation initiated', {
-    hasName: !!data.name,
-    hasCompany: !!data.company_id,
-    hasLocation: !!data.location_id,
-    inputMethod: data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown',
-    dataSize: data.pasted_text?.length || 0,
+    hasName: !!payload.name,
+    hasCompany: !!payload.company_id,
+    hasLocation: !!payload.location_id,
+    inputMethod: payload.pasted_text ? 'text' : payload.file_url ? 'file' : 'unknown',
+    dataSize: typeof payload.pasted_text === 'string' ? payload.pasted_text.length : 0,
   })
 }
 
-export const logContentExtraction = (content: string, extractedData: any, sessionId?: string) => {
+export const logContentExtraction = (
+  content: string,
+  extractedData: unknown,
+  sessionId?: string
+) => {
+  const payload = toRecord(extractedData)
+  const skills = Array.isArray(payload.skills) ? payload.skills : []
   const logger = createContentExtractionLogger(sessionId)
   logger.info('Content extraction completed', {
     contentLength: content.length,
     extractedFields: {
-      title: !!extractedData.title,
-      company: !!extractedData.company,
-      location: !!extractedData.location,
-      skills: extractedData.skills?.length || 0,
-      employmentType: !!extractedData.employmentType,
-      department: !!extractedData.department,
+      title: !!payload.title,
+      company: !!payload.company,
+      location: !!payload.location,
+      skills: skills.length,
+      employmentType: !!payload.employmentType,
+      department: !!payload.department,
     },
-    extractionSuccess: !!(extractedData.title || extractedData.company),
+    extractionSuccess: !!(payload.title || payload.company),
   })
 }
 
 export const logCompanyLocationOperation = (
   operation: 'lookup' | 'create',
   type: 'company' | 'location',
-  data: any,
-  result: any,
+  data: unknown,
+  result: unknown,
   sessionId?: string
 ) => {
+  const resultPayload = toRecord(result)
   const logger = createCompanyLocationLogger(sessionId)
   logger.info(`${type} ${operation} operation`, {
     operation,
     type,
     inputData: data,
-    success: !!result,
-    resultId: result?.id,
+    success: !!resultPayload.id,
+    resultId: typeof resultPayload.id === 'string' ? resultPayload.id : undefined,
     operationDetails: {
-      isExisting: operation === 'lookup' && !!result,
-      isNew: operation === 'create' && !!result,
+      isExisting: operation === 'lookup' && !!resultPayload.id,
+      isNew: operation === 'create' && !!resultPayload.id,
     },
   })
 }

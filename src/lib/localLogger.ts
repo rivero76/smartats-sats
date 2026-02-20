@@ -9,7 +9,7 @@
 export async function writeLocalLog(
   level: string,
   message: string,
-  metadata?: any,
+  metadata?: unknown,
   script?: string
 ): Promise<void> {
   // Skip logging in browser (no filesystem)

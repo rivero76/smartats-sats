@@ -16,6 +16,7 @@
  * 2026-02-20 23:19:37 | P1: Added structured logging schema normalization for frontend log events.
  * 2026-02-20 23:29:40 | P3: Added client-side sampling, throttling, payload truncation, and retry/backoff for log delivery.
  * 2026-02-21 00:15:00 | Hardened script logger to promote metadata.request_id to top-level request_id.
+ * 2026-02-21 03:15:00 | SDLC P3 reliability parameterization: moved logging limits/sampling/retry settings to environment-driven config.
  */
 
 import { supabase } from '@/integrations/supabase/client'
@@ -43,14 +44,39 @@ interface LogOptions {
   metadata?: unknown
 }
 
-const REDACTED_VALUE = '[REDACTED]'
-const MAX_METADATA_BYTES = 12 * 1024
-const RATE_LIMIT_WINDOW_MS = 60_000
-const DEBUG_MAX_PER_WINDOW = 120
-const TRACE_MAX_PER_WINDOW = 60
+function getEnvNumber(name: string, fallback: number): number {
+  const raw = import.meta.env[name]
+  if (!raw || typeof raw !== 'string') return fallback
+  const parsed = Number.parseFloat(raw)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
 
-const DEBUG_SAMPLE_RATE = Number.parseFloat(import.meta.env.VITE_LOG_SAMPLE_DEBUG_RATE || '1')
-const TRACE_SAMPLE_RATE = Number.parseFloat(import.meta.env.VITE_LOG_SAMPLE_TRACE_RATE || '0.35')
+function getEnvInt(name: string, fallback: number): number {
+  const parsed = Math.floor(getEnvNumber(name, fallback))
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function getEnvBackoff(name: string, fallback: number[]): number[] {
+  const raw = import.meta.env[name]
+  if (!raw || typeof raw !== 'string') return fallback
+  const values = raw
+    .split(',')
+    .map((part) => Number.parseInt(part.trim(), 10))
+    .filter((value) => Number.isFinite(value) && value >= 0)
+  return values.length > 0 ? values : fallback
+}
+
+const REDACTED_VALUE = '[REDACTED]'
+const MAX_METADATA_BYTES = Math.max(1024, getEnvInt('VITE_LOG_MAX_METADATA_BYTES', 12 * 1024))
+const RATE_LIMIT_WINDOW_MS = Math.max(1000, getEnvInt('VITE_LOG_RATE_LIMIT_WINDOW_MS', 60_000))
+const DEBUG_MAX_PER_WINDOW = Math.max(1, getEnvInt('VITE_LOG_DEBUG_MAX_PER_WINDOW', 120))
+const TRACE_MAX_PER_WINDOW = Math.max(1, getEnvInt('VITE_LOG_TRACE_MAX_PER_WINDOW', 60))
+
+const DEBUG_SAMPLE_RATE = Math.max(0, Math.min(1, getEnvNumber('VITE_LOG_SAMPLE_DEBUG_RATE', 1)))
+const TRACE_SAMPLE_RATE = Math.max(0, Math.min(1, getEnvNumber('VITE_LOG_SAMPLE_TRACE_RATE', 0.35)))
+
+const LOG_RETRY_MAX_ATTEMPTS = Math.max(1, getEnvInt('VITE_LOG_RETRY_MAX_ATTEMPTS', 3))
+const LOG_RETRY_BACKOFF_MS = getEnvBackoff('VITE_LOG_RETRY_BACKOFF_MS', [200, 600, 1200])
 
 const encoder = new TextEncoder()
 const rateWindow = new Map<string, { count: number; windowStart: number }>()
@@ -223,7 +249,8 @@ function truncateString(value: string, maxChars = 1024): string {
 function truncateUnknown(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[truncated:depth]'
   if (typeof value === 'string') return truncateString(value)
-  if (Array.isArray(value)) return value.slice(0, 50).map((entry) => truncateUnknown(entry, depth + 1))
+  if (Array.isArray(value))
+    return value.slice(0, 50).map((entry) => truncateUnknown(entry, depth + 1))
   if (!isPlainObject(value)) return value
 
   const entries = Object.entries(value).slice(0, 80)
@@ -405,17 +432,37 @@ if (typeof window === 'undefined') {
   })()
 }
 
+function resolveCentralizedLoggingEndpoint(): string | null {
+  const explicitFunctionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL as string | undefined
+  if (explicitFunctionsUrl && explicitFunctionsUrl.length > 0) {
+    return `${explicitFunctionsUrl.replace(/\/$/, '')}/functions/v1/centralized-logging`
+  }
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  if (supabaseUrl && supabaseUrl.includes('.supabase.co')) {
+    return `${supabaseUrl.replace('.supabase.co', '.functions.supabase.co')}/functions/v1/centralized-logging`
+  }
+
+  return null
+}
+
 class CentralizedLogger {
-  private readonly projectId = 'nkgscksbgmzhizohobhg'
-  private readonly baseUrl = `https://${this.projectId}.functions.supabase.co/functions/v1/centralized-logging`
+  private readonly baseUrl = resolveCentralizedLoggingEndpoint()
 
   private async sendWithRetry(
     accessToken: string,
     payload: Record<string, unknown>,
     scriptName: string
   ): Promise<Response | null> {
-    const maxAttempts = 3
-    const backoffMs = [200, 600, 1200]
+    if (!this.baseUrl) {
+      console.warn(
+        '[CentralizedLogger] Missing VITE_SUPABASE_URL or VITE_SUPABASE_FUNCTIONS_URL; skipping remote log write.'
+      )
+      return null
+    }
+
+    const maxAttempts = LOG_RETRY_MAX_ATTEMPTS
+    const backoffMs = LOG_RETRY_BACKOFF_MS
     let lastResponse: Response | null = null
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -439,14 +486,14 @@ class CentralizedLogger {
           return response
         }
 
-        await sleep(backoffMs[attempt - 1] || 1200)
+        await sleep(backoffMs[attempt - 1] ?? backoffMs[backoffMs.length - 1] ?? 1200)
       } catch (error) {
         if (attempt === maxAttempts) {
           const message = error instanceof Error ? error.message : String(error)
           console.error(`[CentralizedLogger] Failed after retries (${scriptName}): ${message}`)
           return lastResponse
         }
-        await sleep(backoffMs[attempt - 1] || 1200)
+        await sleep(backoffMs[attempt - 1] ?? backoffMs[backoffMs.length - 1] ?? 1200)
       }
     }
 
@@ -462,7 +509,12 @@ class CentralizedLogger {
     if (!shouldSample(level)) return
     if (isRateLimited(options.script_name, level)) return
 
-    const structuredMetadata = normalizeStructuredMetadata(options.script_name, level, message, options)
+    const structuredMetadata = normalizeStructuredMetadata(
+      options.script_name,
+      level,
+      message,
+      options
+    )
     const safeMetadata = sanitizeMetadata(options.script_name, structuredMetadata)
 
     // Attempt to log locally first (non-blocking)

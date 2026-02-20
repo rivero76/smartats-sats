@@ -3,20 +3,76 @@
  * 2026-02-20 22:19:11 | Reviewed ATS direct edge function updates and added timestamped file header tracking.
  * 2026-02-20 23:22:57 | P1: Added centralized structured logging hooks for ATS analysis queue, completion, and failures.
  * 2026-02-20 23:29:40 | P2: Added request_id propagation for end-to-end ATS trace correlation.
+ * 2026-02-21 03:07:10 | P1 config hardening: parameterized AI provider endpoint, model, temperature, and pricing via environment variables.
+ * 2026-02-21 03:13:40 | SDLC P2 data-governance hardening: prompt/raw LLM persistence disabled by default with explicit env flags.
+ * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0)
+)
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return true
+  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
 }
+
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = ALLOWED_ORIGINS.has('*')
+    ? '*'
+    : origin && ALLOWED_ORIGINS.has(origin)
+      ? origin
+      : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
+}
+
+function getEnvNumber(name: string, fallback: number): number {
+  const raw = Deno.env.get(name)
+  if (!raw) return fallback
+  const parsed = Number.parseFloat(raw)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function getEnvBoolean(name: string, fallback: boolean): boolean {
+  const raw = Deno.env.get(name)
+  if (!raw) return fallback
+  const normalized = raw.trim().toLowerCase()
+  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true
+  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false
+  return fallback
+}
+
+const OPENAI_API_BASE_URL = (
+  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
+).replace(/\/$/, '')
+const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
+const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4o-mini'
+const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.2)
+const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 0.15)
+const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 0.6)
+const STORE_LLM_PROMPTS = getEnvBoolean('STORE_LLM_PROMPTS', false)
+const STORE_LLM_RAW_RESPONSE = getEnvBoolean('STORE_LLM_RAW_RESPONSE', false)
 
 const MODEL_PRICING_USD: Record<string, { input: number; output: number }> = {
   // Cost per 1M tokens (USD) based on OpenAI pricing
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
+}
+
+MODEL_PRICING_USD[OPENAI_MODEL_ATS] = {
+  input: OPENAI_PRICE_INPUT_PER_MILLION,
+  output: OPENAI_PRICE_OUTPUT_PER_MILLION,
 }
 
 function calculateLLMCost(tokenUsage: any, model: string): number | null {
@@ -87,6 +143,16 @@ async function logEvent(
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = buildCorsHeaders(origin)
+
+  if (!isOriginAllowed(origin)) {
+    return new Response(JSON.stringify({ success: false, error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   const FUNCTION_VERSION = '3.0.0-async'
   console.log(`ATS Analysis Direct Function v${FUNCTION_VERSION} - Request received`)
 
@@ -100,17 +166,20 @@ serve(async (req) => {
   try {
     requestBody = await req.json()
   } catch (error) {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Invalid request body' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ success: false, error: 'Invalid request body' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   const { analysis_id, resume_id, jd_id, request_id } = requestBody
 
   if (!analysis_id || !resume_id || !jd_id) {
     return new Response(
-      JSON.stringify({ success: false, error: 'Missing required fields: analysis_id, resume_id, jd_id' }),
+      JSON.stringify({
+        success: false,
+        error: 'Missing required fields: analysis_id, resume_id, jd_id',
+      }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -128,10 +197,10 @@ serve(async (req) => {
       supabaseServiceKey,
       request_id
     )
-    return new Response(
-      JSON.stringify({ success: false, error: 'Service not configured' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ success: false, error: 'Service not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -156,7 +225,7 @@ serve(async (req) => {
 
   // Kick off background processing and return 202 immediately.
   // EdgeRuntime.waitUntil keeps the isolate alive until processAnalysis resolves.
-  // @ts-ignore — Supabase EdgeRuntime global
+  // @ts-expect-error Supabase Edge runtime provides this global at execution time.
   EdgeRuntime.waitUntil(
     processAnalysis(
       analysis_id,
@@ -170,10 +239,10 @@ serve(async (req) => {
     )
   )
 
-  return new Response(
-    JSON.stringify({ queued: true, analysis_id }),
-    { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  )
+  return new Response(JSON.stringify({ queued: true, analysis_id }), {
+    status: 202,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -259,15 +328,15 @@ async function processAnalysis(
 
     // Call OpenAI API
     const startTime = Date.now()
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        temperature: 0.2,
+        model: OPENAI_MODEL_ATS,
+        temperature: OPENAI_TEMPERATURE_ATS,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
@@ -290,7 +359,7 @@ async function processAnalysis(
 
     const data = await response.json()
     const tokenUsage = data.usage || {}
-    const costEstimateUsd = calculateLLMCost(tokenUsage, 'gpt-4o-mini')
+    const costEstimateUsd = calculateLLMCost(tokenUsage, OPENAI_MODEL_ATS)
     const rawContent = data.choices[0].message.content.trim()
 
     console.log('[processAnalysis] Raw OpenAI response:', rawContent)
@@ -298,6 +367,11 @@ async function processAnalysis(
 
     // Parse JSON with graceful fallbacks
     const analysisResult = parseATSResponse(rawContent)
+
+    const llmStorageFlags = {
+      store_llm_prompts: STORE_LLM_PROMPTS,
+      store_llm_raw_response: STORE_LLM_RAW_RESPONSE,
+    }
 
     // Store results in database
     const updateData = {
@@ -310,17 +384,22 @@ async function processAnalysis(
         processing_completed_at: new Date().toISOString(),
         processing_time_ms: latencyMs,
         token_usage: tokenUsage,
-        model_used: 'gpt-4o-mini',
+        model_used: OPENAI_MODEL_ATS,
         cost_estimate_usd: costEstimateUsd,
-        prompts: promptsMetadata,
         prompt_characters: prompt.length,
         request_id: requestId || null,
         extracted_features: analysisResult.keywords_found,
         resume_warnings: analysisResult.resume_warnings,
-        raw_llm_response: {
-          content: rawContent,
-          parsed_result: analysisResult,
-        },
+        ...llmStorageFlags,
+        ...(STORE_LLM_PROMPTS ? { prompts: promptsMetadata } : {}),
+        ...(STORE_LLM_RAW_RESPONSE
+          ? {
+              raw_llm_response: {
+                content: rawContent,
+                parsed_result: analysisResult,
+              },
+            }
+          : {}),
       },
     }
 
@@ -353,7 +432,7 @@ async function processAnalysis(
         ats_score: updateData.ats_score,
         processing_time_ms: latencyMs,
         duration_ms: latencyMs,
-        model_used: 'gpt-4o-mini',
+        model_used: OPENAI_MODEL_ATS,
         cost_estimate_usd: costEstimateUsd,
       },
       supabaseUrl,
@@ -626,11 +705,7 @@ async function extractTextFromBuffer(buffer: ArrayBuffer, filename: string): Pro
       const sample = uint8Array.slice(0, Math.min(1024, uint8Array.length))
       const textableBytes = sample.filter(
         (byte) =>
-          (byte >= 32 && byte <= 126) ||
-          byte === 9 ||
-          byte === 10 ||
-          byte === 13 ||
-          byte === 32
+          (byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13 || byte === 32
       )
 
       if (textableBytes.length / sample.length > 0.8) {

@@ -6,7 +6,7 @@ interface DevLogEntry {
   time: string
   level: LogLevel
   message: string
-  metadata?: any
+  metadata?: unknown
 }
 
 const LOGGING_ENABLED = import.meta.env.VITE_LOGGING_ENABLED !== 'false'
@@ -15,7 +15,7 @@ const LOG_TO_CONSOLE = import.meta.env.VITE_LOG_TO_CONSOLE !== 'false'
 export class DevLogger {
   private static maxEntries = 200
 
-  private static store(level: LogLevel, message: string, metadata?: any) {
+  private static store(level: LogLevel, message: string, metadata?: unknown) {
     const entry: DevLogEntry = {
       time: new Date().toISOString(),
       level,
@@ -31,7 +31,7 @@ export class DevLogger {
     }
   }
 
-  static log(level: LogLevel, message: string, metadata?: any) {
+  static log(level: LogLevel, message: string, metadata?: unknown) {
     if (!LOGGING_ENABLED && !LOG_TO_CONSOLE) return
 
     if (LOG_TO_CONSOLE) {
@@ -45,19 +45,19 @@ export class DevLogger {
     }
   }
 
-  static info(message: string, metadata?: any) {
+  static info(message: string, metadata?: unknown) {
     this.log('INFO', message, metadata)
   }
 
-  static warn(message: string, metadata?: any) {
+  static warn(message: string, metadata?: unknown) {
     this.log('WARN', message, metadata)
   }
 
-  static error(message: string, metadata?: any) {
+  static error(message: string, metadata?: unknown) {
     this.log('ERROR', message, metadata)
   }
 
-  static debug(message: string, metadata?: any) {
+  static debug(message: string, metadata?: unknown) {
     this.log('DEBUG', message, metadata)
   }
 }

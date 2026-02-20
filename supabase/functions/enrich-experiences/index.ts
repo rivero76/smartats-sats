@@ -2,17 +2,52 @@
  * UPDATE LOG
  * 2026-02-20 23:29:40 | P2: Added request_id propagation for enrichment flow correlation.
  * 2026-02-21 00:15:00 | Hardened provider error handling: avoid raw provider payload logging and return safe messages for 401/429/5xx.
+ * 2026-02-21 03:07:10 | P1 config hardening: parameterized AI provider endpoint, model, and temperature via environment variables.
+ * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0)
+)
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return true
+  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
 }
 
-const MODEL = 'gpt-4o-mini'
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = ALLOWED_ORIGINS.has('*')
+    ? '*'
+    : origin && ALLOWED_ORIGINS.has(origin)
+      ? origin
+      : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
+}
+
+function getEnvNumber(name: string, fallback: number): number {
+  const raw = Deno.env.get(name)
+  if (!raw) return fallback
+  const parsed = Number.parseFloat(raw)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const OPENAI_API_BASE_URL = (
+  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
+).replace(/\/$/, '')
+const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
+const OPENAI_MODEL_ENRICH = Deno.env.get('OPENAI_MODEL_ENRICH') || 'gpt-4o-mini'
+const OPENAI_TEMPERATURE_ENRICH = getEnvNumber('OPENAI_TEMPERATURE_ENRICH', 0.15)
 
 interface EnrichmentRequest {
   analysis_id?: string
@@ -95,6 +130,16 @@ async function logEvent(
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = buildCorsHeaders(origin)
+
+  if (!isOriginAllowed(origin)) {
+    return new Response(JSON.stringify({ success: false, error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -124,11 +169,16 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    await logEvent('INFO', 'Starting enrichment request', {
-      analysis_id: payload.analysis_id,
-      resume_id: payload.resume_id,
-      jd_id: payload.jd_id,
-    }, payload.request_id)
+    await logEvent(
+      'INFO',
+      'Starting enrichment request',
+      {
+        analysis_id: payload.analysis_id,
+        resume_id: payload.resume_id,
+        jd_id: payload.jd_id,
+      },
+      payload.request_id
+    )
 
     const [resumeResult, jobResult] = await Promise.all([
       supabase
@@ -153,7 +203,12 @@ serve(async (req) => {
     ])
 
     if (resumeResult.error) {
-      await logEvent('ERROR', 'Resume fetch failed', { error: resumeResult.error.message }, payload.request_id)
+      await logEvent(
+        'ERROR',
+        'Resume fetch failed',
+        { error: resumeResult.error.message },
+        payload.request_id
+      )
       throw new Error(resumeResult.error.message)
     }
 
@@ -173,15 +228,15 @@ serve(async (req) => {
       masterSkills: payload.master_skills || [],
     })
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.15,
+        model: OPENAI_MODEL_ENRICH,
+        temperature: OPENAI_TEMPERATURE_ENRICH,
         messages: [
           {
             role: 'system',
@@ -201,11 +256,16 @@ serve(async (req) => {
       // Consume response body for completeness without logging provider payload.
       await response.text()
       console.error('OpenAI API error status:', response.status)
-      await logEvent('ERROR', 'OpenAI request failed', {
-        status: response.status,
-        safe_message: safeMessage,
-        error_type: errorType,
-      }, payload.request_id)
+      await logEvent(
+        'ERROR',
+        'OpenAI request failed',
+        {
+          status: response.status,
+          safe_message: safeMessage,
+          error_type: errorType,
+        },
+        payload.request_id
+      )
       throw new Error(safeMessage)
     }
 
@@ -213,18 +273,23 @@ serve(async (req) => {
     const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
     const suggestions = parseEnrichmentResponse(rawContent)
 
-    await logEvent('INFO', 'Enrichment suggestions generated', {
-      suggestion_count: suggestions.length,
-      resume_id: payload.resume_id,
-      jd_id: payload.jd_id,
-    }, payload.request_id)
+    await logEvent(
+      'INFO',
+      'Enrichment suggestions generated',
+      {
+        suggestion_count: suggestions.length,
+        resume_id: payload.resume_id,
+        jd_id: payload.jd_id,
+      },
+      payload.request_id
+    )
 
     return new Response(
       JSON.stringify({
         success: true,
         suggestions,
         metadata: {
-          model: MODEL,
+          model: OPENAI_MODEL_ENRICH,
           token_usage: data.usage,
         },
       }),
@@ -234,9 +299,14 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Enrichment function error:', error)
-    await logEvent('ERROR', 'Enrichment function error', {
-      message: error instanceof Error ? error.message : String(error),
-    }, payload.request_id)
+    await logEvent(
+      'ERROR',
+      'Enrichment function error',
+      {
+        message: error instanceof Error ? error.message : String(error),
+      },
+      payload.request_id
+    )
     return new Response(
       JSON.stringify({
         success: false,
@@ -264,7 +334,12 @@ async function fetchResumeContent(
 
   if (error) {
     console.error('Failed to fetch resume extraction:', error)
-    await logEvent('ERROR', 'Resume content lookup failed', { resume_id: resumeId, error }, requestId)
+    await logEvent(
+      'ERROR',
+      'Resume content lookup failed',
+      { resume_id: resumeId, error },
+      requestId
+    )
     throw new Error('Unable to load resume content for enrichment')
   }
 
