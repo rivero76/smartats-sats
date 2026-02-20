@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppSidebar } from './components/AppSidebar'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import Dashboard from './pages/Dashboard'
 import MyResumes from './pages/MyResumes'
 import JobDescriptions from './pages/JobDescriptions'
@@ -61,7 +62,14 @@ const App = () => {
                               <Route path="/analyses" element={<ATSAnalyses />} />
                               <Route path="/experiences" element={<EnrichedExperiences />} />
                               <Route path="/settings" element={<Settings />} />
-                              <Route path="/admin" element={<AdminDashboard />} />
+                              <Route
+                                path="/admin"
+                                element={
+                                  <AdminRoute>
+                                    <AdminDashboard />
+                                  </AdminRoute>
+                                }
+                              />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </main>

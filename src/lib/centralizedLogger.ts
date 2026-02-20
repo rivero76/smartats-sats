@@ -25,6 +25,131 @@ interface LogOptions {
   metadata?: any
 }
 
+const REDACTED_VALUE = '[REDACTED]'
+
+// P0 guardrail: explicit allowlists for high-risk scripts.
+// Scripts not listed here will retain all metadata keys but still pass through sensitive-value redaction.
+const SCRIPT_ALLOWED_METADATA_KEYS: Record<string, string[]> = {
+  'authentication-frontend': [
+    'event',
+    'action',
+    'user_id',
+    'session_id',
+    'error_code',
+    'error_message',
+    'timestamp',
+    'is_retry',
+    'success',
+    'auth_event',
+    'has_session',
+    'session_expires_at',
+  ],
+  'authentication-session': [
+    'event',
+    'action',
+    'user_id',
+    'session_id',
+    'error_code',
+    'error_message',
+    'timestamp',
+    'is_retry',
+    'success',
+    'auth_event',
+    'has_session',
+    'session_expires_at',
+  ],
+  'authentication-ui': [
+    'event',
+    'action',
+    'form_type',
+    'validation_errors',
+    'toast_type',
+    'context',
+    'message',
+    'timestamp',
+  ],
+  'ats-analysis-direct': [
+    'analysis_id',
+    'resume_id',
+    'jd_id',
+    'status',
+    'model_used',
+    'processing_time_ms',
+    'prompt_characters',
+    'cost_estimate_usd',
+    'token_usage',
+    'error_type',
+    'safe_message',
+    'timestamp',
+  ],
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function shouldRedactKey(key: string): boolean {
+  const normalized = key.toLowerCase()
+  return (
+    normalized.includes('password') ||
+    normalized.includes('secret') ||
+    normalized.includes('token') ||
+    normalized.includes('apikey') ||
+    normalized.includes('api_key') ||
+    normalized.includes('authorization') ||
+    normalized === 'email' ||
+    normalized === 'url' ||
+    normalized === 'file_url' ||
+    normalized.includes('prompt') ||
+    normalized.includes('raw_llm_response') ||
+    normalized.includes('pasted_text')
+  )
+}
+
+function redactSensitiveMetadata(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitiveMetadata(item))
+  }
+
+  if (!isPlainObject(value)) {
+    return value
+  }
+
+  const redacted: Record<string, unknown> = {}
+  for (const [key, entry] of Object.entries(value)) {
+    if (shouldRedactKey(key)) {
+      redacted[key] = REDACTED_VALUE
+      continue
+    }
+    redacted[key] = redactSensitiveMetadata(entry)
+  }
+
+  return redacted
+}
+
+function applyScriptAllowlist(scriptName: string, metadata: unknown): unknown {
+  if (!isPlainObject(metadata)) return metadata
+
+  const allowedKeys = SCRIPT_ALLOWED_METADATA_KEYS[scriptName]
+  if (!allowedKeys) {
+    return metadata
+  }
+
+  const filtered: Record<string, unknown> = {}
+  for (const key of allowedKeys) {
+    if (Object.prototype.hasOwnProperty.call(metadata, key)) {
+      filtered[key] = metadata[key]
+    }
+  }
+
+  return filtered
+}
+
+function sanitizeMetadata(scriptName: string, metadata: unknown): unknown {
+  const allowlisted = applyScriptAllowlist(scriptName, metadata)
+  return redactSensitiveMetadata(allowlisted)
+}
+
 /**
  * Dynamic import guard for Node-only local logging.
  * Prevents Vite bundling errors when running in browser.
@@ -52,18 +177,22 @@ class CentralizedLogger {
    * - In Node.js, also writes to local file.
    */
   async log(level: LogLevel, message: string, options: LogOptions): Promise<void> {
+    const safeMetadata = sanitizeMetadata(options.script_name, options.metadata)
+
     // Attempt to log locally first (non-blocking)
     if (writeLocalLog) {
-      writeLocalLog(level, message, options.metadata, options.script_name)
+      writeLocalLog(level, message, safeMetadata, options.script_name)
     }
 
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      const accessToken =
-        session?.access_token ||
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rZ3Nja3NiZ216aGl6b2hvYmhnIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTc0Nzk4NDcsImV4cCI6MjA3MzA1NTg0N30.KQl_psbpASttYH5FbqwUe1_xSF60_PPUPhidmF_pQD0'
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        console.warn('[CentralizedLogger] No session token available; skipping remote log write.')
+        return
+      }
 
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -75,7 +204,7 @@ class CentralizedLogger {
           script_name: options.script_name,
           log_level: level,
           message,
-          metadata: options.metadata,
+          metadata: safeMetadata,
           user_id: options.user_id,
           session_id: options.session_id,
           request_id: options.request_id,
@@ -89,7 +218,7 @@ class CentralizedLogger {
           writeLocalLog(
             'ERROR',
             `Supabase log failed: ${errorText}`,
-            options.metadata,
+            safeMetadata,
             options.script_name
           )
         }
@@ -100,7 +229,7 @@ class CentralizedLogger {
         writeLocalLog(
           'ERROR',
           `Supabase logging exception: ${error.message}`,
-          options.metadata,
+          safeMetadata,
           options.script_name
         )
       }
