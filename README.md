@@ -1,73 +1,119 @@
-# Welcome to your Lovable project
+# SmartATS
 
-## Project info
+## Update Log
+- 2026-02-20 22:25:31 | Replaced Lovable deployment documentation with the current SmartATS architecture and product feature set.
 
-**URL**: https://lovable.dev/projects/dbe265ab-2483-4c23-aa44-69fcb1894344
+SmartATS is a web application for resume management, job description management, ATS scoring, and AI-assisted experience enrichment.
 
-## How can I edit this code?
+## Current Architecture
 
-There are several ways of editing your application.
+### Frontend
+- React 18 + TypeScript + Vite
+- TanStack Query for server state and caching
+- React Router for navigation
+- Tailwind CSS + shadcn/ui for UI components
 
-**Use Lovable**
+### Backend and Data
+- Supabase Auth for authentication and session management
+- Supabase Postgres for application data
+- Supabase Edge Functions (Deno) for server-side workflows
+- Supabase Storage for document assets
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dbe265ab-2483-4c23-aa44-69fcb1894344) and start prompting.
+### AI Processing
+- OpenAI model integration from Supabase Edge Functions
+- Core AI flows:
+  - `ats-analysis-direct` for resume-to-job ATS analysis
+  - `enrich-experiences` for improving resume experience entries
 
-Changes made via Lovable will be committed automatically to this repo.
+### Runtime and Deployment
+- Local development: Vite (`npm run dev`)
+- Production container: multi-stage Docker build (`node:20-alpine` builder + `nginx:alpine` runtime)
+- Container orchestration: `docker-compose.yml` with services:
+  - `smartats-app` (production)
+  - `smartats-dev` (hot-reload development profile)
 
-**Use your preferred IDE**
+## Product Features and Functionalities
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Authentication and Access
+- User sign-in/sign-out and protected routes
+- Profile-aware sidebar and role-based admin access
+- Password reset flow
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Resume Management
+- Upload and manage resumes
+- Resume content extraction and preview flow
+- Resume CRUD operations
 
-Follow these steps:
+### Job Description Management
+- Create, update, and manage job descriptions
+- Job description CRUD operations
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### ATS Analysis
+- Trigger ATS analysis for a selected resume and job description
+- Queue, process, retry, and delete analysis jobs
+- Display ATS score, matched/missing skills, and suggestions
+- Analysis progress and debug visibility
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Experience Enrichment
+- Generate AI suggestions to strengthen experience bullets
+- Review and save enriched experience content
+- Track enriched outcomes for later review
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Dashboard and Analytics
+- Summary dashboard for resumes, jobs, and analyses
+- ATS analysis status/metrics views
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Administration and Logging
+- Admin dashboard for operational visibility
+- Centralized logging controls and log viewer/cleanup utilities
+- Account deletion and cancellation flows via edge functions
+
+## Main App Routes
+- `/` Dashboard
+- `/resumes` My Resumes
+- `/jobs` Job Descriptions
+- `/analyses` ATS Analyses
+- `/experiences` Enriched Experiences
+- `/settings` Settings
+- `/admin` Admin Dashboard (role-gated)
+- `/auth` Authentication
+- `/reset-password` Password Reset
+
+## Local Development
+
+### Prerequisites
+- Node.js 20+
+- npm
+- Supabase project credentials configured in environment files
+
+### Start with npm
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Build production assets
+```bash
+npm run build
+npm run preview
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Docker Usage
 
-**Use GitHub Codespaces**
+### Development container
+```bash
+docker compose --profile dev up smartats-dev --build
+```
+App: `http://localhost:8080`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Production container
+```bash
+docker compose up smartats-app --build
+```
+App: `http://localhost:3000`
 
-## What technologies are used for this project?
+## Change Tracking Functionality
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/dbe265ab-2483-4c23-aa44-69fcb1894344) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Reviewed code files include an `UPDATE LOG` header entry with timestamp format `YYYY-MM-DD HH24:MM:SS`.
+- `README.md` is updated when functionality/process changes are introduced.
+- `SATS_CHANGES.txt` records product-level changes, updated files, reasons, and timestamps.

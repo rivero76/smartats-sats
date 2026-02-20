@@ -1,69 +1,95 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Settings as SettingsIcon, User, Bell, Shield, Database, Key, Loader2, AlertTriangle } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useProfile, type ProfileFormData } from "@/hooks/useProfile"
-import { useAccountDeletion } from "@/hooks/useAccountDeletion"
-import { DeleteAccountModal } from "@/components/DeleteAccountModal"
-import { useEffect, useState } from "react"
-import { HelpButton } from "@/components/help/HelpButton"
-import { HelpModal } from "@/components/help/HelpModal"
-import { getHelpContent } from "@/data/helpContent"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Settings as SettingsIcon,
+  User,
+  Bell,
+  Shield,
+  Database,
+  Key,
+  Loader2,
+  AlertTriangle,
+} from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useProfile, type ProfileFormData } from '@/hooks/useProfile'
+import { useAccountDeletion } from '@/hooks/useAccountDeletion'
+import { DeleteAccountModal } from '@/components/DeleteAccountModal'
+import { useEffect, useState } from 'react'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
 
 const profileFormSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Please enter a valid email address'),
   phone: z.string(),
   location: z.string(),
   professional_summary: z.string(),
-  linkedin_url: z.string().refine((val) => !val || z.string().url().safeParse(val).success, "Please enter a valid URL"),
-  portfolio_url: z.string().refine((val) => !val || z.string().url().safeParse(val).success, "Please enter a valid URL"),
-});
+  linkedin_url: z
+    .string()
+    .refine((val) => !val || z.string().url().safeParse(val).success, 'Please enter a valid URL'),
+  portfolio_url: z
+    .string()
+    .refine((val) => !val || z.string().url().safeParse(val).success, 'Please enter a valid URL'),
+})
 
 const Settings = () => {
-  const { loading, saving, getFormData, saveProfile } = useProfile();
-  const { deletionStatus, isLoading: isDeletionLoading, isCancelling, cancelDeletion, refreshStatus } = useAccountDeletion();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const helpContent = getHelpContent('profileSettings');
-  
+  const { loading, saving, getFormData, saveProfile } = useProfile()
+  const {
+    deletionStatus,
+    isLoading: isDeletionLoading,
+    isCancelling,
+    cancelDeletion,
+    refreshStatus,
+  } = useAccountDeletion()
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('profileSettings')
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      location: "",
-      professional_summary: "",
-      linkedin_url: "",
-      portfolio_url: "",
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      location: '',
+      professional_summary: '',
+      linkedin_url: '',
+      portfolio_url: '',
     },
-  });
+  })
 
   // Update form when profile data is loaded
   useEffect(() => {
     if (!loading) {
-      const formData = getFormData();
-      console.log('Settings: Resetting form with data:', formData);
-      form.reset(formData);
+      const formData = getFormData()
+      console.log('Settings: Resetting form with data:', formData)
+      form.reset(formData)
     }
-  }, [loading, form.reset]);
+  }, [loading, form.reset])
 
   const onSubmit = async (data: ProfileFormData) => {
-    console.log('Settings: Form submitted with data:', data);
-    await saveProfile(data);
-  };
+    console.log('Settings: Form submitted with data:', data)
+    await saveProfile(data)
+  }
 
   return (
     <div className="space-y-6">
@@ -75,7 +101,7 @@ const Settings = () => {
           </p>
         </div>
         {helpContent && (
-          <HelpButton 
+          <HelpButton
             onClick={() => setShowHelp(true)}
             tooltip="Learn how to configure your profile and settings"
           />
@@ -89,9 +115,7 @@ const Settings = () => {
             <User className="h-5 w-5" />
             <span>Profile Settings</span>
           </CardTitle>
-          <CardDescription>
-            Update your personal information and preferences.
-          </CardDescription>
+          <CardDescription>Update your personal information and preferences.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -130,7 +154,7 @@ const Settings = () => {
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -144,7 +168,7 @@ const Settings = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="phone"
@@ -158,7 +182,7 @@ const Settings = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="location"
@@ -172,7 +196,7 @@ const Settings = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="professional_summary"
@@ -180,17 +204,17 @@ const Settings = () => {
                     <FormItem>
                       <FormLabel>Professional Summary (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Brief professional summary" 
+                        <Textarea
+                          placeholder="Brief professional summary"
                           className="min-h-[100px]"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="linkedin_url"
@@ -204,7 +228,7 @@ const Settings = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="portfolio_url"
@@ -218,7 +242,7 @@ const Settings = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <Button type="submit" disabled={saving}>
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
@@ -234,11 +258,12 @@ const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Bell className="h-5 w-5" />
-            <span>Notification Preferences <span className="text-sm text-muted-foreground">(Coming Soon)</span></span>
+            <span>
+              Notification Preferences{' '}
+              <span className="text-sm text-muted-foreground">(Coming Soon)</span>
+            </span>
           </CardTitle>
-          <CardDescription>
-            Choose what notifications you'd like to receive.
-          </CardDescription>
+          <CardDescription>Choose what notifications you'd like to receive.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 opacity-60">
           <div className="flex items-center justify-between">
@@ -290,15 +315,18 @@ const Settings = () => {
             <Shield className="h-5 w-5" />
             <span>Security & Privacy</span>
           </CardTitle>
-          <CardDescription>
-            Manage your account security and data privacy settings.
-          </CardDescription>
+          <CardDescription>Manage your account security and data privacy settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4 opacity-60">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
-              <Input id="currentPassword" type="password" placeholder="Enter current password" disabled />
+              <Input
+                id="currentPassword"
+                type="password"
+                placeholder="Enter current password"
+                disabled
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
@@ -306,13 +334,20 @@ const Settings = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input id="confirmPassword" type="password" placeholder="Confirm new password" disabled />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm new password"
+                disabled
+              />
             </div>
-            <Button disabled>Update Password <span className="ml-2 text-xs">(Coming Soon)</span></Button>
+            <Button disabled>
+              Update Password <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
           </div>
-          
+
           <Separator className="my-6" />
-          
+
           <div className="flex items-center justify-between opacity-60">
             <div className="space-y-0.5">
               <Label className="text-base">Two-Factor Authentication</Label>
@@ -320,7 +355,9 @@ const Settings = () => {
                 Add an extra layer of security to your account
               </p>
             </div>
-            <Button variant="outline" disabled>Enable 2FA <span className="ml-2 text-xs">(Coming Soon)</span></Button>
+            <Button variant="outline" disabled>
+              Enable 2FA <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -332,9 +369,7 @@ const Settings = () => {
             <Database className="h-5 w-5" />
             <span>Data Management</span>
           </CardTitle>
-          <CardDescription>
-            Export your data or manage your account data.
-          </CardDescription>
+          <CardDescription>Export your data or manage your account data.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
@@ -344,7 +379,9 @@ const Settings = () => {
                 Download all your resumes, analyses, and job descriptions
               </p>
             </div>
-            <Button variant="outline" disabled>Export <span className="ml-2 text-xs">(Coming Soon)</span></Button>
+            <Button variant="outline" disabled>
+              Export <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
@@ -363,16 +400,15 @@ const Settings = () => {
                         Account scheduled for deletion
                       </p>
                       <p className="text-xs">
-                        Permanent deletion: {new Date(deletionStatus.permanentDeletionDate!).toLocaleDateString()}
+                        Permanent deletion:{' '}
+                        {new Date(deletionStatus.permanentDeletionDate!).toLocaleDateString()}
                       </p>
-                      <p className="text-xs">
-                        Days remaining: {deletionStatus.daysRemaining}
-                      </p>
+                      <p className="text-xs">Days remaining: {deletionStatus.daysRemaining}</p>
                     </div>
                   </AlertDescription>
                 </Alert>
-                <Button 
-                  onClick={cancelDeletion} 
+                <Button
+                  onClick={cancelDeletion}
                   disabled={isCancelling}
                   variant="outline"
                   size="sm"
@@ -382,8 +418,8 @@ const Settings = () => {
                 </Button>
               </div>
             ) : (
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => setShowDeleteModal(true)}
                 disabled={isDeletionLoading}
               >
@@ -418,18 +454,14 @@ const Settings = () => {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onSuccess={() => {
-          refreshStatus();
+          refreshStatus()
           // User will be signed out automatically by the edge function
         }}
       />
 
       {/* Help Modal */}
       {helpContent && (
-        <HelpModal 
-          open={showHelp}
-          onOpenChange={setShowHelp}
-          content={helpContent}
-        />
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
       )}
     </div>
   )

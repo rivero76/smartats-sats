@@ -1,105 +1,103 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 interface DeleteAccountRequest {
-  password: string;
-  reason?: string;
+  password: string
+  reason?: string
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('Authorization header required');
+      throw new Error('Authorization header required')
     }
 
     // Get user from JWT
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+    const token = authHeader.replace('Bearer ', '')
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token)
+
     if (userError || !user) {
-      throw new Error('Invalid authentication token');
+      throw new Error('Invalid authentication token')
     }
 
-    console.log('Delete account request for user:', user.id);
+    console.log('Delete account request for user:', user.id)
 
     // Parse request body
-    const { password, reason }: DeleteAccountRequest = await req.json();
+    const { password, reason }: DeleteAccountRequest = await req.json()
 
     if (!password) {
-      throw new Error('Password is required for account deletion');
+      throw new Error('Password is required for account deletion')
     }
 
     // Verify password by attempting to sign in
     const { error: passwordError } = await supabase.auth.signInWithPassword({
       email: user.email!,
-      password: password
-    });
+      password: password,
+    })
 
     if (passwordError) {
-      console.error('Password verification failed:', passwordError);
-      throw new Error('Invalid password provided');
+      console.error('Password verification failed:', passwordError)
+      throw new Error('Invalid password provided')
     }
 
-    console.log('Password verified successfully');
+    console.log('Password verified successfully')
 
     // Get client IP and user agent for audit logging
-    const clientIP = req.headers.get('x-forwarded-for') || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const userAgent = req.headers.get('user-agent') || 'unknown'
 
     // CRITICAL: Revoke all user sessions BEFORE deletion
     // This ensures the token is still valid when we revoke sessions
-    console.log('Revoking user sessions before account deletion...');
-    const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global');
-    
+    console.log('Revoking user sessions before account deletion...')
+    const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global')
+
     if (signOutError) {
-      console.error('Failed to sign out user globally:', signOutError);
-      throw new Error(`Failed to revoke sessions: ${signOutError.message}`);
+      console.error('Failed to sign out user globally:', signOutError)
+      throw new Error(`Failed to revoke sessions: ${signOutError.message}`)
     }
-    
-    console.log('User sessions revoked successfully');
+
+    console.log('User sessions revoked successfully')
 
     // Now call the soft delete function
-    const { data: deletionResult, error: deletionError } = await supabase.rpc(
-      'soft_delete_user', 
-      {
-        target_user_id: user.id,
-        deletion_reason: reason || 'User requested account deletion'
-      }
-    );
+    const { data: deletionResult, error: deletionError } = await supabase.rpc('soft_delete_user', {
+      target_user_id: user.id,
+      deletion_reason: reason || 'User requested account deletion',
+    })
 
     if (deletionError) {
-      console.error('Soft delete function error:', deletionError);
-      throw new Error(`Failed to delete account: ${deletionError.message}`);
+      console.error('Soft delete function error:', deletionError)
+      throw new Error(`Failed to delete account: ${deletionError.message}`)
     }
 
-    console.log('Account soft delete successful:', deletionResult);
+    console.log('Account soft delete successful:', deletionResult)
 
     // Phase 2: HARD DELETE from auth.users to allow re-signup with same email
     // This must be done AFTER soft delete and session revocation
-    console.log('Performing hard delete from auth.users to allow re-signup...');
-    const { error: hardDeleteError } = await supabase.auth.admin.deleteUser(user.id);
-    
+    console.log('Performing hard delete from auth.users to allow re-signup...')
+    const { error: hardDeleteError } = await supabase.auth.admin.deleteUser(user.id)
+
     if (hardDeleteError) {
-      console.error('Hard delete from auth.users failed:', hardDeleteError);
+      console.error('Hard delete from auth.users failed:', hardDeleteError)
       // Log the error but don't fail the entire deletion process
       // The soft delete already succeeded
       await supabase.from('account_deletion_logs').insert({
@@ -110,11 +108,11 @@ serve(async (req) => {
         deletion_reason: reason,
         data_deleted: {
           error: hardDeleteError.message,
-          timestamp: new Date().toISOString()
-        }
-      });
+          timestamp: new Date().toISOString(),
+        },
+      })
     } else {
-      console.log('Hard delete from auth.users successful');
+      console.log('Hard delete from auth.users successful')
       // Log successful hard deletion
       await supabase.from('account_deletion_logs').insert({
         user_id: user.id,
@@ -124,9 +122,9 @@ serve(async (req) => {
         deletion_reason: reason,
         data_deleted: {
           deletion_method: 'complete_user_deletion',
-          timestamp: new Date().toISOString()
-        }
-      });
+          timestamp: new Date().toISOString(),
+        },
+      })
     }
 
     // Log additional audit information
@@ -138,12 +136,12 @@ serve(async (req) => {
       deletion_reason: reason,
       data_deleted: {
         deletion_method: 'user_requested',
-        timestamp: new Date().toISOString()
-      }
-    });
+        timestamp: new Date().toISOString(),
+      },
+    })
 
     // TODO: Send confirmation email (implement email service)
-    console.log('TODO: Send deletion confirmation email to:', user.email);
+    console.log('TODO: Send deletion confirmation email to:', user.email)
 
     return new Response(
       JSON.stringify({
@@ -151,7 +149,7 @@ serve(async (req) => {
         message: 'Account scheduled for deletion',
         deletion_date: deletionResult.deletion_date,
         permanent_deletion_date: deletionResult.permanent_deletion_date,
-        grace_period_days: 30
+        grace_period_days: 30,
       }),
       {
         status: 200,
@@ -160,15 +158,14 @@ serve(async (req) => {
           ...corsHeaders,
         },
       }
-    );
-
+    )
   } catch (error: any) {
-    console.error('Delete account error:', error);
-    
+    console.error('Delete account error:', error)
+
     return new Response(
       JSON.stringify({
         error: error.message || 'Failed to delete account',
-        success: false
+        success: false,
       }),
       {
         status: 400,
@@ -177,6 +174,6 @@ serve(async (req) => {
           ...corsHeaders,
         },
       }
-    );
+    )
   }
-});
+})

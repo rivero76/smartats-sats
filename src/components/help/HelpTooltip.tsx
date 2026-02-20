@@ -1,25 +1,25 @@
-import { ReactNode } from "react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { HelpCircle, Info } from "lucide-react"
+import { ReactNode } from 'react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { HelpCircle, Info } from 'lucide-react'
 
 interface HelpTooltipProps {
   children: ReactNode
   content: string
-  side?: "top" | "right" | "bottom" | "left"
+  side?: 'top' | 'right' | 'bottom' | 'left'
   showIcon?: boolean
-  iconType?: "help" | "info"
+  iconType?: 'help' | 'info'
   className?: string
 }
 
-export const HelpTooltip = ({ 
-  children, 
-  content, 
-  side = "top", 
-  showIcon = true, 
-  iconType = "help",
-  className = ""
+export const HelpTooltip = ({
+  children,
+  content,
+  side = 'top',
+  showIcon = true,
+  iconType = 'help',
+  className = '',
 }: HelpTooltipProps) => {
-  const IconComponent = iconType === "help" ? HelpCircle : Info
+  const IconComponent = iconType === 'help' ? HelpCircle : Info
 
   return (
     <TooltipProvider>

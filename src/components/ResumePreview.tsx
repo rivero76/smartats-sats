@@ -1,10 +1,16 @@
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { FileText, Eye, AlertCircle, Loader2, AlertTriangle, CheckCircle } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import { FileText, Eye, AlertCircle, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
 import { useResumes, Resume } from '@/hooks/useResumes'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
@@ -22,28 +28,30 @@ export const ResumePreview = () => {
   const { toast } = useToast()
   const [selectedResumeId, setSelectedResumeId] = useState<string>('')
   const [isExtracting, setIsExtracting] = useState(false)
-  
-  const { data: extraction, isLoading: extractionLoading } = useDocumentExtraction(selectedResumeId || null)
+
+  const { data: extraction, isLoading: extractionLoading } = useDocumentExtraction(
+    selectedResumeId || null
+  )
   const createExtraction = useCreateDocumentExtraction()
 
-  const selectedResume = resumes.find(r => r.id === selectedResumeId)
+  const selectedResume = resumes.find((r) => r.id === selectedResumeId)
 
   const handleExtractText = async () => {
     if (!selectedResumeId) {
       toast({
-        variant: "destructive",
-        title: "No resume selected",
-        description: "Please select a resume to extract text from."
+        variant: 'destructive',
+        title: 'No resume selected',
+        description: 'Please select a resume to extract text from.',
       })
       return
     }
 
-    const selectedResume = resumes.find(r => r.id === selectedResumeId)
+    const selectedResume = resumes.find((r) => r.id === selectedResumeId)
     if (!selectedResume?.file_url) {
       toast({
-        variant: "destructive",
-        title: "No file found",
-        description: "The selected resume does not have a file attached."
+        variant: 'destructive',
+        title: 'No file found',
+        description: 'The selected resume does not have a file attached.',
       })
       return
     }
@@ -59,9 +67,7 @@ export const ResumePreview = () => {
       const filePath = urlParts[1]
 
       // Download the file using authenticated Supabase client
-      const { data, error } = await supabase.storage
-        .from('SATS_resumes')
-        .download(filePath)
+      const { data, error } = await supabase.storage.from('SATS_resumes').download(filePath)
 
       if (error) {
         throw new Error(`Failed to download file: ${error.message}`)
@@ -81,24 +87,23 @@ export const ResumePreview = () => {
       })
 
       toast({
-        title: "Text extraction completed",
-        description: `Extracted ${extractedContent.wordCount} words using ${extractedContent.method}.`
+        title: 'Text extraction completed',
+        description: `Extracted ${extractedContent.wordCount} words using ${extractedContent.method}.`,
       })
-
     } catch (error) {
       console.error('Error extracting text:', error)
-      
+
       if (isProcessingError(error)) {
         toast({
-          variant: "destructive",
-          title: "Text extraction failed",
-          description: error.message
+          variant: 'destructive',
+          title: 'Text extraction failed',
+          description: error.message,
         })
       } else {
         toast({
-          variant: "destructive",
-          title: "Failed to extract text",
-          description: error instanceof Error ? error.message : "An unknown error occurred"
+          variant: 'destructive',
+          title: 'Failed to extract text',
+          description: error instanceof Error ? error.message : 'An unknown error occurred',
         })
       }
     } finally {
@@ -139,7 +144,7 @@ export const ResumePreview = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button 
+          <Button
             onClick={handleExtractText}
             disabled={!selectedResumeId || isExtracting || extractionLoading}
             className="flex items-center gap-2"
@@ -159,15 +164,19 @@ export const ResumePreview = () => {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>Text extracted using <Badge variant="outline">{extraction.extraction_method}</Badge></span>
+              <span>
+                Text extracted using <Badge variant="outline">{extraction.extraction_method}</Badge>
+              </span>
               <span className="text-muted-foreground">• {extraction.word_count} words</span>
             </div>
-            
+
             {extraction.warnings && extraction.warnings.length > 0 && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                 <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">Extraction Warnings:</p>
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                    Extraction Warnings:
+                  </p>
                   <ul className="mt-1 space-y-1 text-yellow-700 dark:text-yellow-300">
                     {extraction.warnings.map((warning, index) => (
                       <li key={index}>• {warning}</li>
@@ -176,13 +185,16 @@ export const ResumePreview = () => {
                 </div>
               </div>
             )}
-            
+
             <Card className="bg-muted/50">
               <CardContent className="p-4">
                 <ScrollArea className="h-96 w-full">
                   <pre className="text-sm font-mono whitespace-pre-wrap">
                     {getDisplayLines().map((line, index) => (
-                      <div key={index} className="border-l-2 border-transparent hover:border-primary/20 hover:bg-accent/50 px-2 py-0.5">
+                      <div
+                        key={index}
+                        className="border-l-2 border-transparent hover:border-primary/20 hover:bg-accent/50 px-2 py-0.5"
+                      >
                         <span className="text-muted-foreground/60 mr-3 select-none">
                           {String(index + 1).padStart(2, '0')}
                         </span>
@@ -195,8 +207,8 @@ export const ResumePreview = () => {
             </Card>
 
             <div className="text-sm text-muted-foreground">
-              Total content: {extraction.extracted_text.length} characters
-              ({extraction.extracted_text.split('\n').length} lines)
+              Total content: {extraction.extracted_text.length} characters (
+              {extraction.extracted_text.split('\n').length} lines)
             </div>
           </div>
         )}

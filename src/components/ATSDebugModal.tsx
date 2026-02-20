@@ -1,23 +1,24 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-  FileText, 
-  Brain, 
-  AlertTriangle, 
-  CheckCircle2, 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  FileText,
+  Brain,
+  AlertTriangle,
+  CheckCircle2,
   Copy,
-  Eye,
-  Download,
   RefreshCw,
-  Loader2
-} from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+  Loader2,
+  Timer,
+  DollarSign,
+  Sparkles,
+} from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
 import { ATSAnalysis } from '@/hooks/useATSAnalyses'
 import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import { format } from 'date-fns'
@@ -39,15 +40,15 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
       await navigator.clipboard.writeText(text)
       setCopiedField(fieldName)
       toast({
-        title: "Copied to clipboard",
+        title: 'Copied to clipboard',
         description: `${fieldName} copied successfully`,
       })
       setTimeout(() => setCopiedField(null), 2000)
     } catch (error) {
       toast({
-        title: "Failed to copy",
-        description: "Could not copy to clipboard",
-        variant: "destructive"
+        title: 'Failed to copy',
+        description: 'Could not copy to clipboard',
+        variant: 'destructive',
       })
     }
   }
@@ -56,6 +57,19 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
   const rawLLMResponse = analysisData.raw_llm_response || {}
   const tokenUsage = analysisData.token_usage || {}
   const resumeWarnings = analysisData.resume_warnings || []
+  const prompts = analysisData.prompts || {}
+  const promptCharacters = analysisData.prompt_characters
+  const costEstimate = analysisData.cost_estimate_usd
+  const extractedFeatures =
+    (Array.isArray(analysisData.extracted_features)
+      ? analysisData.extracted_features
+      : rawLLMResponse?.parsed_result?.keywords_found) || analysis.matched_skills
+
+  const formatCurrency = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return 'N/A'
+    if (value === 0) return '$0.0000'
+    return `$${value < 0.01 ? value.toFixed(4) : value.toFixed(2)}`
+  }
 
   const formatJSON = (obj: any) => {
     try {
@@ -76,9 +90,10 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="response">AI Response</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
             <TabsTrigger value="errors">Errors</TabsTrigger>
@@ -94,7 +109,15 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Status:</span>
-                      <Badge variant={analysis.status === 'completed' ? 'secondary' : analysis.status === 'error' ? 'destructive' : 'outline'}>
+                      <Badge
+                        variant={
+                          analysis.status === 'completed'
+                            ? 'secondary'
+                            : analysis.status === 'error'
+                              ? 'destructive'
+                              : 'outline'
+                        }
+                      >
                         {analysis.status}
                       </Badge>
                     </div>
@@ -130,10 +153,35 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                         <span className="font-mono text-xs">{analysisData.model_used}</span>
                       </div>
                     )}
+                    {costEstimate !== undefined && costEstimate !== null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          Est. Cost:
+                        </span>
+                        <span className="font-mono text-xs">{formatCurrency(costEstimate)}</span>
+                      </div>
+                    )}
+                    {analysisData.processing_completed_at && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm flex items-center gap-1">
+                          <Timer className="h-4 w-4 text-muted-foreground" />
+                          Completed:
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(
+                            new Date(analysisData.processing_completed_at),
+                            'MMM dd, yyyy HH:mm:ss'
+                          )}
+                        </span>
+                      </div>
+                    )}
                     {tokenUsage.total_tokens && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Total Tokens:</span>
-                        <span className="font-mono text-xs">{tokenUsage.total_tokens.toLocaleString()}</span>
+                        <span className="font-mono text-xs">
+                          {tokenUsage.total_tokens.toLocaleString()}
+                        </span>
                       </div>
                     )}
                     {resumeWarnings.length > 0 && (
@@ -177,7 +225,11 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     <ScrollArea className="h-24">
                       <div className="flex flex-wrap gap-1">
                         {analysis.matched_skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="bg-green-100 text-green-800 text-xs"
+                          >
                             {skill}
                           </Badge>
                         ))}
@@ -197,7 +249,11 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     <ScrollArea className="h-24">
                       <div className="flex flex-wrap gap-1">
                         {analysis.missing_skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="bg-red-100 text-red-800 text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="bg-red-100 text-red-800 text-xs"
+                          >
                             {skill}
                           </Badge>
                         ))}
@@ -206,6 +262,28 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                   </CardContent>
                 </Card>
               </div>
+
+              {extractedFeatures && extractedFeatures.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Extracted Features ({extractedFeatures.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-24">
+                      <div className="flex flex-wrap gap-1">
+                        {extractedFeatures.map((feature: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="content" className="space-y-4">
@@ -229,13 +307,17 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     </div>
                     {(analysis.resume as any)?.file_url && (
                       <div className="text-sm">
-                        <span className="font-medium">URL:</span> 
-                        <span className="font-mono text-xs ml-2">{(analysis.resume as any).file_url}</span>
+                        <span className="font-medium">URL:</span>
+                        <span className="font-mono text-xs ml-2">
+                          {(analysis.resume as any).file_url}
+                        </span>
                       </div>
                     )}
                     {resumeWarnings.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-sm font-medium text-red-600">Extraction Warnings:</span>
+                        <span className="text-sm font-medium text-red-600">
+                          Extraction Warnings:
+                        </span>
                         {resumeWarnings.map((warning, index) => (
                           <div key={index} className="text-xs text-red-700 bg-red-50 p-2 rounded">
                             {warning}
@@ -257,14 +339,74 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                       <span className="font-medium">Title:</span> {analysis.job_description?.name}
                     </div>
                     <div className="text-sm">
-                      <span className="font-medium">Company:</span> {analysis.job_description?.company?.name}
+                      <span className="font-medium">Company:</span>{' '}
+                      {analysis.job_description?.company?.name}
                     </div>
                     <ScrollArea className="h-32">
                       <div className="text-xs text-muted-foreground">
-                        {(analysis.job_description as any)?.description || 'No description available'}
+                        {(analysis.job_description as any)?.description ||
+                          'No description available'}
                       </div>
                     </ScrollArea>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="prompts" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      System Prompt
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(prompts.system || '', 'System Prompt')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-32">
+                    <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-4 rounded">
+                      {prompts.system || 'System prompt not recorded.'}
+                    </pre>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Analysis Prompt
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {promptCharacters && <span>{promptCharacters.toLocaleString()} chars</span>}
+                      {tokenUsage.prompt_tokens && (
+                        <span>{tokenUsage.prompt_tokens.toLocaleString()} tokens</span>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(prompts.user || '', 'Analysis Prompt')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-64">
+                    <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-4 rounded">
+                      {prompts.user || 'Prompt not recorded.'}
+                    </pre>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -301,9 +443,7 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     <CardTitle className="text-sm">AI Suggestions</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm text-muted-foreground">
-                      {analysis.suggestions}
-                    </div>
+                    <div className="text-sm text-muted-foreground">{analysis.suggestions}</div>
                   </CardContent>
                 </Card>
               )}
@@ -319,29 +459,39 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">Prompt Tokens:</span>
-                        <span className="font-mono text-sm">{tokenUsage.prompt_tokens?.toLocaleString() || 'N/A'}</span>
+                        <span className="font-mono text-sm">
+                          {tokenUsage.prompt_tokens?.toLocaleString() || 'N/A'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Completion Tokens:</span>
-                        <span className="font-mono text-sm">{tokenUsage.completion_tokens?.toLocaleString() || 'N/A'}</span>
+                        <span className="font-mono text-sm">
+                          {tokenUsage.completion_tokens?.toLocaleString() || 'N/A'}
+                        </span>
                       </div>
                       <div className="flex justify-between font-medium">
                         <span className="text-sm">Total Tokens:</span>
-                        <span className="font-mono text-sm">{tokenUsage.total_tokens?.toLocaleString() || 'N/A'}</span>
+                        <span className="font-mono text-sm">
+                          {tokenUsage.total_tokens?.toLocaleString() || 'N/A'}
+                        </span>
                       </div>
                     </div>
-                    
+
                     {tokenUsage.prompt_tokens_details && (
                       <div className="space-y-2">
                         <div className="text-sm font-medium">Prompt Details:</div>
                         <div className="text-xs space-y-1">
                           <div className="flex justify-between">
                             <span>Cached:</span>
-                            <span className="font-mono">{tokenUsage.prompt_tokens_details.cached_tokens || 0}</span>
+                            <span className="font-mono">
+                              {tokenUsage.prompt_tokens_details.cached_tokens || 0}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Audio:</span>
-                            <span className="font-mono">{tokenUsage.prompt_tokens_details.audio_tokens || 0}</span>
+                            <span className="font-mono">
+                              {tokenUsage.prompt_tokens_details.audio_tokens || 0}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -363,7 +513,10 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                   {resumeWarnings.length > 0 ? (
                     <div className="space-y-2">
                       {resumeWarnings.map((warning, index) => (
-                        <div key={index} className="p-3 bg-red-50 border border-red-200 rounded text-sm">
+                        <div
+                          key={index}
+                          className="p-3 bg-red-50 border border-red-200 rounded text-sm"
+                        >
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div>
@@ -386,7 +539,11 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                         <span className="font-medium text-green-800">
-                          Analysis completed successfully at {format(new Date(analysisData.processing_completed_at), 'MMM dd, yyyy HH:mm:ss')}
+                          Analysis completed successfully at{' '}
+                          {format(
+                            new Date(analysisData.processing_completed_at),
+                            'MMM dd, yyyy HH:mm:ss'
+                          )}
                         </span>
                       </div>
                     </div>

@@ -1,111 +1,134 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Search, Download, Eye, AlertCircle, CheckCircle, Clock, FileText } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
+import {
+  RefreshCw,
+  Search,
+  Download,
+  Eye,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  FileText,
+} from 'lucide-react'
+import { format } from 'date-fns'
 
 interface JobDescriptionLogEntry {
-  id: string;
-  script_name: string;
-  log_level: string;
-  message: string;
-  metadata: any;
-  timestamp: string;
-  session_id?: string;
-  user_id?: string;
+  id: string
+  script_name: string
+  log_level: string
+  message: string
+  metadata: any
+  timestamp: string
+  session_id?: string
+  user_id?: string
 }
 
 interface IngestionMetrics {
-  totalSessions: number;
-  successfulIngestions: number;
-  failedIngestions: number;
-  averageProcessingTime: number;
-  extractionAccuracy: number;
-  topErrors: Array<{ error: string; count: number }>;
+  totalSessions: number
+  successfulIngestions: number
+  failedIngestions: number
+  averageProcessingTime: number
+  extractionAccuracy: number
+  topErrors: Array<{ error: string; count: number }>
 }
 
 export const JobDescriptionLoggingPanel = () => {
-  const [timeRange, setTimeRange] = useState('24h');
-  const [logLevel, setLogLevel] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [timeRange, setTimeRange] = useState('24h')
+  const [logLevel, setLogLevel] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Fetch job description logs
   const { data: logs, isLoading } = useQuery({
     queryKey: ['job-description-logs', timeRange, logLevel],
     queryFn: async () => {
-      const hoursBack = timeRange === '1h' ? 1 : timeRange === '24h' ? 24 : timeRange === '7d' ? 168 : 720;
-      
+      const hoursBack =
+        timeRange === '1h' ? 1 : timeRange === '24h' ? 24 : timeRange === '7d' ? 168 : 720
+
       let query = supabase
         .from('log_entries')
         .select('*')
-        .in('script_name', ['job-description-ingest', 'content-extraction', 'company-location-management'])
+        .in('script_name', [
+          'job-description-ingest',
+          'content-extraction',
+          'company-location-management',
+        ])
         .gte('timestamp', new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString())
         .order('timestamp', { ascending: false })
-        .limit(500);
+        .limit(500)
 
       if (logLevel !== 'all') {
-        query = query.eq('log_level', logLevel.toUpperCase());
+        query = query.eq('log_level', logLevel.toUpperCase())
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as JobDescriptionLogEntry[];
+      const { data, error } = await query
+      if (error) throw error
+      return data as JobDescriptionLogEntry[]
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
+    refetchInterval: 30000, // Refresh every 30 seconds
+  })
 
   // Calculate metrics
   const metrics: IngestionMetrics = React.useMemo(() => {
-    if (!logs) return {
-      totalSessions: 0,
-      successfulIngestions: 0,
-      failedIngestions: 0,
-      averageProcessingTime: 0,
-      extractionAccuracy: 0,
-      topErrors: []
-    };
+    if (!logs)
+      return {
+        totalSessions: 0,
+        successfulIngestions: 0,
+        failedIngestions: 0,
+        averageProcessingTime: 0,
+        extractionAccuracy: 0,
+        topErrors: [],
+      }
 
-    const sessions = new Set(logs.map(log => log.metadata?.sessionId).filter(Boolean));
-    const successful = logs.filter(log => 
-      log.message.includes('Completed') && log.log_level === 'INFO'
-    ).length;
-    const failed = logs.filter(log => 
-      log.log_level === 'ERROR'
-    ).length;
+    const sessions = new Set(logs.map((log) => log.metadata?.sessionId).filter(Boolean))
+    const successful = logs.filter(
+      (log) => log.message.includes('Completed') && log.log_level === 'INFO'
+    ).length
+    const failed = logs.filter((log) => log.log_level === 'ERROR').length
 
     const processingTimes = logs
-      .filter(log => log.metadata?.duration)
-      .map(log => log.metadata.duration);
-    
-    const avgTime = processingTimes.length > 0 
-      ? processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length 
-      : 0;
+      .filter((log) => log.metadata?.duration)
+      .map((log) => log.metadata.duration)
 
-    const extractionLogs = logs.filter(log => 
-      log.script_name === 'content-extraction' && log.metadata?.extractionQuality
-    );
-    
-    const accuracy = extractionLogs.length > 0 
-      ? extractionLogs.filter(log => log.metadata.extractionQuality.hasCore).length / extractionLogs.length * 100
-      : 0;
+    const avgTime =
+      processingTimes.length > 0
+        ? processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length
+        : 0
 
-    const errors = logs.filter(log => log.log_level === 'ERROR');
+    const extractionLogs = logs.filter(
+      (log) => log.script_name === 'content-extraction' && log.metadata?.extractionQuality
+    )
+
+    const accuracy =
+      extractionLogs.length > 0
+        ? (extractionLogs.filter((log) => log.metadata.extractionQuality.hasCore).length /
+            extractionLogs.length) *
+          100
+        : 0
+
+    const errors = logs.filter((log) => log.log_level === 'ERROR')
     const errorCounts = errors.reduce((acc: any, log) => {
-      const error = log.metadata?.error || log.message;
-      acc[error] = (acc[error] || 0) + 1;
-      return acc;
-    }, {});
+      const error = log.metadata?.error || log.message
+      acc[error] = (acc[error] || 0) + 1
+      return acc
+    }, {})
 
     const topErrors = Object.entries(errorCounts)
       .map(([error, count]) => ({ error, count: count as number }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+      .slice(0, 5)
 
     return {
       totalSessions: sessions.size,
@@ -113,33 +136,43 @@ export const JobDescriptionLoggingPanel = () => {
       failedIngestions: failed,
       averageProcessingTime: Math.round(avgTime),
       extractionAccuracy: Math.round(accuracy),
-      topErrors
-    };
-  }, [logs]);
+      topErrors,
+    }
+  }, [logs])
 
-  const filteredLogs = logs?.filter(log => 
-    searchTerm === '' || 
-    log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.metadata?.sessionId?.includes(searchTerm)
-  ) || [];
+  const filteredLogs =
+    logs?.filter(
+      (log) =>
+        searchTerm === '' ||
+        log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.metadata?.sessionId?.includes(searchTerm)
+    ) || []
 
   const getLogIcon = (level: string) => {
     switch (level.toLowerCase()) {
-      case 'error': return <AlertCircle className="h-4 w-4 text-destructive" />;
-      case 'info': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'debug': return <Eye className="h-4 w-4 text-blue-500" />;
-      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-destructive" />
+      case 'info':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'debug':
+        return <Eye className="h-4 w-4 text-blue-500" />
+      default:
+        return <Clock className="h-4 w-4 text-muted-foreground" />
     }
-  };
+  }
 
   const getLogBadgeVariant = (level: string) => {
     switch (level.toLowerCase()) {
-      case 'error': return 'destructive';
-      case 'info': return 'default';
-      case 'debug': return 'secondary';
-      default: return 'outline';
+      case 'error':
+        return 'destructive'
+      case 'info':
+        return 'default'
+      case 'debug':
+        return 'secondary'
+      default:
+        return 'outline'
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -147,7 +180,8 @@ export const JobDescriptionLoggingPanel = () => {
         <div>
           <h3 className="text-xl font-semibold">Job Description Ingestion Monitoring</h3>
           <p className="text-muted-foreground">
-            Monitor and analyze job description processing, content extraction, and company/location management
+            Monitor and analyze job description processing, content extraction, and company/location
+            management
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -183,11 +217,18 @@ export const JobDescriptionLoggingPanel = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {metrics.totalSessions > 0 
-                ? Math.round((metrics.successfulIngestions / (metrics.successfulIngestions + metrics.failedIngestions)) * 100)
-                : 0}%
+              {metrics.totalSessions > 0
+                ? Math.round(
+                    (metrics.successfulIngestions /
+                      (metrics.successfulIngestions + metrics.failedIngestions)) *
+                      100
+                  )
+                : 0}
+              %
             </div>
-            <p className="text-xs text-muted-foreground">{metrics.successfulIngestions} successful</p>
+            <p className="text-xs text-muted-foreground">
+              {metrics.successfulIngestions} successful
+            </p>
           </CardContent>
         </Card>
 
@@ -304,7 +345,9 @@ export const JobDescriptionLoggingPanel = () => {
                     <div>
                       <h4 className="font-medium">Extraction Quality</h4>
                       <p className="text-2xl font-bold">{metrics.extractionAccuracy}%</p>
-                      <p className="text-sm text-muted-foreground">Successfully extracted core fields</p>
+                      <p className="text-sm text-muted-foreground">
+                        Successfully extracted core fields
+                      </p>
                     </div>
                     <div>
                       <h4 className="font-medium">Processing Speed</h4>
@@ -332,7 +375,10 @@ export const JobDescriptionLoggingPanel = () => {
               ) : (
                 <div className="space-y-3">
                   {metrics.topErrors.map((errorItem, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex-1">
                         <p className="font-medium text-sm">{errorItem.error}</p>
                       </div>
@@ -346,5 +392,5 @@ export const JobDescriptionLoggingPanel = () => {
         </TabsContent>
       </Tabs>
     </div>
-  );
-};
+  )
+}

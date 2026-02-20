@@ -28,21 +28,69 @@ export interface ResumeInfo {
 }
 
 const COMMON_SKILLS = [
-  'JavaScript', 'Python', 'Java', 'React', 'Node.js', 'TypeScript', 'SQL', 'HTML', 'CSS',
-  'AWS', 'Docker', 'Kubernetes', 'Git', 'MongoDB', 'PostgreSQL', 'MySQL', 'Redis',
-  'Angular', 'Vue.js', 'Express', 'Spring', 'Django', 'Flask', 'Laravel', 'PHP',
-  'C++', 'C#', 'Go', 'Rust', 'Swift', 'Kotlin', 'Ruby', 'Scala', 'R', 'MATLAB',
-  'Machine Learning', 'AI', 'Data Science', 'Analytics', 'Tableau', 'Power BI',
-  'Figma', 'Sketch', 'Adobe', 'Photoshop', 'Illustrator', 'UI/UX', 'Design',
-  'Project Management', 'Agile', 'Scrum', 'JIRA', 'Confluence', 'Slack', 'Teams'
+  'JavaScript',
+  'Python',
+  'Java',
+  'React',
+  'Node.js',
+  'TypeScript',
+  'SQL',
+  'HTML',
+  'CSS',
+  'AWS',
+  'Docker',
+  'Kubernetes',
+  'Git',
+  'MongoDB',
+  'PostgreSQL',
+  'MySQL',
+  'Redis',
+  'Angular',
+  'Vue.js',
+  'Express',
+  'Spring',
+  'Django',
+  'Flask',
+  'Laravel',
+  'PHP',
+  'C++',
+  'C#',
+  'Go',
+  'Rust',
+  'Swift',
+  'Kotlin',
+  'Ruby',
+  'Scala',
+  'R',
+  'MATLAB',
+  'Machine Learning',
+  'AI',
+  'Data Science',
+  'Analytics',
+  'Tableau',
+  'Power BI',
+  'Figma',
+  'Sketch',
+  'Adobe',
+  'Photoshop',
+  'Illustrator',
+  'UI/UX',
+  'Design',
+  'Project Management',
+  'Agile',
+  'Scrum',
+  'JIRA',
+  'Confluence',
+  'Slack',
+  'Teams',
 ]
 
 export function extractJobDescriptionInfo(content: string, sessionId?: string): JobInfo {
   const logger = createContentExtractionLogger(sessionId)
-  
+
   if (!content || content.trim().length < 10) {
-    logger.info('Content extraction skipped - insufficient content', { 
-      contentLength: content?.length || 0 
+    logger.info('Content extraction skipped - insufficient content', {
+      contentLength: content?.length || 0,
     })
     return {
       title: null,
@@ -51,19 +99,22 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
       skills: [],
       employmentType: null,
       department: null,
-      salaryRange: null
+      salaryRange: null,
     }
   }
 
   logger.info('Starting job description content extraction', {
     contentLength: content.length,
-    contentPreview: content.substring(0, 200) + (content.length > 200 ? '...' : '')
+    contentPreview: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
   })
 
   const startTime = Date.now()
-  const lines = content.split('\n').map(line => line.trim()).filter(Boolean)
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
   const text = content.toLowerCase()
-  
+
   const title = extractJobTitle(content, lines)
   const company = extractCompany(content, lines)
   const location = extractLocation(content, lines)
@@ -79,11 +130,11 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
     skills,
     employmentType,
     department,
-    salaryRange
+    salaryRange,
   }
 
   const extractionTime = Date.now() - startTime
-  
+
   logger.info('Content extraction completed', {
     extractionTime,
     extractedFields: {
@@ -93,12 +144,18 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
       skills: result.skills?.length || 0,
       employmentType: !!result.employmentType,
       department: !!result.department,
-      salaryRange: !!result.salaryRange
+      salaryRange: !!result.salaryRange,
     },
     extractionQuality: {
       hasCore: !!(result.title && result.company),
-      completeness: [result.title, result.company, result.location, result.skills?.length, result.employmentType].filter(Boolean).length
-    }
+      completeness: [
+        result.title,
+        result.company,
+        result.location,
+        result.skills?.length,
+        result.employmentType,
+      ].filter(Boolean).length,
+    },
   })
 
   // Log the content extraction for debugging and analytics
@@ -108,8 +165,11 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
 }
 
 export function extractResumeInfo(content: string): ResumeInfo {
-  const lines = content.split('\n').map(line => line.trim()).filter(Boolean)
-  
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
   return {
     name: extractPersonName(content, lines),
     email: extractEmail(content),
@@ -119,7 +179,7 @@ export function extractResumeInfo(content: string): ResumeInfo {
     experience: extractExperience(content, lines),
     education: extractEducation(content, lines),
     currentJobTitle: extractCurrentJobTitle(content, lines),
-    recentJobTitles: extractRecentJobTitles(content, lines)
+    recentJobTitles: extractRecentJobTitles(content, lines),
   }
 }
 
@@ -128,26 +188,32 @@ function extractJobTitle(content: string, lines: string[]): string | null {
   const titlePatterns = [
     /(?:position|role|job\s+title|title):\s*(.+)/i,
     /^(.+(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior))/i,
-    /we're\s+(?:looking for|hiring)\s+(?:a|an)\s+(.+)/i
+    /we're\s+(?:looking for|hiring)\s+(?:a|an)\s+(.+)/i,
   ]
-  
+
   for (const pattern of titlePatterns) {
     const match = content.match(pattern)
     if (match && match[1]) {
       return match[1].trim()
     }
   }
-  
+
   // Check first few lines for job titles
   for (const line of lines.slice(0, 5)) {
-    if (line.length > 5 && line.length < 80 && 
-        (line.includes('Engineer') || line.includes('Developer') || 
-         line.includes('Manager') || line.includes('Analyst') ||
-         line.includes('Specialist') || line.includes('Director'))) {
+    if (
+      line.length > 5 &&
+      line.length < 80 &&
+      (line.includes('Engineer') ||
+        line.includes('Developer') ||
+        line.includes('Manager') ||
+        line.includes('Analyst') ||
+        line.includes('Specialist') ||
+        line.includes('Director'))
+    ) {
       return line
     }
   }
-  
+
   return null
 }
 
@@ -156,9 +222,9 @@ function extractCompany(content: string, lines: string[]): string | null {
     /(?:company|organization|at|join)\s*:\s*(.+)/i,
     /about\s+([A-Z][a-zA-Z\s&,.-]+)(?:\s+is|\s+was|\s+provides)/i,
     /([A-Z][a-zA-Z\s&,.-]+)\s+is\s+(?:looking|seeking|hiring)/i,
-    /@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/
+    /@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/,
   ]
-  
+
   for (const pattern of companyPatterns) {
     const match = content.match(pattern)
     if (match && match[1]) {
@@ -170,7 +236,7 @@ function extractCompany(content: string, lines: string[]): string | null {
       }
     }
   }
-  
+
   return null
 }
 
@@ -178,43 +244,45 @@ function extractLocation(content: string, lines: string[]): JobInfo['location'] 
   const locationPatterns = [
     /(?:location|based\s+in|office):\s*(.+)/i,
     /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z]{2}|[A-Z][a-z]+)(?:,\s*([A-Z][a-z]+))?/,
-    /(remote|hybrid|on-site)/i
+    /(remote|hybrid|on-site)/i,
   ]
-  
+
   for (const pattern of locationPatterns) {
     const match = content.match(pattern)
     if (match) {
       if (match[0].toLowerCase().includes('remote')) {
         return { city: 'Remote', state: null, country: null }
       }
-      if (match[3]) { // City, State, Country
+      if (match[3]) {
+        // City, State, Country
         return {
           city: match[1]?.trim() || null,
           state: match[2]?.trim() || null,
-          country: match[3]?.trim() || null
+          country: match[3]?.trim() || null,
         }
       }
-      if (match[2]) { // City, State
+      if (match[2]) {
+        // City, State
         return {
           city: match[1]?.trim() || null,
           state: match[2]?.trim() || null,
-          country: null
+          country: null,
         }
       }
       if (match[1]) {
         const location = match[1].trim()
-        const parts = location.split(',').map(p => p.trim())
+        const parts = location.split(',').map((p) => p.trim())
         if (parts.length >= 2) {
           return {
             city: parts[0] || null,
             state: parts[1] || null,
-            country: parts[2] || null
+            country: parts[2] || null,
           }
         }
       }
     }
   }
-  
+
   return null
 }
 
@@ -226,7 +294,7 @@ function escapeRegex(string: string): string {
 function extractSkills(content: string): string[] {
   const foundSkills = new Set<string>()
   const text = content.toLowerCase()
-  
+
   // Match exact skills from our list
   for (const skill of COMMON_SKILLS) {
     try {
@@ -234,9 +302,9 @@ function extractSkills(content: string): string[] {
       const escapedSkill = escapeRegex(skillLower)
       const patterns = [
         new RegExp(`\\b${escapedSkill}\\b`, 'i'),
-        new RegExp(`\\b${escapedSkill}(?:\\.js|\\.py|script)\\b`, 'i')
+        new RegExp(`\\b${escapedSkill}(?:\\.js|\\.py|script)\\b`, 'i'),
       ]
-      
+
       for (const pattern of patterns) {
         if (pattern.test(text)) {
           foundSkills.add(skill)
@@ -249,9 +317,11 @@ function extractSkills(content: string): string[] {
       continue
     }
   }
-  
+
   // Look for skills sections
-  const skillsSection = content.match(/(?:skills?|technologies?|requirements?):\s*(.+?)(?:\n\n|\n[A-Z])/is)
+  const skillsSection = content.match(
+    /(?:skills?|technologies?|requirements?):\s*(.+?)(?:\n\n|\n[A-Z])/is
+  )
   if (skillsSection) {
     const skillsText = skillsSection[1]
     for (const skill of COMMON_SKILLS) {
@@ -260,7 +330,7 @@ function extractSkills(content: string): string[] {
       }
     }
   }
-  
+
   return Array.from(foundSkills).slice(0, 10) // Limit to 10 skills
 }
 
@@ -276,16 +346,16 @@ function extractEmploymentType(text: string): string | null {
 function extractDepartment(content: string, lines: string[]): string | null {
   const deptPatterns = [
     /(?:department|team|division):\s*(.+)/i,
-    /(engineering|marketing|sales|hr|finance|operations|product|design|data)\s+team/i
+    /(engineering|marketing|sales|hr|finance|operations|product|design|data)\s+team/i,
   ]
-  
+
   for (const pattern of deptPatterns) {
     const match = content.match(pattern)
     if (match && match[1]) {
       return match[1].trim()
     }
   }
-  
+
   return null
 }
 
@@ -293,35 +363,39 @@ function extractSalaryRange(content: string): string | null {
   const salaryPatterns = [
     /\$?(\d{2,3}[,.]?\d{3})\s*[-–]\s*\$?(\d{2,3}[,.]?\d{3})/,
     /salary:\s*\$?(\d{2,3}[,.]?\d{3}(?:\s*[-–]\s*\$?\d{2,3}[,.]?\d{3})?)/i,
-    /compensation:\s*\$?(\d{2,3}[,.]?\d{3}(?:\s*[-–]\s*\$?\d{2,3}[,.]?\d{3})?)/i
+    /compensation:\s*\$?(\d{2,3}[,.]?\d{3}(?:\s*[-–]\s*\$?\d{2,3}[,.]?\d{3})?)/i,
   ]
-  
+
   for (const pattern of salaryPatterns) {
     const match = content.match(pattern)
     if (match) {
       return match[0].trim()
     }
   }
-  
+
   return null
 }
 
 function extractPersonName(content: string, lines: string[]): string | null {
   // First line is often the name in resumes
   const firstLine = lines[0]
-  if (firstLine && firstLine.length < 50 && 
-      /^[A-Z][a-z]+\s+[A-Z][a-z]+/.test(firstLine) &&
-      !firstLine.includes('@') && !firstLine.includes('www.')) {
+  if (
+    firstLine &&
+    firstLine.length < 50 &&
+    /^[A-Z][a-z]+\s+[A-Z][a-z]+/.test(firstLine) &&
+    !firstLine.includes('@') &&
+    !firstLine.includes('www.')
+  ) {
     return firstLine
   }
-  
+
   // Look for name patterns
   const namePattern = /name:\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/i
   const match = content.match(namePattern)
   if (match) {
     return match[1]
   }
-  
+
   return null
 }
 
@@ -334,16 +408,16 @@ function extractEmail(content: string): string | null {
 function extractPhone(content: string): string | null {
   const phonePatterns = [
     /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/,
-    /\+?\d{1,3}[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/
+    /\+?\d{1,3}[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/,
   ]
-  
+
   for (const pattern of phonePatterns) {
     const match = content.match(pattern)
     if (match) {
       return match[0]
     }
   }
-  
+
   return null
 }
 
@@ -355,41 +429,38 @@ function extractPersonLocation(content: string, lines: string[]): string | null 
       return locationMatch[0]
     }
   }
-  
+
   const locationPattern = /(?:location|address):\s*(.+)/i
   const match = content.match(locationPattern)
   return match ? match[1].trim() : null
 }
 
 function extractExperience(content: string, lines: string[]): string | null {
-  const expPatterns = [
-    /(\d+)\+?\s*years?\s*(?:of\s*)?experience/i,
-    /experience:\s*(.+?)(?:\n|$)/i
-  ]
-  
+  const expPatterns = [/(\d+)\+?\s*years?\s*(?:of\s*)?experience/i, /experience:\s*(.+?)(?:\n|$)/i]
+
   for (const pattern of expPatterns) {
     const match = content.match(pattern)
     if (match) {
       return match[0].trim()
     }
   }
-  
+
   return null
 }
 
 function extractEducation(content: string, lines: string[]): string | null {
   const eduPatterns = [
     /(bachelor|master|phd|degree|university|college).*?(?:in|of)\s*([^.\n]+)/i,
-    /education:\s*(.+?)(?:\n\n|$)/is
+    /education:\s*(.+?)(?:\n\n|$)/is,
   ]
-  
+
   for (const pattern of eduPatterns) {
     const match = content.match(pattern)
     if (match) {
       return match[0].trim()
     }
   }
-  
+
   return null
 }
 
@@ -399,9 +470,9 @@ function extractCurrentJobTitle(content: string, lines: string[]): string | null
     /(?:current\s+)?(?:position|role|title):\s*(.+)/i,
     /(?:currently|presently)\s+(?:working as|employed as)?\s*(.+)/i,
     /^(.+?)\s*\|\s*[A-Z][a-zA-Z\s&,.-]+\s*\|\s*(?:current|present|\d{4}\s*-\s*(?:present|current))/im,
-    /^(.+?)\s*at\s+[A-Z][a-zA-Z\s&,.-]+\s*(?:current|present|\d{4}\s*-\s*(?:present|current))/im
+    /^(.+?)\s*at\s+[A-Z][a-zA-Z\s&,.-]+\s*(?:current|present|\d{4}\s*-\s*(?:present|current))/im,
   ]
-  
+
   for (const pattern of titlePatterns) {
     const match = content.match(pattern)
     if (match && match[1]) {
@@ -411,12 +482,16 @@ function extractCurrentJobTitle(content: string, lines: string[]): string | null
       }
     }
   }
-  
+
   // Look in work experience section for current roles
-  const workSectionMatch = content.match(/(?:work\s+experience|professional\s+experience|employment):(.*?)(?:\n\n|education:|skills:|$)/is)
+  const workSectionMatch = content.match(
+    /(?:work\s+experience|professional\s+experience|employment):(.*?)(?:\n\n|education:|skills:|$)/is
+  )
   if (workSectionMatch) {
     const workSection = workSectionMatch[1]
-    const currentJobMatch = workSection.match(/(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*.*?(?:present|current|\d{4}\s*-\s*(?:present|current))/im)
+    const currentJobMatch = workSection.match(
+      /(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*.*?(?:present|current|\d{4}\s*-\s*(?:present|current))/im
+    )
     if (currentJobMatch && currentJobMatch[1]) {
       const title = currentJobMatch[1].trim()
       if (isValidJobTitle(title)) {
@@ -424,19 +499,19 @@ function extractCurrentJobTitle(content: string, lines: string[]): string | null
       }
     }
   }
-  
+
   return null
 }
 
 function extractRecentJobTitles(content: string, lines: string[]): string[] {
   const jobTitles = new Set<string>()
-  
+
   // Common job title patterns for resumes
   const titlePatterns = [
     /^(.+?(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior|architect|consultant|designer|administrator))\s*(?:\||@|at)/im,
-    /(?:^|\n)(.+?(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior|architect|consultant|designer|administrator))\s*[-–]\s*[A-Z]/gm
+    /(?:^|\n)(.+?(?:engineer|developer|manager|analyst|specialist|coordinator|director|lead|senior|junior|architect|consultant|designer|administrator))\s*[-–]\s*[A-Z]/gm,
   ]
-  
+
   for (const pattern of titlePatterns) {
     let match
     while ((match = pattern.exec(content)) !== null) {
@@ -446,11 +521,13 @@ function extractRecentJobTitles(content: string, lines: string[]): string[] {
       }
     }
   }
-  
+
   // Look for structured work experience entries
-  const workEntries = content.match(/(?:^|\n)(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*(?:\||•|\n|\d{4})/gm)
+  const workEntries = content.match(
+    /(?:^|\n)(.+?)\s*(?:\||@|at)\s*[A-Z][a-zA-Z\s&,.-]+\s*(?:\||•|\n|\d{4})/gm
+  )
   if (workEntries) {
-    workEntries.forEach(entry => {
+    workEntries.forEach((entry) => {
       const titleMatch = entry.match(/(?:^|\n)(.+?)(?:\s*(?:\||@|at))/i)
       if (titleMatch && titleMatch[1]) {
         const title = titleMatch[1].trim()
@@ -460,32 +537,32 @@ function extractRecentJobTitles(content: string, lines: string[]): string[] {
       }
     })
   }
-  
+
   return Array.from(jobTitles).slice(0, 5)
 }
 
 function isValidJobTitle(title: string): boolean {
   if (!title || title.length < 3 || title.length > 80) return false
-  
+
   // Filter out common false positives
   const invalidPatterns = [
     /^\d+/, // Starts with number
     /@/, // Contains email
     /^(the|a|an|and|or|but|in|on|at|to|for|of|with|by)$/i, // Common words
     /^(experience|education|skills|contact|phone|email|address)$/i, // Resume sections
-    /\.(com|org|net|edu|gov)/i // URLs
+    /\.(com|org|net|edu|gov)/i, // URLs
   ]
-  
-  return !invalidPatterns.some(pattern => pattern.test(title))
+
+  return !invalidPatterns.some((pattern) => pattern.test(title))
 }
 
 // Generate smart resume name suggestions
 export function generateResumeNameSuggestions(
-  extractedData: ResumeInfo | null, 
+  extractedData: ResumeInfo | null,
   fileName: string
 ): string[] {
   const suggestions: string[] = []
-  
+
   if (extractedData?.currentJobTitle) {
     // Priority 1: Current job title
     suggestions.push(`${extractedData.currentJobTitle} Resume`)
@@ -493,23 +570,23 @@ export function generateResumeNameSuggestions(
       suggestions.push(`${extractedData.name} - ${extractedData.currentJobTitle}`)
     }
   }
-  
+
   if (extractedData?.recentJobTitles && extractedData.recentJobTitles.length > 0) {
     // Priority 2: Recent job titles
     const recentTitle = extractedData.recentJobTitles[0]
-    if (!suggestions.some(s => s.includes(recentTitle))) {
+    if (!suggestions.some((s) => s.includes(recentTitle))) {
       suggestions.push(`${recentTitle} Resume`)
     }
   }
-  
+
   // Priority 3: Filename-based suggestion
   if (fileName) {
     const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
-    if (!suggestions.some(s => s.toLowerCase().includes(cleanFileName.toLowerCase()))) {
+    if (!suggestions.some((s) => s.toLowerCase().includes(cleanFileName.toLowerCase()))) {
       suggestions.push(cleanFileName)
     }
   }
-  
+
   // Priority 4: Name-based suggestion
   if (extractedData?.name) {
     const nameSuggestion = `${extractedData.name} Resume`
@@ -517,11 +594,11 @@ export function generateResumeNameSuggestions(
       suggestions.push(nameSuggestion)
     }
   }
-  
+
   // Priority 5: Generic fallback
   if (suggestions.length === 0) {
     suggestions.push('Professional Resume')
   }
-  
+
   return suggestions.slice(0, 3) // Limit to 3 suggestions
 }

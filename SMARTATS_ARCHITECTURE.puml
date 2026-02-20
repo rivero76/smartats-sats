@@ -1,0 +1,125 @@
+@startuml SmartATS Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentBackgroundColor #FFFFFF
+skinparam componentBorderColor #333333
+skinparam arrowColor #333333
+
+package "Frontend Layer (React + TypeScript)" #E1F5FE {
+  package "Pages" #B3E5FC {
+    component Dashboard
+    component MyResumes
+    component JobDescriptions
+    component ATSAnalyses
+    component EnrichedExperiences
+    component Settings
+    component AdminDashboard
+    component Auth
+  }
+
+  package "Components" #B3E5FC {
+    component FileUpload
+    component ResumeModal
+    component JobDescriptionModal
+    component ATSAnalysisModal
+    component EnrichExperienceModal
+    component ResumePreview
+    component ATSDebugModal
+    component AppSidebar
+  }
+
+  package "Hooks (TanStack Query)" #81D4FA {
+    component useResumes
+    component useJobDescriptions
+    component useATSAnalyses
+    component useEnrichedExperiences
+    component useProfile
+    component useUserRole
+    component useDirectATSAnalysis
+  }
+
+  package "Services & Utils" #4FC3F7 {
+    component documentProcessor
+    component contentExtraction
+    component AuthContext
+  }
+}
+
+package "External Services" #FFF9C4 {
+  component Supabase as "Supabase\n(Auth+DB+Storage)"
+  component OpenAI as "OpenAI\nGPT-4o-mini"
+}
+
+package "Backend Layer (Deno Edge Functions)" #F3E5F5 {
+  package "Edge Functions" #E1BEE7 {
+    component ATSAnalysisDirect as "ats-analysis-direct\n(Resume-Job Analysis)"
+    component EnrichExperiences as "enrich-experiences\n(Experience Enhancement)"
+    component CentralizedLogging as "centralized-logging\n(Log Aggregation)"
+    component DeleteAccount as "delete-account\n(Account Lifecycle)"
+    component CancelAccountDeletion as "cancel-account-deletion"
+  }
+}
+
+package "Data Models (Supabase)" #E0F2F1 {
+  component ResumesTable as "sats_resumes"
+  component JobDescriptionsTable as "sats_job_descriptions"
+  component AnalysesTable as "sats_analyses"
+  component FindingsTable as "ats_findings"
+  component DerivativesTable as "ats_derivatives"
+  component ProfilesTable as "profiles"
+  component CompaniesTable as "sats_companies"
+}
+
+' Relationships
+Dashboard --> useResumes: fetches resumes
+Dashboard --> useJobDescriptions: fetches jobs
+Dashboard --> useATSAnalyses: fetches analyses
+
+MyResumes --> useResumes: CRUD operations
+MyResumes --> FileUpload: upload component
+FileUpload --> documentProcessor: extract text
+
+JobDescriptions --> useJobDescriptions: CRUD operations
+JobDescriptions --> JobDescriptionModal: create/edit
+
+ATSAnalyses --> useATSAnalyses: fetch analyses
+ATSAnalyses --> ATSAnalysisModal: trigger analysis
+ATSAnalysisModal --> useDirectATSAnalysis: run analysis
+
+EnrichedExperiences --> useEnrichedExperiences: fetch enriched data
+
+Settings --> useProfile: manage profile
+AdminDashboard --> useUserRole: check permissions
+
+useResumes --> Supabase: API calls
+useJobDescriptions --> Supabase: API calls
+useATSAnalyses --> Supabase: API calls
+useEnrichedExperiences --> Supabase: API calls
+useProfile --> Supabase: API calls
+
+Supabase --> ResumesTable
+Supabase --> JobDescriptionsTable
+Supabase --> AnalysesTable
+Supabase --> FindingsTable
+Supabase --> DerivativesTable
+Supabase --> ProfilesTable
+Supabase --> CompaniesTable
+
+documentProcessor --> contentExtraction: extract text from PDF/DOCX
+FileUpload --> ResumeModal: preview
+
+ATSAnalysisModal --> ATSAnalysisDirect: call edge function
+ATSAnalysisDirect --> OpenAI: AI analysis
+ATSAnalysisDirect --> Supabase: store results
+
+EnrichExperienceModal --> EnrichExperiences: call edge function
+EnrichExperiences --> OpenAI: AI enrichment
+EnrichExperiences --> Supabase: store results
+
+AppSidebar --> AuthContext: user session
+
+Auth --> Supabase: authenticate
+Settings --> DeleteAccount: delete account
+DeleteAccount --> Supabase: soft delete user
+
+@enduml

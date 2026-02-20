@@ -1,20 +1,32 @@
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileUpload } from '@/components/FileUpload'
-import { 
-  useCreateJobDescription, 
-  useUpdateJobDescription, 
-  useCompanies, 
+import {
+  useCreateJobDescription,
+  useUpdateJobDescription,
+  useCompanies,
   useLocations,
   useCreateCompany,
   useCreateLocation,
-  JobDescription 
+  JobDescription,
 } from '@/hooks/useJobDescriptions'
 import { Plus, Edit, Building, MapPin } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -27,10 +39,10 @@ interface JobDescriptionModalProps {
   onClose?: () => void
 }
 
-export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({ 
-  jobDescription, 
-  trigger, 
-  onClose 
+export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
+  jobDescription,
+  trigger,
+  onClose,
 }) => {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(jobDescription?.name || '')
@@ -39,36 +51,39 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   const [pastedText, setPastedText] = useState(jobDescription?.pasted_text || '')
   const [fileUrl, setFileUrl] = useState(jobDescription?.file_url || '')
   const [inputMethod, setInputMethod] = useState<'file' | 'text'>('file')
-  
+
   // Company creation
   const [newCompanyName, setNewCompanyName] = useState('')
   const [showNewCompany, setShowNewCompany] = useState(false)
-  
+
   // Location creation
   const [newLocationData, setNewLocationData] = useState({ city: '', state: '', country: '' })
   const [showNewLocation, setShowNewLocation] = useState(false)
-  
+
   // Auto-population states
   const [showExtracted, setShowExtracted] = useState(false)
   const [extractedData, setExtractedData] = useState<any>(null)
   const [session] = useState(() => new JobDescriptionSession())
-  
+
   const createJobDescription = useCreateJobDescription()
   const updateJobDescription = useUpdateJobDescription()
   const createCompany = useCreateCompany()
   const createLocation = useCreateLocation()
   const { toast } = useToast()
-  
+
   const { data: companies = [] } = useCompanies()
   const { data: locations = [] } = useLocations()
 
   const isEditing = !!jobDescription
-  const isLoading = createJobDescription.isPending || updateJobDescription.isPending || 
-                    createCompany.isPending || createLocation.isPending
+  const isLoading =
+    createJobDescription.isPending ||
+    updateJobDescription.isPending ||
+    createCompany.isPending ||
+    createLocation.isPending
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name.trim()) return
 
     try {
@@ -82,7 +97,10 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
       }
 
       // Create new location if needed
-      if (showNewLocation && (newLocationData.city || newLocationData.state || newLocationData.country)) {
+      if (
+        showNewLocation &&
+        (newLocationData.city || newLocationData.state || newLocationData.country)
+      ) {
         const location = await createLocation.mutateAsync(newLocationData)
         finalLocationId = location.id
       }
@@ -92,7 +110,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
         company_id: finalCompanyId || null,
         location_id: finalLocationId || null,
         pasted_text: inputMethod === 'text' ? pastedText || null : null,
-        file_url: inputMethod === 'file' ? fileUrl || null : null
+        file_url: inputMethod === 'file' ? fileUrl || null : null,
       }
 
       if (isEditing) {
@@ -100,7 +118,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
       } else {
         await createJobDescription.mutateAsync(data)
       }
-      
+
       handleClose()
     } catch (error) {
       // Error handling is done in the hooks
@@ -108,67 +126,72 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   }
 
   const processContent = (content: string) => {
-    if (!content.trim()) return;
-    
+    if (!content.trim()) return
+
     session.info('Processing content for extraction', {
       contentLength: content.length,
-      inputMethod: inputMethod
-    });
+      inputMethod: inputMethod,
+    })
 
     try {
-      const extracted = extractJobDescriptionInfo(content, session.getSessionId());
-      setExtractedData(extracted);
-      
+      const extracted = extractJobDescriptionInfo(content, session.getSessionId())
+      setExtractedData(extracted)
+
       // Auto-populate fields
-      if (extracted.title) setName(extracted.title);
-      
+      if (extracted.title) setName(extracted.title)
+
       if (extracted.company) {
         // Try to find existing company or suggest creating new one
-        const existingCompany = companies.find(c => 
+        const existingCompany = companies.find((c) =>
           c.name.toLowerCase().includes(extracted.company!.toLowerCase())
-        );
+        )
         if (existingCompany) {
-          setCompanyId(existingCompany.id);
+          setCompanyId(existingCompany.id)
         } else {
-          setNewCompanyName(extracted.company);
-          setShowNewCompany(true);
+          setNewCompanyName(extracted.company)
+          setShowNewCompany(true)
         }
       }
-      
+
       if (extracted.location) {
         // Try to find existing location
-        const locationStr = [extracted.location.city, extracted.location.state, extracted.location.country]
-          .filter(Boolean).join(", ");
-        const existingLocation = locations.find(l => 
+        const locationStr = [
+          extracted.location.city,
+          extracted.location.state,
+          extracted.location.country,
+        ]
+          .filter(Boolean)
+          .join(', ')
+        const existingLocation = locations.find((l) =>
           formatLocationName(l).toLowerCase().includes(locationStr.toLowerCase())
-        );
+        )
         if (existingLocation) {
-          setLocationId(existingLocation.id);
+          setLocationId(existingLocation.id)
         } else if (locationStr) {
           setNewLocationData({
             city: extracted.location.city || '',
             state: extracted.location.state || '',
-            country: extracted.location.country || ''
-          });
-          setShowNewLocation(true);
+            country: extracted.location.country || '',
+          })
+          setShowNewLocation(true)
         }
       }
-      
-      setShowExtracted(true);
-      
+
+      setShowExtracted(true)
+
       toast({
-        title: "Information Extracted",
-        description: "Job information auto-populated! Please review and adjust as needed.",
-      });
+        title: 'Information Extracted',
+        description: 'Job information auto-populated! Please review and adjust as needed.',
+      })
     } catch (error) {
-      console.error('Error extracting content:', error);
+      console.error('Error extracting content:', error)
       toast({
-        title: "Extraction Error",
-        description: "Could not extract information. Please fill manually.",
-        variant: "destructive",
-      });
+        title: 'Extraction Error',
+        description: 'Could not extract information. Please fill manually.',
+        variant: 'destructive',
+      })
     }
-  };
+  }
 
   const handleClose = () => {
     setOpen(false)
@@ -188,27 +211,27 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
   }
 
   const handleFileUpload = (url: string, fileName: string, extractedContent?: any) => {
-    setFileUrl(url);
-    
+    setFileUrl(url)
+
     // Auto-populate job title from filename if it's empty
     if (!name.trim() && fileName) {
-      const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
-      const cleanName = nameWithoutExt.replace(/[-_]/g, " ");
-      setName(cleanName);
+      const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '')
+      const cleanName = nameWithoutExt.replace(/[-_]/g, ' ')
+      setName(cleanName)
     }
 
     // Process extracted text immediately
     if (extractedContent?.text) {
-      processContent(extractedContent.text);
+      processContent(extractedContent.text)
     }
-  };
+  }
 
   const handleTextPaste = (text: string) => {
-    setPastedText(text);
+    setPastedText(text)
     if (text.trim().length > 20) {
-      processContent(text);
+      processContent(text)
     }
-  };
+  }
 
   const formatLocationName = (location: any) => {
     const parts = [location.city, location.state, location.country].filter(Boolean)
@@ -234,14 +257,14 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
           </Button>
         )}
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Edit Job Description' : 'Create New Job Description'}
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
@@ -316,19 +339,25 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   <div className="space-y-2">
                     <Input
                       value={newLocationData.city}
-                      onChange={(e) => setNewLocationData(prev => ({ ...prev, city: e.target.value }))}
+                      onChange={(e) =>
+                        setNewLocationData((prev) => ({ ...prev, city: e.target.value }))
+                      }
                       placeholder="City"
                       disabled={isLoading}
                     />
                     <Input
                       value={newLocationData.state}
-                      onChange={(e) => setNewLocationData(prev => ({ ...prev, state: e.target.value }))}
+                      onChange={(e) =>
+                        setNewLocationData((prev) => ({ ...prev, state: e.target.value }))
+                      }
                       placeholder="State/Province"
                       disabled={isLoading}
                     />
                     <Input
                       value={newLocationData.country}
-                      onChange={(e) => setNewLocationData(prev => ({ ...prev, country: e.target.value }))}
+                      onChange={(e) =>
+                        setNewLocationData((prev) => ({ ...prev, country: e.target.value }))
+                      }
                       placeholder="Country"
                       disabled={isLoading}
                     />
@@ -377,12 +406,15 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
           {/* Job Description Input */}
           <div className="space-y-2">
             <Label>Job Description</Label>
-            <Tabs value={inputMethod} onValueChange={(value) => setInputMethod(value as 'file' | 'text')}>
+            <Tabs
+              value={inputMethod}
+              onValueChange={(value) => setInputMethod(value as 'file' | 'text')}
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="file">Upload File</TabsTrigger>
                 <TabsTrigger value="text">Paste Text</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="file" className="space-y-4">
                 <FileUpload
                   bucket="SATS_job_documents"
@@ -390,12 +422,10 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   disabled={isLoading}
                 />
                 {fileUrl && (
-                  <p className="text-sm text-muted-foreground">
-                    File uploaded successfully
-                  </p>
+                  <p className="text-sm text-muted-foreground">File uploaded successfully</p>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="text" className="space-y-4">
                 <Textarea
                   value={pastedText}
@@ -413,11 +443,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
             <div className="bg-muted p-4 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Auto-Extracted Information</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowExtracted(false)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowExtracted(false)}>
                   ✕
                 </Button>
               </div>
@@ -438,8 +464,13 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   <div className="flex justify-between">
                     <span className="font-medium">Location:</span>
                     <span className="text-right">
-                      {[extractedData.location.city, extractedData.location.state, extractedData.location.country]
-                        .filter(Boolean).join(", ")}
+                      {[
+                        extractedData.location.city,
+                        extractedData.location.state,
+                        extractedData.location.country,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
                     </span>
                   </div>
                 )}
@@ -447,8 +478,9 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   <div className="flex justify-between">
                     <span className="font-medium">Skills Found:</span>
                     <span className="text-right text-xs">
-                      {extractedData.skills.slice(0, 3).join(", ")}
-                      {extractedData.skills.length > 3 && ` +${extractedData.skills.length - 3} more`}
+                      {extractedData.skills.slice(0, 3).join(', ')}
+                      {extractedData.skills.length > 3 &&
+                        ` +${extractedData.skills.length - 3} more`}
                     </span>
                   </div>
                 )}
@@ -460,16 +492,15 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
           )}
 
           <div className="flex justify-end space-x-3">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !name.trim()}>
-              {isLoading ? 'Saving...' : isEditing ? 'Update Job Description' : 'Create Job Description'}
+              {isLoading
+                ? 'Saving...'
+                : isEditing
+                  ? 'Update Job Description'
+                  : 'Create Job Description'}
             </Button>
           </div>
         </form>

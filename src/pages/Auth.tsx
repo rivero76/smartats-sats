@@ -1,170 +1,180 @@
-import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
-import genezxLogo from "@/assets/genezx-logo.png";
-import { authEvents } from "@/lib/authLogger";
+import { useState } from 'react'
+import { Navigate, Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/AuthContext'
+import { Loader2 } from 'lucide-react'
+import genezxLogo from '@/assets/genezx-logo.png'
+import { authEvents } from '@/lib/authLogger'
 
 const Auth = () => {
-  const { signUp, signIn, user, loading, resendConfirmation } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
-  const [existingUserEmail, setExistingUserEmail] = useState("");
-  
+  const { signUp, signIn, user, loading, resendConfirmation } = useAuth()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false)
+  const [existingUserEmail, setExistingUserEmail] = useState('')
+
   // Form state
   const [signUpData, setSignUpData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  })
+
   const [signInData, setSignInData] = useState({
-    email: "",
-    password: "",
-  });
+    email: '',
+    password: '',
+  })
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     // Validate passwords match
-    const validationErrors: string[] = [];
+    const validationErrors: string[] = []
     if (signUpData.password !== signUpData.confirmPassword) {
-      validationErrors.push("Passwords do not match");
+      validationErrors.push('Passwords do not match')
       toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
-      await authEvents.formSubmission('signup', signUpData.email, validationErrors);
-      return;
+        title: 'Error',
+        description: 'Passwords do not match',
+        variant: 'destructive',
+      })
+      await authEvents.formSubmission('signup', signUpData.email, validationErrors)
+      return
     }
 
     // Log form submission
-    await authEvents.formSubmission('signup', signUpData.email);
-    setIsLoading(true);
-    
-    const { error, data } = await signUp(signUpData.email, signUpData.password, signUpData.name);
-    
+    await authEvents.formSubmission('signup', signUpData.email)
+    setIsLoading(true)
+
+    const { error, data } = await signUp(signUpData.email, signUpData.password, signUpData.name)
+
     if (error) {
       // Handle specific error cases to provide better UX
-      if (error.message?.includes("User already registered") || 
-          error.message?.includes("already been registered")) {
-        setExistingUserEmail(signUpData.email);
-        setShowResendConfirmation(true);
-        const toastMessage = "An account with this email already exists. Try signing in or resend confirmation email.";
+      if (
+        error.message?.includes('User already registered') ||
+        error.message?.includes('already been registered')
+      ) {
+        setExistingUserEmail(signUpData.email)
+        setShowResendConfirmation(true)
+        const toastMessage =
+          'An account with this email already exists. Try signing in or resend confirmation email.'
         toast({
-          title: "Account Already Exists",
+          title: 'Account Already Exists',
           description: toastMessage,
-          variant: "default",
-        });
-        await authEvents.toastShown('info', toastMessage, 'signup_existing_user');
+          variant: 'default',
+        })
+        await authEvents.toastShown('info', toastMessage, 'signup_existing_user')
       } else {
-        const toastMessage = error.message;
+        const toastMessage = error.message
         toast({
-          title: "Sign up failed",
+          title: 'Sign up failed',
           description: toastMessage,
-          variant: "destructive",
-        });
-        await authEvents.toastShown('error', toastMessage, 'signup_error');
+          variant: 'destructive',
+        })
+        await authEvents.toastShown('error', toastMessage, 'signup_error')
       }
     } else {
       // Check if user was created or just reactivated
       if (data?.user && !data.user.email_confirmed_at) {
-        const toastMessage = "Check your email to verify your account";
+        const toastMessage = 'Check your email to verify your account'
         toast({
-          title: "Success!",
+          title: 'Success!',
           description: toastMessage,
-        });
-        await authEvents.toastShown('success', toastMessage, 'signup_success_new_user');
+        })
+        await authEvents.toastShown('success', toastMessage, 'signup_success_new_user')
       } else if (data?.user && data.user.email_confirmed_at) {
         // User was reactivated (already confirmed)
-        const toastMessage = "Your account has been reactivated. You can now sign in.";
+        const toastMessage = 'Your account has been reactivated. You can now sign in.'
         toast({
-          title: "Welcome back!",
+          title: 'Welcome back!',
           description: toastMessage,
-        });
-        await authEvents.toastShown('success', toastMessage, 'signup_success_reactivated');
+        })
+        await authEvents.toastShown('success', toastMessage, 'signup_success_reactivated')
       } else {
-        const toastMessage = "Check your email to verify your account";
+        const toastMessage = 'Check your email to verify your account'
         toast({
-          title: "Success!",
+          title: 'Success!',
           description: toastMessage,
-        });
-        await authEvents.toastShown('success', toastMessage, 'signup_success_default');
+        })
+        await authEvents.toastShown('success', toastMessage, 'signup_success_default')
       }
     }
-    
-    setIsLoading(false);
-  };
+
+    setIsLoading(false)
+  }
 
   const handleResendConfirmation = async () => {
-    if (!existingUserEmail) return;
-    
-    setIsLoading(true);
-    const { error } = await resendConfirmation(existingUserEmail);
-    
+    if (!existingUserEmail) return
+
+    setIsLoading(true)
+    const { error } = await resendConfirmation(existingUserEmail)
+
     if (error) {
-      const toastMessage = error.message;
+      const toastMessage = error.message
       toast({
-        title: "Error",
+        title: 'Error',
         description: toastMessage,
-        variant: "destructive",
-      });
-      await authEvents.toastShown('error', toastMessage, 'resend_confirmation_error');
+        variant: 'destructive',
+      })
+      await authEvents.toastShown('error', toastMessage, 'resend_confirmation_error')
     } else {
-      const toastMessage = "Check your email for the confirmation link";
+      const toastMessage = 'Check your email for the confirmation link'
       toast({
-        title: "Confirmation Email Sent!",
+        title: 'Confirmation Email Sent!',
         description: toastMessage,
-      });
-      await authEvents.toastShown('success', toastMessage, 'resend_confirmation_success');
-      setShowResendConfirmation(false);
+      })
+      await authEvents.toastShown('success', toastMessage, 'resend_confirmation_success')
+      setShowResendConfirmation(false)
     }
-    
-    setIsLoading(false);
-  };
+
+    setIsLoading(false)
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     // Log form submission
-    await authEvents.formSubmission('signin', signInData.email);
-    setIsLoading(true);
-    
-    const { error } = await signIn(signInData.email, signInData.password);
-    
+    await authEvents.formSubmission('signin', signInData.email)
+    setIsLoading(true)
+
+    const { error } = await signIn(signInData.email, signInData.password)
+
     if (error) {
-      const toastMessage = error.message;
+      const toastMessage = error.message
       toast({
-        title: "Sign in failed",
+        title: 'Sign in failed',
         description: toastMessage,
-        variant: "destructive",
-      });
-      await authEvents.toastShown('error', toastMessage, 'signin_error');
+        variant: 'destructive',
+      })
+      await authEvents.toastShown('error', toastMessage, 'signin_error')
     }
-    
-    setIsLoading(false);
-  };
+
+    setIsLoading(false)
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    );
+    )
   }
 
   return (
@@ -172,30 +182,35 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <img 
-              src={genezxLogo} 
-              alt="geneZx" 
-              className="h-16 w-auto object-contain"
-            />
+            <img src={genezxLogo} alt="geneZx" className="h-16 w-auto object-contain" />
           </div>
           <div className="space-y-2">
             <CardTitle className="text-2xl font-bold text-primary">Smart ATS</CardTitle>
             <CardDescription className="text-base leading-relaxed">
-              Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
+              Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize
+              your hiring process.
             </CardDescription>
             <p className="text-xs text-muted-foreground">
-              Powered by <a href="https://genezx.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">geneZx</a>
+              Powered by{' '}
+              <a
+                href="https://genezx.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline font-medium"
+              >
+                geneZx
+              </a>
             </p>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin" className="space-y-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -209,7 +224,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
                   <Input
@@ -221,7 +236,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -229,18 +244,18 @@ const Auth = () => {
                       Signing In...
                     </>
                   ) : (
-                    "Sign In"
+                    'Sign In'
                   )}
                 </Button>
               </form>
-              
+
               <div className="text-center text-sm">
                 <Link to="/reset-password" className="text-primary hover:underline">
                   Forgot your password?
                 </Link>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="signup" className="space-y-4">
               {showResendConfirmation ? (
                 <div className="space-y-4">
@@ -249,10 +264,11 @@ const Auth = () => {
                       An account with <strong>{existingUserEmail}</strong> already exists.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      You can either sign in with your existing password, or resend the confirmation email if you never received it.
+                      You can either sign in with your existing password, or resend the confirmation
+                      email if you never received it.
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -266,31 +282,31 @@ const Auth = () => {
                           Sending...
                         </>
                       ) : (
-                        "Resend Confirmation"
+                        'Resend Confirmation'
                       )}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setShowResendConfirmation(false);
-                        setSignInData({ ...signInData, email: existingUserEmail });
+                        setShowResendConfirmation(false)
+                        setSignInData({ ...signInData, email: existingUserEmail })
                         // Switch to sign in tab
-                        const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
-                        signInTab?.click();
+                        const signInTab = document.querySelector('[value="signin"]') as HTMLElement
+                        signInTab?.click()
                       }}
                       className="flex-1"
                     >
                       Sign In Instead
                     </Button>
                   </div>
-                  
+
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => {
-                      setShowResendConfirmation(false);
-                      setExistingUserEmail("");
+                      setShowResendConfirmation(false)
+                      setExistingUserEmail('')
                     }}
                     className="w-full"
                   >
@@ -310,7 +326,7 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input
@@ -322,7 +338,7 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
@@ -334,7 +350,7 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm-password">Confirm Password</Label>
                     <Input
@@ -342,11 +358,13 @@ const Auth = () => {
                       type="password"
                       placeholder="Confirm your password"
                       value={signUpData.confirmPassword}
-                      onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
+                      onChange={(e) =>
+                        setSignUpData({ ...signUpData, confirmPassword: e.target.value })
+                      }
                       required
                     />
                   </div>
-                  
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
@@ -354,7 +372,7 @@ const Auth = () => {
                         Creating Account...
                       </>
                     ) : (
-                      "Create Account"
+                      'Create Account'
                     )}
                   </Button>
                 </form>
@@ -364,7 +382,7 @@ const Auth = () => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default Auth;
+export default Auth

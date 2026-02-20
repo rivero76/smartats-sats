@@ -1,18 +1,50 @@
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { FileText, Search, Plus, Edit, Trash2, Building, MapPin, File, Type, ExternalLink } from "lucide-react"
-import { useJobDescriptions, useDeleteJobDescription, JobDescription } from '@/hooks/useJobDescriptions'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
+  FileText,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Building,
+  MapPin,
+  File,
+  Type,
+  ExternalLink,
+} from 'lucide-react'
+import {
+  useJobDescriptions,
+  useDeleteJobDescription,
+  JobDescription,
+} from '@/hooks/useJobDescriptions'
 import { JobDescriptionModal } from '@/components/JobDescriptionModal'
 import { Skeleton } from '@/components/ui/skeleton'
-import { HelpButton } from "@/components/help/HelpButton"
-import { HelpModal } from "@/components/help/HelpModal"
-import { getHelpContent } from "@/data/helpContent"
-import { HelpTooltip } from "@/components/help/HelpTooltip"
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
+import { HelpTooltip } from '@/components/help/HelpTooltip'
 
 const JobDescriptions = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -21,9 +53,10 @@ const JobDescriptions = () => {
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('jobDescriptions')
 
-  const filteredJobDescriptions = jobDescriptions.filter(jd =>
-    jd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    jd.company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredJobDescriptions = jobDescriptions.filter(
+    (jd) =>
+      jd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      jd.company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleDelete = async (id: string) => {
@@ -38,7 +71,7 @@ const JobDescriptions = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -64,14 +97,12 @@ const JobDescriptions = () => {
           </div>
           <JobDescriptionModal />
         </div>
-        
+
         <Card>
           <CardContent className="flex items-center justify-center py-8">
             <div className="text-center">
               <p className="text-destructive">Failed to load job descriptions</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Please try refreshing the page
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Please try refreshing the page</p>
             </div>
           </CardContent>
         </Card>
@@ -91,7 +122,7 @@ const JobDescriptions = () => {
         <div className="flex items-center space-x-2">
           <JobDescriptionModal />
           {helpContent && (
-            <HelpButton 
+            <HelpButton
               onClick={() => setShowHelp(true)}
               tooltip="Learn how to create and manage job descriptions"
             />
@@ -106,9 +137,7 @@ const JobDescriptions = () => {
             <Search className="h-5 w-5" />
             <span>Search & Filter</span>
           </CardTitle>
-          <CardDescription>
-            Find job descriptions by title or company name.
-          </CardDescription>
+          <CardDescription>Find job descriptions by title or company name.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-4">
@@ -152,15 +181,19 @@ const JobDescriptions = () => {
                 {searchQuery ? 'No matching job descriptions' : 'No job descriptions created yet'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'Try adjusting your search terms.' : 'Create your first job description to get started with ATS analysis.'}
+                {searchQuery
+                  ? 'Try adjusting your search terms.'
+                  : 'Create your first job description to get started with ATS analysis.'}
               </p>
               {!searchQuery && (
-                <JobDescriptionModal trigger={
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Your First Job Description
-                  </Button>
-                } />
+                <JobDescriptionModal
+                  trigger={
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Your First Job Description
+                    </Button>
+                  }
+                />
               )}
             </div>
           ) : (
@@ -178,9 +211,7 @@ const JobDescriptions = () => {
                     </HelpTooltip>
                   </TableHead>
                   <TableHead>
-                    <HelpTooltip content="Geographic location for this job">
-                      Location
-                    </HelpTooltip>
+                    <HelpTooltip content="Geographic location for this job">Location</HelpTooltip>
                   </TableHead>
                   <TableHead>
                     <HelpTooltip content="Whether this was uploaded as a file or entered as text">
@@ -202,9 +233,7 @@ const JobDescriptions = () => {
               <TableBody>
                 {filteredJobDescriptions.map((jd) => (
                   <TableRow key={jd.id}>
-                    <TableCell className="font-medium">
-                      {jd.name}
-                    </TableCell>
+                    <TableCell className="font-medium">{jd.name}</TableCell>
                     <TableCell>
                       {jd.company ? (
                         <div className="flex items-center space-x-1">
@@ -260,8 +289,8 @@ const JobDescriptions = () => {
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
-                        
-                        <JobDescriptionModal 
+
+                        <JobDescriptionModal
                           jobDescription={jd}
                           trigger={
                             <Button variant="ghost" size="sm">
@@ -269,10 +298,14 @@ const JobDescriptions = () => {
                             </Button>
                           }
                         />
-                        
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -280,7 +313,8 @@ const JobDescriptions = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Job Description</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{jd.name}"? This action cannot be undone.
+                                Are you sure you want to delete "{jd.name}"? This action cannot be
+                                undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -306,11 +340,7 @@ const JobDescriptions = () => {
 
       {/* Help Modal */}
       {helpContent && (
-        <HelpModal 
-          open={showHelp}
-          onOpenChange={setShowHelp}
-          content={helpContent}
-        />
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
       )}
     </div>
   )

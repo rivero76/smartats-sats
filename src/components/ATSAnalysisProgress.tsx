@@ -1,18 +1,22 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 22:19:11 | Reviewed recent ATS progress UI updates and added timestamped file header tracking.
+ */
 import React from 'react'
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent } from "@/components/ui/card"
-import { 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader2, 
-  FileText, 
-  Brain, 
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  FileText,
+  Brain,
   Target,
   Calendar,
-  Zap
-} from "lucide-react"
+  Zap,
+} from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ATSAnalysis } from '@/hooks/useATSAnalyses'
 
@@ -22,8 +26,12 @@ interface ATSAnalysisProgressProps {
 
 const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
   const getStatusDetails = (status: string, analysisData?: Record<string, any>) => {
-    const startTime = analysisData?.processing_started_at ? new Date(analysisData.processing_started_at) : new Date(analysis.created_at)
-    const completedTime = analysisData?.processing_completed_at ? new Date(analysisData.processing_completed_at) : null
+    const startTime = analysisData?.processing_started_at
+      ? new Date(analysisData.processing_started_at)
+      : new Date(analysis.created_at)
+    const completedTime = analysisData?.processing_completed_at
+      ? new Date(analysisData.processing_completed_at)
+      : null
     const processingTime = analysisData?.processing_time_ms
     const tokenUsage = analysisData?.token_usage
     const resumeWarnings = analysisData?.resume_warnings || []
@@ -32,7 +40,9 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
     switch (status) {
       case 'completed':
         return {
-          badge: <Badge className="bg-green-100 text-green-800 border-green-200">✅ Complete</Badge>,
+          badge: (
+            <Badge className="bg-green-100 text-green-800 border-green-200">✅ Complete</Badge>
+          ),
           title: 'Analysis Complete',
           description: `Finished ${formatDistanceToNow(completedTime || startTime, { addSuffix: true })}`,
           showProgress: true,
@@ -41,8 +51,8 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
             processingTime,
             tokenUsage,
             modelUsed,
-            resumeWarnings
-          }
+            resumeWarnings,
+          },
         }
       case 'processing':
         return {
@@ -54,8 +64,8 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
           details: {
             processingTime,
             tokenUsage,
-            modelUsed
-          }
+            modelUsed,
+          },
         }
       case 'error':
         return {
@@ -66,8 +76,8 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
           progress: 0,
           error: analysisData?.error_details || 'Unknown error occurred',
           details: {
-            resumeWarnings
-          }
+            resumeWarnings,
+          },
         }
       default:
         return {
@@ -76,7 +86,7 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
           description: `Queued ${formatDistanceToNow(startTime, { addSuffix: true })}`,
           showProgress: true,
           progress: 10,
-          details: {}
+          details: {},
         }
     }
   }
@@ -89,26 +99,26 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
         id: 'queued',
         label: 'Analysis Queued',
         icon: Clock,
-        completed: true
+        completed: true,
       },
       {
         id: 'extracting',
         label: 'Extracting Content',
         icon: FileText,
-        completed: analysis.status !== 'initial'
+        completed: analysis.status !== 'initial' && analysis.status !== 'queued',
       },
       {
         id: 'analyzing',
         label: 'AI Analysis',
         icon: Brain,
-        completed: analysis.status === 'completed'
+        completed: analysis.status === 'completed',
       },
       {
         id: 'results',
         label: 'Results Ready',
         icon: Target,
-        completed: analysis.status === 'completed'
-      }
+        completed: analysis.status === 'completed',
+      },
     ]
 
     return steps
@@ -147,13 +157,15 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
       <div className="flex items-center gap-2">
         {getTimelineSteps().map((step, index) => (
           <React.Fragment key={step.id}>
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-              step.completed 
-                ? 'bg-green-100 text-green-700' 
-                : analysis.status === 'processing' && index === 2
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-500'
-            }`}>
+            <div
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                step.completed
+                  ? 'bg-green-100 text-green-700'
+                  : analysis.status === 'processing' && index === 2
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-500'
+              }`}
+            >
               <step.icon className="h-3 w-3" />
               <span>{step.label}</span>
             </div>
@@ -165,7 +177,9 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
       </div>
 
       {/* Processing Details */}
-      {(statusInfo.details.tokenUsage || statusInfo.details.modelUsed || statusInfo.details.resumeWarnings?.length > 0) && (
+      {(statusInfo.details.tokenUsage ||
+        statusInfo.details.modelUsed ||
+        statusInfo.details.resumeWarnings?.length > 0) && (
         <Card>
           <CardContent className="pt-4">
             <div className="grid gap-3 text-sm">
@@ -176,7 +190,7 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
                   <span className="font-mono">{statusInfo.details.modelUsed}</span>
                 </div>
               )}
-              
+
               {statusInfo.details.tokenUsage && (
                 <div className="flex items-center gap-2">
                   <Brain className="h-4 w-4 text-blue-500" />
@@ -195,7 +209,9 @@ const ATSAnalysisProgress = ({ analysis }: ATSAnalysisProgressProps) => {
                   </div>
                   <ul className="ml-6 space-y-1">
                     {statusInfo.details.resumeWarnings.map((warning: string, index: number) => (
-                      <li key={index} className="text-orange-700 text-xs">• {warning}</li>
+                      <li key={index} className="text-orange-700 text-xs">
+                        • {warning}
+                      </li>
                     ))}
                   </ul>
                 </div>

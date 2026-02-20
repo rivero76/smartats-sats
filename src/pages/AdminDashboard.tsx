@@ -1,72 +1,80 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ShieldCheck, Users, Activity, Database, Settings, AlertTriangle, FileText } from "lucide-react"
-import { LoggingControlPanel } from "@/components/admin/LoggingControlPanel"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  ShieldCheck,
+  Users,
+  Activity,
+  Database,
+  Settings,
+  AlertTriangle,
+  FileText,
+} from 'lucide-react'
+import { LoggingControlPanel } from '@/components/admin/LoggingControlPanel'
 
 const AdminDashboard = () => {
   const systemStats = [
     {
-      title: "Total Users",
-      value: "1,234",
-      description: "Active registered users",
+      title: 'Total Users',
+      value: '1,234',
+      description: 'Active registered users',
       icon: Users,
-      color: "text-blue-600"
+      color: 'text-blue-600',
     },
     {
-      title: "Analyses Today",
-      value: "89",
-      description: "ATS analyses completed",
+      title: 'Analyses Today',
+      value: '89',
+      description: 'ATS analyses completed',
       icon: Activity,
-      color: "text-green-600"
+      color: 'text-green-600',
     },
     {
-      title: "Storage Used",
-      value: "67%",
-      description: "Database storage capacity",
+      title: 'Storage Used',
+      value: '67%',
+      description: 'Database storage capacity',
       icon: Database,
-      color: "text-purple-600"
+      color: 'text-purple-600',
     },
     {
-      title: "System Alerts",
-      value: "3",
-      description: "Requiring attention",
+      title: 'System Alerts',
+      value: '3',
+      description: 'Requiring attention',
       icon: AlertTriangle,
-      color: "text-orange-600"
-    }
+      color: 'text-orange-600',
+    },
   ]
 
   const recentActivity = [
     {
-      user: "john.doe@example.com",
-      action: "Uploaded resume",
-      time: "2 minutes ago",
-      type: "success"
+      user: 'john.doe@example.com',
+      action: 'Uploaded resume',
+      time: '2 minutes ago',
+      type: 'success',
     },
     {
-      user: "jane.smith@company.com", 
-      action: "Completed ATS analysis",
-      time: "5 minutes ago",
-      type: "info"
+      user: 'jane.smith@company.com',
+      action: 'Completed ATS analysis',
+      time: '5 minutes ago',
+      type: 'info',
     },
     {
-      user: "mike.johnson@startup.io",
-      action: "Created job description",
-      time: "12 minutes ago",
-      type: "success"
+      user: 'mike.johnson@startup.io',
+      action: 'Created job description',
+      time: '12 minutes ago',
+      type: 'success',
     },
     {
-      user: "System",
-      action: "Database backup completed",
-      time: "1 hour ago",
-      type: "info"
+      user: 'System',
+      action: 'Database backup completed',
+      time: '1 hour ago',
+      type: 'info',
     },
     {
-      user: "sarah.wilson@hr.com",
-      action: "Failed login attempt",
-      time: "2 hours ago",
-      type: "warning"
-    }
+      user: 'sarah.wilson@hr.com',
+      action: 'Failed login attempt',
+      time: '2 hours ago',
+      type: 'warning',
+    },
   ]
 
   return (
@@ -115,18 +123,21 @@ const AdminDashboard = () => {
             <Card className="col-span-4">
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  Latest user actions and system events
-                </CardDescription>
+                <CardDescription>Latest user actions and system events</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {recentActivity.map((activity, index) => (
                     <div key={index} className="flex items-start space-x-4">
-                      <div className={`flex h-2 w-2 rounded-full mt-2 ${
-                        activity.type === 'success' ? 'bg-green-500' :
-                        activity.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
-                      }`} />
+                      <div
+                        className={`flex h-2 w-2 rounded-full mt-2 ${
+                          activity.type === 'success'
+                            ? 'bg-green-500'
+                            : activity.type === 'warning'
+                              ? 'bg-orange-500'
+                              : 'bg-blue-500'
+                        }`}
+                      />
                       <div className="space-y-1 flex-1">
                         <p className="text-sm">
                           <span className="font-medium text-primary">{activity.user}</span>
@@ -144,9 +155,7 @@ const AdminDashboard = () => {
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>System Health</CardTitle>
-                <CardDescription>
-                  Current system status and performance
-                </CardDescription>
+                <CardDescription>Current system status and performance</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -155,34 +164,36 @@ const AdminDashboard = () => {
                     <span className="text-green-600">Normal (23%)</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{width: '23%'}}></div>
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '23%' }}></div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Memory Usage</span>
                     <span className="text-yellow-600">Moderate (67%)</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
-                    <div className="bg-yellow-600 h-2 rounded-full" style={{width: '67%'}}></div>
+                    <div className="bg-yellow-600 h-2 rounded-full" style={{ width: '67%' }}></div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>API Response Time</span>
                     <span className="text-green-600">Excellent (120ms)</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{width: '15%'}}></div>
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '15%' }}></div>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-600">All Systems Operational</span>
+                    <span className="text-sm font-medium text-green-600">
+                      All Systems Operational
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -202,7 +213,9 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   View, edit, and manage user accounts and permissions.
                 </p>
-                <Button variant="outline" className="w-full">Manage Users</Button>
+                <Button variant="outline" className="w-full">
+                  Manage Users
+                </Button>
               </CardContent>
             </Card>
 
@@ -217,7 +230,9 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Monitor database performance and manage data storage.
                 </p>
-                <Button variant="outline" className="w-full">View Database</Button>
+                <Button variant="outline" className="w-full">
+                  View Database
+                </Button>
               </CardContent>
             </Card>
 
@@ -232,7 +247,9 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Generate detailed reports on system usage and performance.
                 </p>
-                <Button variant="outline" className="w-full">View Analytics</Button>
+                <Button variant="outline" className="w-full">
+                  View Analytics
+                </Button>
               </CardContent>
             </Card>
           </div>

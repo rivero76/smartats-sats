@@ -1,23 +1,52 @@
+// src/pages/MyResumes.tsx
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { FileText, Download, Trash2, Plus, Edit, ExternalLink } from "lucide-react"
-import { useResumes, useDeleteResume, Resume } from '@/hooks/useResumes'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { FileText, Download, Trash2, Plus, Edit } from 'lucide-react'
+import { useResumes, useDeleteResume } from '@/hooks/useResumes'
 import { ResumeModal } from '@/components/ResumeModal'
 import { ResumePreview } from '@/components/ResumePreview'
 import { Skeleton } from '@/components/ui/skeleton'
-import { HelpButton } from "@/components/help/HelpButton"
-import { HelpModal } from "@/components/help/HelpModal"
-import { getHelpContent } from "@/data/helpContent"
-import { HelpTooltip } from "@/components/help/HelpTooltip"
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
+import { HelpTooltip } from '@/components/help/HelpTooltip'
+import { FileUpload } from '@/components/FileUpload'
 
 const MyResumes = () => {
   const { data: resumes = [], isLoading, error } = useResumes()
   const deleteResume = useDeleteResume()
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('resumes')
+
+  // Controls the simple "Upload Resume" dialog that wraps FileUpload
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   const handleDelete = async (id: string) => {
     try {
@@ -31,7 +60,7 @@ const MyResumes = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -45,6 +74,25 @@ const MyResumes = () => {
     document.body.removeChild(link)
   }
 
+  const uploadDialog = (
+    <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Upload New Resume</DialogTitle>
+        </DialogHeader>
+        <FileUpload
+          bucket="SATS_resumes"
+          onUpload={() => {
+            // FileUpload handles resume + extraction creation.
+            // Closing the dialog is enough; react-query will refresh the list.
+            setUploadOpen(false)
+          }}
+          disabled={false}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -56,23 +104,42 @@ const MyResumes = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <ResumeModal />
+            {/* Use new upload flow instead of ResumeModal for creation */}
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Upload Resume
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>Upload New Resume</DialogTitle>
+                </DialogHeader>
+                <FileUpload
+                  bucket="SATS_resumes"
+                  onUpload={() => {
+                    setUploadOpen(false)
+                  }}
+                  disabled={false}
+                />
+              </DialogContent>
+            </Dialog>
+
             {helpContent && (
-              <HelpButton 
+              <HelpButton
                 onClick={() => setShowHelp(true)}
                 tooltip="Learn how to manage your resumes effectively"
               />
             )}
           </div>
         </div>
-        
+
         <Card>
           <CardContent className="flex items-center justify-center py-8">
             <div className="text-center">
               <p className="text-destructive">Failed to load resumes</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Please try refreshing the page
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Please try refreshing the page</p>
             </div>
           </CardContent>
         </Card>
@@ -82,6 +149,7 @@ const MyResumes = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Upload button + Help */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Resumes</h1>
@@ -90,9 +158,30 @@ const MyResumes = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <ResumeModal />
+          {/* New upload flow using FileUpload in a simple dialog */}
+          <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Upload Resume
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Upload New Resume</DialogTitle>
+              </DialogHeader>
+              <FileUpload
+                bucket="SATS_resumes"
+                onUpload={() => {
+                  setUploadOpen(false)
+                }}
+                disabled={false}
+              />
+            </DialogContent>
+          </Dialog>
+
           {helpContent && (
-            <HelpButton 
+            <HelpButton
               onClick={() => setShowHelp(true)}
               tooltip="Learn how to manage your resumes effectively"
             />
@@ -100,6 +189,7 @@ const MyResumes = () => {
         </div>
       </div>
 
+      {/* Main card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -110,7 +200,7 @@ const MyResumes = () => {
               </CardDescription>
             </div>
             {helpContent && (
-              <HelpButton 
+              <HelpButton
                 onClick={() => setShowHelp(true)}
                 size="icon"
                 variant="ghost"
@@ -138,12 +228,10 @@ const MyResumes = () => {
               <p className="text-muted-foreground mb-4">
                 Upload your first resume to get started with ATS analysis and optimization.
               </p>
-              <ResumeModal trigger={
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Upload Your First Resume
-                </Button>
-              } />
+              <Button onClick={() => setUploadOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Upload Your First Resume
+              </Button>
             </div>
           ) : (
             <Table>
@@ -174,9 +262,7 @@ const MyResumes = () => {
               <TableBody>
                 {resumes.map((resume) => (
                   <TableRow key={resume.id}>
-                    <TableCell className="font-medium">
-                      {resume.name}
-                    </TableCell>
+                    <TableCell className="font-medium">{resume.name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(resume.created_at)}
                     </TableCell>
@@ -197,7 +283,8 @@ const MyResumes = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
-                        <ResumeModal 
+                        {/* Edit-only modal now */}
+                        <ResumeModal
                           resume={resume}
                           trigger={
                             <Button variant="ghost" size="sm">
@@ -205,10 +292,14 @@ const MyResumes = () => {
                             </Button>
                           }
                         />
-                        
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -216,7 +307,8 @@ const MyResumes = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Resume</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{resume.name}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{resume.name}&quot;? This
+                                action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -244,12 +336,11 @@ const MyResumes = () => {
 
       {/* Help Modal */}
       {helpContent && (
-        <HelpModal 
-          open={showHelp}
-          onOpenChange={setShowHelp}
-          content={helpContent}
-        />
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
       )}
+
+      {/* Shared upload dialog instance (for direct state control) */}
+      {uploadDialog}
     </div>
   )
 }

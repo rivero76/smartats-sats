@@ -1,0 +1,19 @@
+# Development Dockerfile with hot reload support
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* bun.lockb* ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose development port (Vite default)
+EXPOSE 5173
+
+# Run development server with host binding
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

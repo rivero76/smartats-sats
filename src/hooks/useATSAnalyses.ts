@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 22:19:11 | Reviewed ATS analysis hook updates and added timestamped file header tracking.
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { supabase } from '@/integrations/supabase/client'
@@ -10,7 +14,7 @@ export interface ATSAnalysis {
   user_id: string
   resume_id: string
   jd_id: string
-  status: 'initial' | 'processing' | 'completed' | 'error'
+  status: 'initial' | 'queued' | 'processing' | 'completed' | 'error'
   ats_score?: number
   matched_skills: string[]
   missing_skills: string[]
@@ -56,15 +60,16 @@ export interface ATSAnalysisStats {
 export const useATSAnalyses = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  
+
   const query = useQuery({
     queryKey: ['ats-analyses'],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated')
-      
+
       const { data, error } = await supabase
         .from('sats_analyses')
-        .select(`
+        .select(
+          `
           *,
           resume:sats_resumes!sats_analyses_resume_id_fkey (
             id,
@@ -78,10 +83,11 @@ export const useATSAnalyses = () => {
               name
             )
           )
-        `)
+        `
+        )
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-      
+
       if (error) throw error
 
       // Fetch user details separately for each analysis
@@ -92,24 +98,26 @@ export const useATSAnalyses = () => {
             .select('id, name, auth_user_id')
             .eq('auth_user_id', analysis.user_id)
             .single()
-          
+
           // Also fetch email from profiles table
           const { data: profileData } = await supabase
             .from('profiles')
             .select('email')
             .eq('user_id', analysis.user_id)
             .single()
-          
+
           return {
             ...analysis,
-            user: userError ? null : {
-              ...userData,
-              email: profileData?.email
-            }
+            user: userError
+              ? null
+              : {
+                  ...userData,
+                  email: profileData?.email,
+                },
           }
         })
       )
-      
+
       return analysesWithUserData as ATSAnalysis[]
     },
     enabled: !!user,
@@ -127,7 +135,7 @@ export const useATSAnalyses = () => {
           event: '*',
           schema: 'public',
           table: 'sats_analyses',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
         () => {
           // Invalidate and refetch when any change occurs
@@ -147,7 +155,7 @@ export const useATSAnalyses = () => {
 // Calculate statistics for ATS analyses
 export const useATSAnalysisStats = () => {
   const { data: analyses } = useATSAnalyses()
-  
+
   return useQuery({
     queryKey: ['ats-analysis-stats', analyses?.length],
     queryFn: async (): Promise<ATSAnalysisStats> => {
@@ -156,30 +164,35 @@ export const useATSAnalysisStats = () => {
           totalAnalyses: 0,
           averageScore: 0,
           highMatches: 0,
-          needImprovement: 0
+          needImprovement: 0,
         }
       }
-      
-      const completedAnalyses = analyses.filter(a => a.status === 'completed' && a.ats_score !== null)
+
+      const completedAnalyses = analyses.filter(
+        (a) => a.status === 'completed' && a.ats_score !== null
+      )
       const totalAnalyses = analyses.length
-      
+
       let averageScore = 0
       let highMatches = 0
       let needImprovement = 0
-      
+
       if (completedAnalyses.length > 0) {
-        const totalScore = completedAnalyses.reduce((sum, analysis) => sum + (analysis.ats_score || 0), 0)
+        const totalScore = completedAnalyses.reduce(
+          (sum, analysis) => sum + (analysis.ats_score || 0),
+          0
+        )
         averageScore = Math.round(totalScore / completedAnalyses.length)
-        
-        highMatches = completedAnalyses.filter(a => (a.ats_score || 0) > 80).length
-        needImprovement = completedAnalyses.filter(a => (a.ats_score || 0) < 60).length
+
+        highMatches = completedAnalyses.filter((a) => (a.ats_score || 0) > 80).length
+        needImprovement = completedAnalyses.filter((a) => (a.ats_score || 0) < 60).length
       }
-      
+
       return {
         totalAnalyses,
         averageScore,
         highMatches,
-        needImprovement
+        needImprovement,
       }
     },
     enabled: !!analyses,
@@ -192,14 +205,11 @@ export const useCreateATSAnalysis = useDirectATSAnalysis
 // Delete an ATS analysis
 export const useDeleteATSAnalysis = () => {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('sats_analyses')
-        .delete()
-        .eq('id', id)
-      
+      const { error } = await supabase.from('sats_analyses').delete().eq('id', id)
+
       if (error) throw error
     },
     onSuccess: () => {

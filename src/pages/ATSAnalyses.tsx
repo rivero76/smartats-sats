@@ -1,27 +1,52 @@
+/**
+ * UPDATE LOG
+ * 2026-02-20 22:19:11 | Reviewed ATS analyses page updates and added timestamped file header tracking.
+ */
 import { useState } from 'react'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
 import ATSDebugModal from '@/components/ATSDebugModal'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Plus, TrendingUp, Target, AlertCircle, CheckCircle, Calendar, Building, Trash2, Loader2, RefreshCw, Bug } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { useATSAnalyses, useATSAnalysisStats, useDeleteATSAnalysis, ATSAnalysis } from '@/hooks/useATSAnalyses'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  BarChart3,
+  Plus,
+  TrendingUp,
+  Target,
+  AlertCircle,
+  CheckCircle,
+  Calendar,
+  Building,
+  Trash2,
+  Loader2,
+  RefreshCw,
+  Bug,
+  Download,
+} from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import {
+  useATSAnalyses,
+  useATSAnalysisStats,
+  useDeleteATSAnalysis,
+  ATSAnalysis,
+} from '@/hooks/useATSAnalyses'
 import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
-import { HelpButton } from "@/components/help/HelpButton"
-import { HelpModal } from "@/components/help/HelpModal"
-import { getHelpContent } from "@/data/helpContent"
-import { HelpTooltip } from "@/components/help/HelpTooltip"
+import { EnrichExperienceModal } from '@/components/EnrichExperienceModal'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
+import { HelpTooltip } from '@/components/help/HelpTooltip'
 import { formatDistanceToNow } from 'date-fns'
 
 const ATSAnalyses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [debugAnalysis, setDebugAnalysis] = useState<ATSAnalysis | null>(null)
+  const [enrichAnalysis, setEnrichAnalysis] = useState<ATSAnalysis | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('atsAnalysis')
-  
+
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
   const deleteAnalysis = useDeleteATSAnalysis()
@@ -37,14 +62,124 @@ const ATSAnalyses = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Complete</Badge>
+        return (
+          <Badge variant="secondary" className="bg-green-100 text-green-800">
+            Complete
+          </Badge>
+        )
       case 'processing':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Processing</Badge>
+        return (
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+            Processing
+          </Badge>
+        )
       case 'error':
         return <Badge variant="destructive">Error</Badge>
       default:
         return <Badge variant="outline">Queued</Badge>
     }
+  }
+
+  const exportAnalysisToMarkdown = (analysis: ATSAnalysis) => {
+    const analysisData = analysis.analysis_data || {}
+    const rawLLMResponse = analysisData.raw_llm_response || {}
+    const tokenUsage = analysisData.token_usage || {}
+    const resumeWarnings: string[] = analysisData.resume_warnings || []
+    const prompts = analysisData.prompts || {}
+    const costEstimate = analysisData.cost_estimate_usd
+    const extractedFeatures: string[] =
+      (Array.isArray(analysisData.extracted_features)
+        ? analysisData.extracted_features
+        : rawLLMResponse?.parsed_result?.keywords_found) || analysis.matched_skills
+
+    const formatCost = (v?: number | null) => {
+      if (typeof v !== 'number' || Number.isNaN(v)) return 'N/A'
+      return `$${v < 0.01 ? v.toFixed(4) : v.toFixed(2)}`
+    }
+
+    const lines: string[] = []
+
+    lines.push(`# ATS Analysis Report`)
+    lines.push(
+      `**${analysis.resume?.name}** vs **${analysis.job_description?.name}**` +
+        (analysis.job_description?.company?.name
+          ? ` @ ${analysis.job_description.company.name}`
+          : '')
+    )
+    lines.push(`\n_Exported: ${new Date().toISOString()}_\n`)
+
+    lines.push(`## Overview\n`)
+    lines.push(`| Field | Value |`)
+    lines.push(`|---|---|`)
+    lines.push(`| Analysis ID | \`${analysis.id}\` |`)
+    lines.push(`| Status | ${analysis.status} |`)
+    lines.push(`| ATS Score | **${analysis.ats_score ?? 'N/A'}%** |`)
+    lines.push(`| Created | ${new Date(analysis.created_at).toISOString()} |`)
+    if (analysisData.processing_completed_at)
+      lines.push(`| Completed | ${analysisData.processing_completed_at} |`)
+    if (analysisData.processing_time_ms)
+      lines.push(`| Processing Time | ${Math.round(analysisData.processing_time_ms / 1000)}s |`)
+    if (analysisData.model_used)
+      lines.push(`| Model | \`${analysisData.model_used}\` |`)
+    if (tokenUsage.prompt_tokens)
+      lines.push(`| Prompt Tokens | ${tokenUsage.prompt_tokens.toLocaleString()} |`)
+    if (tokenUsage.completion_tokens)
+      lines.push(`| Completion Tokens | ${tokenUsage.completion_tokens.toLocaleString()} |`)
+    if (tokenUsage.total_tokens)
+      lines.push(`| Total Tokens | ${tokenUsage.total_tokens.toLocaleString()} |`)
+    if (costEstimate !== undefined && costEstimate !== null)
+      lines.push(`| Est. Cost | ${formatCost(costEstimate)} |`)
+
+    if (analysis.matched_skills.length > 0) {
+      lines.push(`\n## Matched Skills (${analysis.matched_skills.length})\n`)
+      lines.push(analysis.matched_skills.map((s) => `- ${s}`).join('\n'))
+    }
+
+    if (analysis.missing_skills.length > 0) {
+      lines.push(`\n## Missing Skills (${analysis.missing_skills.length})\n`)
+      lines.push(analysis.missing_skills.map((s) => `- ${s}`).join('\n'))
+    }
+
+    if (extractedFeatures.length > 0) {
+      lines.push(`\n## Extracted Features (${extractedFeatures.length})\n`)
+      lines.push(extractedFeatures.map((f) => `- ${f}`).join('\n'))
+    }
+
+    if (analysis.suggestions) {
+      lines.push(`\n## AI Suggestions\n`)
+      lines.push(analysis.suggestions)
+    }
+
+    if (resumeWarnings.length > 0) {
+      lines.push(`\n## Resume Warnings\n`)
+      resumeWarnings.forEach((w, i) => lines.push(`${i + 1}. ${w}`))
+    }
+
+    if (prompts.system) {
+      lines.push(`\n## System Prompt\n`)
+      lines.push('```\n' + prompts.system + '\n```')
+    }
+
+    if (prompts.user) {
+      lines.push(`\n## Analysis Prompt\n`)
+      lines.push('```\n' + prompts.user + '\n```')
+    }
+
+    if (rawLLMResponse && Object.keys(rawLLMResponse).length > 0) {
+      lines.push(`\n## Raw AI Response\n`)
+      lines.push('```json\n' + JSON.stringify(rawLLMResponse, null, 2) + '\n```')
+    }
+
+    const markdown = lines.join('\n')
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const r = (analysis.resume?.name || 'resume').replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    const j = (analysis.job_description?.name || 'job').replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    a.download = `ats_${r}_vs_${j}.md`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -62,7 +197,7 @@ const ATSAnalyses = () => {
             New Analysis
           </Button>
           {helpContent && (
-            <HelpButton 
+            <HelpButton
               onClick={() => setShowHelp(true)}
               tooltip="Learn how to run and interpret ATS analyses"
             />
@@ -72,72 +207,68 @@ const ATSAnalyses = () => {
 
       {/* Analysis Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsLoading ? (
-          // Loading skeletons
-          Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-2" />
-                <Skeleton className="h-3 w-32" />
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          [
-            {
-              title: "Total Analyses",
-              value: stats?.totalAnalyses.toString() || "0",
-              description: "Resume-job matches analyzed",
-              icon: BarChart3,
-              color: "text-blue-600"
-            },
-            {
-              title: "Average Score",
-              value: `${stats?.averageScore || 0}%`,
-              description: "ATS compatibility rate",
-              icon: TrendingUp,
-              color: "text-green-600"
-            },
-            {
-              title: "High Matches",
-              value: stats?.highMatches.toString() || "0",
-              description: "Scores above 80%",
-              icon: CheckCircle,
-              color: "text-emerald-600"
-            },
-            {
-              title: "Need Improvement",
-              value: stats?.needImprovement.toString() || "0",
-              description: "Scores below 60%",
-              icon: AlertCircle,
-              color: "text-orange-600"
-            }
-          ].map((stat, index) => (
-            <Card key={index} className="transition-shadow hover:shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.description}</p>
-              </CardContent>
-            </Card>
-          ))
-        )}
+        {statsLoading
+          ? // Loading skeletons
+            Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-32" />
+                </CardContent>
+              </Card>
+            ))
+          : [
+              {
+                title: 'Total Analyses',
+                value: stats?.totalAnalyses.toString() || '0',
+                description: 'Resume-job matches analyzed',
+                icon: BarChart3,
+                color: 'text-blue-600',
+              },
+              {
+                title: 'Average Score',
+                value: `${stats?.averageScore || 0}%`,
+                description: 'ATS compatibility rate',
+                icon: TrendingUp,
+                color: 'text-green-600',
+              },
+              {
+                title: 'High Matches',
+                value: stats?.highMatches.toString() || '0',
+                description: 'Scores above 80%',
+                icon: CheckCircle,
+                color: 'text-emerald-600',
+              },
+              {
+                title: 'Need Improvement',
+                value: stats?.needImprovement.toString() || '0',
+                description: 'Scores below 60%',
+                icon: AlertCircle,
+                color: 'text-orange-600',
+              },
+            ].map((stat, index) => (
+              <Card key={index} className="transition-shadow hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </CardContent>
+              </Card>
+            ))}
       </div>
 
       {/* Analysis List */}
       <Card>
         <CardHeader>
           <CardTitle>Your Analyses</CardTitle>
-          <CardDescription>
-            View and manage your ATS analyses and their results.
-          </CardDescription>
+          <CardDescription>View and manage your ATS analyses and their results.</CardDescription>
         </CardHeader>
         <CardContent>
           {analysesLoading ? (
@@ -209,7 +340,18 @@ const ATSAnalyses = () => {
                         <Bug className="h-3 w-3 mr-1" />
                         Debug
                       </Button>
-                      {(analysis.status === 'error' || (analysis.status === 'completed' && analysis.ats_score === 0)) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportAnalysisToMarkdown(analysis)}
+                        className="text-xs"
+                        title="Export analysis as Markdown"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Export
+                      </Button>
+                      {(analysis.status === 'error' ||
+                        (analysis.status === 'completed' && analysis.ats_score === 0)) && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -245,30 +387,34 @@ const ATSAnalyses = () => {
 
                   {/* Analysis Results */}
                   {analysis.status === 'completed' && analysis.ats_score !== null && (
-                      <div className="space-y-4 mt-6">
-                        <div className="flex items-center justify-between">
-                          <HelpTooltip content="Score from 0-100% showing how well your resume matches the job requirements. 80%+ is excellent.">
-                            <span className="text-sm font-medium">ATS Compatibility Score</span>
-                          </HelpTooltip>
-                          <span className={`text-2xl font-bold ${getScoreColor(analysis.ats_score)}`}>
-                            {analysis.ats_score}%
-                          </span>
-                        </div>
-                        <Progress value={analysis.ats_score} className="h-2" />
-                        
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {/* Matched Skills */}
-                          {analysis.matched_skills.length > 0 && (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                <HelpTooltip content="Skills from the job description that were found in your resume">
-                                  <span className="text-sm font-medium">Matched Skills</span>
-                                </HelpTooltip>
-                              </div>
+                    <div className="space-y-4 mt-6">
+                      <div className="flex items-center justify-between">
+                        <HelpTooltip content="Score from 0-100% showing how well your resume matches the job requirements. 80%+ is excellent.">
+                          <span className="text-sm font-medium">ATS Compatibility Score</span>
+                        </HelpTooltip>
+                        <span className={`text-2xl font-bold ${getScoreColor(analysis.ats_score)}`}>
+                          {analysis.ats_score}%
+                        </span>
+                      </div>
+                      <Progress value={analysis.ats_score} className="h-2" />
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {/* Matched Skills */}
+                        {analysis.matched_skills.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <HelpTooltip content="Skills from the job description that were found in your resume">
+                                <span className="text-sm font-medium">Matched Skills</span>
+                              </HelpTooltip>
+                            </div>
                             <div className="flex flex-wrap gap-1">
                               {analysis.matched_skills.slice(0, 6).map((skill, index) => (
-                                <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
+                                <Badge
+                                  key={index}
+                                  variant="secondary"
+                                  className="bg-green-100 text-green-800"
+                                >
                                   {skill}
                                 </Badge>
                               ))}
@@ -281,18 +427,22 @@ const ATSAnalyses = () => {
                           </div>
                         )}
 
-                          {/* Missing Skills */}
-                          {analysis.missing_skills.length > 0 && (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-red-600" />
-                                <HelpTooltip content="Skills mentioned in the job description that weren't found in your resume - consider adding these">
-                                  <span className="text-sm font-medium">Missing Skills</span>
-                                </HelpTooltip>
-                              </div>
+                        {/* Missing Skills */}
+                        {analysis.missing_skills.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4 text-red-600" />
+                              <HelpTooltip content="Skills mentioned in the job description that weren't found in your resume - consider adding these">
+                                <span className="text-sm font-medium">Missing Skills</span>
+                              </HelpTooltip>
+                            </div>
                             <div className="flex flex-wrap gap-1">
                               {analysis.missing_skills.slice(0, 6).map((skill, index) => (
-                                <Badge key={index} variant="secondary" className="bg-red-100 text-red-800">
+                                <Badge
+                                  key={index}
+                                  variant="secondary"
+                                  className="bg-red-100 text-red-800"
+                                >
                                   {skill}
                                 </Badge>
                               ))}
@@ -315,8 +465,12 @@ const ATSAnalyses = () => {
                       )}
 
                       {/* Action Button */}
-                      <Button className="w-full" disabled>
-                        Add Missing Experience (Coming Soon)
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => setEnrichAnalysis(analysis)}
+                      >
+                        Add Missing Experience
                       </Button>
                     </div>
                   )}
@@ -329,21 +483,24 @@ const ATSAnalyses = () => {
 
       {/* Analysis Modal */}
       <ATSAnalysisModal open={isModalOpen} onOpenChange={setIsModalOpen} />
-      
+
+      {/* Enrich Experience Modal */}
+      <EnrichExperienceModal
+        open={!!enrichAnalysis}
+        onOpenChange={(open) => !open && setEnrichAnalysis(null)}
+        initialAnalysisId={enrichAnalysis?.id}
+      />
+
       {/* Debug Modal */}
-      <ATSDebugModal 
-        open={!!debugAnalysis} 
+      <ATSDebugModal
+        open={!!debugAnalysis}
         onOpenChange={(open) => !open && setDebugAnalysis(null)}
         analysis={debugAnalysis}
       />
 
       {/* Help Modal */}
       {helpContent && (
-        <HelpModal 
-          open={showHelp}
-          onOpenChange={setShowHelp}
-          content={helpContent}
-        />
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
       )}
     </div>
   )

@@ -1,91 +1,116 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { BarChart3, FileText, BriefcaseIcon, Users, TrendingUp, Clock, Target, CheckCircle, Clock4 } from "lucide-react"
-import { useResumes } from "@/hooks/useResumes";
-import { useJobDescriptions } from "@/hooks/useJobDescriptions";
-import { useATSAnalyses, useATSAnalysisStats } from "@/hooks/useATSAnalyses";
-import { useMemo, useState } from "react";
-import { HelpButton } from "@/components/help/HelpButton";
-import { HelpModal } from "@/components/help/HelpModal";
-import { getHelpContent } from "@/data/helpContent";
-import { HelpTooltip } from "@/components/help/HelpTooltip";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import {
+  BarChart3,
+  FileText,
+  BriefcaseIcon,
+  Users,
+  TrendingUp,
+  Clock,
+  Target,
+  CheckCircle,
+  Clock4,
+} from 'lucide-react'
+import { useResumes } from '@/hooks/useResumes'
+import { useJobDescriptions } from '@/hooks/useJobDescriptions'
+import { useATSAnalyses, useATSAnalysisStats } from '@/hooks/useATSAnalyses'
+import { useMemo, useState } from 'react'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
+import { HelpTooltip } from '@/components/help/HelpTooltip'
 
 const Dashboard = () => {
-  const { satsUser } = useAuth();
-  const navigate = useNavigate();
-  const [showHelp, setShowHelp] = useState(false);
-  const helpContent = getHelpContent('dashboard');
-  
+  const { satsUser } = useAuth()
+  const navigate = useNavigate()
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('dashboard')
+
   // Fetch data using existing hooks
-  const { data: resumes, isLoading: resumesLoading } = useResumes();
-  const { data: jobDescriptions, isLoading: jobsLoading } = useJobDescriptions();
-  const { data: analyses, isLoading: analysesLoading } = useATSAnalyses();
-  const { data: analysisStats, isLoading: statsLoading } = useATSAnalysisStats();
+  const { data: resumes, isLoading: resumesLoading } = useResumes()
+  const { data: jobDescriptions, isLoading: jobsLoading } = useJobDescriptions()
+  const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
+  const { data: analysisStats, isLoading: statsLoading } = useATSAnalysisStats()
 
   // Calculate dynamic stats
-  const stats = useMemo(() => [
-    {
-      title: "Total Resumes",
-      value: resumesLoading ? "..." : (resumes?.length || 0).toString(),
-      description: "Resumes uploaded and analyzed",
-      icon: FileText,
-      color: "text-blue-600",
-      loading: resumesLoading
-    },
-    {
-      title: "Job Descriptions",
-      value: jobsLoading ? "..." : (jobDescriptions?.length || 0).toString(),
-      description: "Job postings created",
-      icon: BriefcaseIcon,
-      color: "text-green-600",
-      loading: jobsLoading
-    },
-    {
-      title: "ATS Analyses",
-      value: analysesLoading ? "..." : (analysisStats?.totalAnalyses || 0).toString(),
-      description: "Resume-job matches analyzed",
-      icon: BarChart3,
-      color: "text-purple-600",
-      loading: analysesLoading
-    },
-    {
-      title: "Match Rate",
-      value: statsLoading ? "..." : `${analysisStats?.averageScore || 0}%`,
-      description: "Average ATS compatibility",
-      icon: TrendingUp,
-      color: "text-orange-600",
-      loading: statsLoading
-    }
-  ], [resumes, jobDescriptions, analysisStats, resumesLoading, jobsLoading, analysesLoading, statsLoading]);
+  const stats = useMemo(
+    () => [
+      {
+        title: 'Total Resumes',
+        value: resumesLoading ? '...' : (resumes?.length || 0).toString(),
+        description: 'Resumes uploaded and analyzed',
+        icon: FileText,
+        color: 'text-blue-600',
+        loading: resumesLoading,
+      },
+      {
+        title: 'Job Descriptions',
+        value: jobsLoading ? '...' : (jobDescriptions?.length || 0).toString(),
+        description: 'Job postings created',
+        icon: BriefcaseIcon,
+        color: 'text-green-600',
+        loading: jobsLoading,
+      },
+      {
+        title: 'ATS Analyses',
+        value: analysesLoading ? '...' : (analysisStats?.totalAnalyses || 0).toString(),
+        description: 'Resume-job matches analyzed',
+        icon: BarChart3,
+        color: 'text-purple-600',
+        loading: analysesLoading,
+      },
+      {
+        title: 'Match Rate',
+        value: statsLoading ? '...' : `${analysisStats?.averageScore || 0}%`,
+        description: 'Average ATS compatibility',
+        icon: TrendingUp,
+        color: 'text-orange-600',
+        loading: statsLoading,
+      },
+    ],
+    [
+      resumes,
+      jobDescriptions,
+      analysisStats,
+      resumesLoading,
+      jobsLoading,
+      analysesLoading,
+      statsLoading,
+    ]
+  )
 
   // Generate recent activity from actual data
   const recentActivity = useMemo(() => {
     if (analysesLoading || !analyses) {
-      return [{
-        action: "Welcome to Smart ATS!",
-        time: "Just now",
-        description: "Get started by uploading your first resume or creating a job description."
-      }];
+      return [
+        {
+          action: 'Welcome to Smart ATS!',
+          time: 'Just now',
+          description: 'Get started by uploading your first resume or creating a job description.',
+        },
+      ]
     }
 
     if (analyses.length === 0) {
-      return [{
-        action: "Welcome to Smart ATS!",
-        time: "Just now",
-        description: "Get started by uploading your first resume or creating a job description."
-      }];
+      return [
+        {
+          action: 'Welcome to Smart ATS!',
+          time: 'Just now',
+          description: 'Get started by uploading your first resume or creating a job description.',
+        },
+      ]
     }
 
     // Show recent analyses
-    return analyses.slice(0, 3).map(analysis => ({
+    return analyses.slice(0, 3).map((analysis) => ({
       action: `ATS Analysis ${analysis.status === 'completed' ? 'Completed' : 'Processing'}`,
       time: new Date(analysis.created_at).toLocaleDateString(),
-      description: `Resume "${analysis.resume?.name}" analyzed against "${analysis.job_description?.name}"${analysis.ats_score ? ` - Score: ${analysis.ats_score}%` : ''}`
-    }));
-  }, [analyses, analysesLoading]);
+      description: `Resume "${analysis.resume?.name}" analyzed against "${analysis.job_description?.name}"${analysis.ats_score ? ` - Score: ${analysis.ats_score}%` : ''}`,
+    }))
+  }, [analyses, analysesLoading])
 
   return (
     <div className="space-y-6">
@@ -95,11 +120,12 @@ const Dashboard = () => {
             Welcome, {satsUser?.name || 'User'} 👋
           </h1>
           <p className="text-muted-foreground">
-            Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize your hiring process.
+            Welcome to your Smart ATS dashboard. Monitor your recruitment activities and optimize
+            your hiring process.
           </p>
         </div>
         {helpContent && (
-          <HelpButton 
+          <HelpButton
             onClick={() => setShowHelp(true)}
             tooltip="Learn how to use your dashboard effectively"
           />
@@ -111,13 +137,17 @@ const Dashboard = () => {
         {stats.map((stat) => (
           <Card key={stat.title} className="transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <HelpTooltip 
+              <HelpTooltip
                 content={
-                  stat.title === "Total Resumes" ? "Number of resumes you've uploaded and can use for ATS analysis" :
-                  stat.title === "Job Descriptions" ? "Number of job postings you've created for matching against resumes" :
-                  stat.title === "ATS Analyses" ? "Total number of resume-job compatibility analyses you've run" :
-                  stat.title === "Match Rate" ? "Average compatibility score across all your analyses - higher is better"
-                  : stat.description
+                  stat.title === 'Total Resumes'
+                    ? "Number of resumes you've uploaded and can use for ATS analysis"
+                    : stat.title === 'Job Descriptions'
+                      ? "Number of job postings you've created for matching against resumes"
+                      : stat.title === 'ATS Analyses'
+                        ? "Total number of resume-job compatibility analyses you've run"
+                        : stat.title === 'Match Rate'
+                          ? 'Average compatibility score across all your analyses - higher is better'
+                          : stat.description
                 }
               >
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
@@ -148,8 +178,8 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 overflow-hidden">
-              <Button 
-                className="h-auto p-4 justify-start" 
+              <Button
+                className="h-auto p-4 justify-start"
                 variant="outline"
                 onClick={() => navigate('/resumes')}
               >
@@ -163,9 +193,9 @@ const Dashboard = () => {
                   </span>
                 </div>
               </Button>
-              
-              <Button 
-                className="h-auto p-4 justify-start" 
+
+              <Button
+                className="h-auto p-4 justify-start"
                 variant="outline"
                 onClick={() => navigate('/jobs')}
               >
@@ -179,9 +209,9 @@ const Dashboard = () => {
                   </span>
                 </div>
               </Button>
-              
-              <Button 
-                className="h-auto p-4 justify-start" 
+
+              <Button
+                className="h-auto p-4 justify-start"
                 variant="outline"
                 onClick={() => navigate('/analyses')}
               >
@@ -195,9 +225,9 @@ const Dashboard = () => {
                   </span>
                 </div>
               </Button>
-              
-              <Button 
-                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed relative" 
+
+              <Button
+                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed relative"
                 variant="outline"
                 disabled
               >
@@ -206,7 +236,9 @@ const Dashboard = () => {
                     <Users className="h-4 w-4 flex-shrink-0" />
                     <span className="font-medium truncate">Advanced Reports</span>
                   </div>
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded self-start">Coming Soon</span>
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded self-start">
+                    Coming Soon
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     Detailed analytics and performance metrics
                   </span>
@@ -220,9 +252,7 @@ const Dashboard = () => {
         <Card className="col-span-3">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your latest actions and system updates
-            </CardDescription>
+            <CardDescription>Your latest actions and system updates</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -328,11 +358,7 @@ const Dashboard = () => {
 
       {/* Help Modal */}
       {helpContent && (
-        <HelpModal 
-          open={showHelp}
-          onOpenChange={setShowHelp}
-          content={helpContent}
-        />
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
       )}
     </div>
   )

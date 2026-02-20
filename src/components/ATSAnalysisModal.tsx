@@ -1,13 +1,25 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 import { useResumes } from '@/hooks/useResumes'
 import { useJobDescriptions } from '@/hooks/useJobDescriptions'
 import { useCreateATSAnalysis } from '@/hooks/useATSAnalyses'
-
 
 interface ATSAnalysisModalProps {
   open: boolean
@@ -24,7 +36,7 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!selectedResume || !selectedJobDescription) {
       return
     }
@@ -53,18 +65,15 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
         <DialogHeader>
           <DialogTitle>Run ATS Analysis</DialogTitle>
           <DialogDescription>
-            Select a resume and job description to analyze their compatibility and get improvement recommendations.
+            Select a resume and job description to analyze their compatibility and get improvement
+            recommendations.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="resume-select">Select Resume</Label>
-            <Select
-              value={selectedResume}
-              onValueChange={setSelectedResume}
-              disabled={isLoading}
-            >
+            <Select value={selectedResume} onValueChange={setSelectedResume} disabled={isLoading}>
               <SelectTrigger id="resume-select">
                 <SelectValue placeholder="Choose a resume..." />
               </SelectTrigger>
@@ -99,9 +108,7 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
                     <div className="flex flex-col items-start">
                       <span className="font-medium">{job.name}</span>
                       {job.company?.name && (
-                        <span className="text-sm text-muted-foreground">
-                          {job.company.name}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{job.company.name}</span>
                       )}
                     </div>
                   </SelectItem>
@@ -115,7 +122,6 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
             )}
           </div>
 
-
           <DialogFooter>
             <Button
               type="button"
@@ -125,10 +131,7 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!isValid || createAnalysis.isPending}
-            >
+            <Button type="submit" disabled={!isValid || createAnalysis.isPending}>
               {createAnalysis.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

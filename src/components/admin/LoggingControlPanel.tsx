@@ -1,99 +1,105 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Eye, Settings, Trash2, Download, RefreshCw } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { LogViewer } from './LogViewer';
-import { LogCleanupManager } from './LogCleanupManager';
-import { JobDescriptionLoggingPanel } from './JobDescriptionLoggingPanel';
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AlertTriangle, Eye, Settings, Trash2, Download, RefreshCw } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
+import { LogViewer } from './LogViewer'
+import { LogCleanupManager } from './LogCleanupManager'
+import { JobDescriptionLoggingPanel } from './JobDescriptionLoggingPanel'
 
 interface LogSetting {
-  id: string;
-  script_name: string;
-  description: string;
-  logging_enabled: boolean;
-  debug_enabled: boolean;
-  trace_enabled: boolean;
-  log_level: 'OFF' | 'ERROR' | 'INFO' | 'DEBUG' | 'TRACE';
-  updated_at: string;
+  id: string
+  script_name: string
+  description: string
+  logging_enabled: boolean
+  debug_enabled: boolean
+  trace_enabled: boolean
+  log_level: 'OFF' | 'ERROR' | 'INFO' | 'DEBUG' | 'TRACE'
+  updated_at: string
 }
 
 interface LogEntry {
-  id: string;
-  script_name: string;
-  log_level: string;
-  message: string;
-  metadata: any;
-  timestamp: string;
+  id: string
+  script_name: string
+  log_level: string
+  message: string
+  metadata: any
+  timestamp: string
 }
 
 export const LoggingControlPanel = () => {
-  const queryClient = useQueryClient();
-  const [selectedScript, setSelectedScript] = useState<string>('');
+  const queryClient = useQueryClient()
+  const [selectedScript, setSelectedScript] = useState<string>('')
 
   // Fetch log settings
   const { data: logSettings, isLoading } = useQuery({
     queryKey: ['log-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('log_settings')
-        .select('*')
-        .order('script_name');
-      
-      if (error) throw error;
-      return data as LogSetting[];
-    }
-  });
+      const { data, error } = await supabase.from('log_settings').select('*').order('script_name')
+
+      if (error) throw error
+      return data as LogSetting[]
+    },
+  })
 
   // Update log setting mutation
   const updateLogSettingMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<LogSetting> }) => {
-      const { error } = await supabase
-        .from('log_settings')
-        .update(updates)
-        .eq('id', id);
-      
-      if (error) throw error;
+      const { error } = await supabase.from('log_settings').update(updates).eq('id', id)
+
+      if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['log-settings'] });
-      toast.success('Log settings updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['log-settings'] })
+      toast.success('Log settings updated successfully')
     },
     onError: (error) => {
-      toast.error('Failed to update log settings: ' + error.message);
-    }
-  });
+      toast.error('Failed to update log settings: ' + error.message)
+    },
+  })
 
   const getLogLevelBadgeVariant = (level: string) => {
     switch (level) {
-      case 'OFF': return 'secondary';
-      case 'ERROR': return 'destructive';
-      case 'INFO': return 'default';
-      case 'DEBUG': return 'outline';
-      case 'TRACE': return 'outline';
-      default: return 'secondary';
+      case 'OFF':
+        return 'secondary'
+      case 'ERROR':
+        return 'destructive'
+      case 'INFO':
+        return 'default'
+      case 'DEBUG':
+        return 'outline'
+      case 'TRACE':
+        return 'outline'
+      default:
+        return 'secondary'
     }
-  };
+  }
 
   const handleToggleLogging = (setting: LogSetting, field: keyof LogSetting) => {
     updateLogSettingMutation.mutate({
       id: setting.id,
-      updates: { [field]: !(setting[field] as boolean) }
-    });
-  };
+      updates: { [field]: !(setting[field] as boolean) },
+    })
+  }
 
   const handleLogLevelChange = (setting: LogSetting, level: string) => {
     updateLogSettingMutation.mutate({
       id: setting.id,
-      updates: { log_level: level as LogSetting['log_level'] }
-    });
-  };
+      updates: { log_level: level as LogSetting['log_level'] },
+    })
+  }
 
   if (isLoading) {
     return (
@@ -101,7 +107,7 @@ export const LoggingControlPanel = () => {
         <RefreshCw className="h-6 w-6 animate-spin" />
         <span className="ml-2">Loading logging settings...</span>
       </div>
-    );
+    )
   }
 
   return (
@@ -115,9 +121,7 @@ export const LoggingControlPanel = () => {
         </div>
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm text-muted-foreground">
-            All logging is disabled by default
-          </span>
+          <span className="text-sm text-muted-foreground">All logging is disabled by default</span>
         </div>
       </div>
 
@@ -233,5 +237,5 @@ export const LoggingControlPanel = () => {
         </TabsContent>
       </Tabs>
     </div>
-  );
-};
+  )
+}

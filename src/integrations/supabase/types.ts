@@ -1,16 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: '13.0.5'
   }
   public: {
     Tables: {
@@ -77,11 +71,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_derivatives_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'ats_derivatives_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "ats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -115,11 +109,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_findings_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: 'ats_findings_run_id_fkey'
+            columns: ['run_id']
             isOneToOne: false
-            referencedRelation: "ats_runs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_runs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -159,11 +153,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_job_documents_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'ats_job_documents_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "ats_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -308,18 +302,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_runs_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'ats_runs_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "ats_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ats_runs_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'ats_runs_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "ats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -350,11 +344,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_scores_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: 'ats_scores_run_id_fkey'
+            columns: ['run_id']
             isOneToOne: true
-            referencedRelation: "ats_runs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_runs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -427,11 +421,87 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "document_extractions_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'document_extractions_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: true
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      enriched_experiences: {
+        Row: {
+          analysis_id: string | null
+          approved_at: string | null
+          confidence_score: number | null
+          created_at: string
+          explanation: string | null
+          id: string
+          jd_id: string | null
+          resume_id: string
+          skill_name: string
+          skill_type: 'explicit' | 'inferred'
+          source: Json | null
+          suggestion: string
+          updated_at: string
+          user_action: 'pending' | 'accepted' | 'edited' | 'rejected'
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          approved_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          jd_id?: string | null
+          resume_id: string
+          skill_name: string
+          skill_type: 'explicit' | 'inferred'
+          source?: Json | null
+          suggestion: string
+          updated_at?: string
+          user_action?: 'pending' | 'accepted' | 'edited' | 'rejected'
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          approved_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          jd_id?: string | null
+          resume_id?: string
+          skill_name?: string
+          skill_type?: 'explicit' | 'inferred'
+          source?: Json | null
+          suggestion?: string
+          updated_at?: string
+          user_action?: 'pending' | 'accepted' | 'edited' | 'rejected'
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'enriched_experiences_analysis_id_fkey'
+            columns: ['analysis_id']
+            isOneToOne: false
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'enriched_experiences_jd_id_fkey'
+            columns: ['jd_id']
+            isOneToOne: false
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'enriched_experiences_resume_id_fkey'
+            columns: ['resume_id']
+            isOneToOne: false
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -693,18 +763,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_analyses_jd_id_fkey"
-            columns: ["jd_id"]
+            foreignKeyName: 'sats_analyses_jd_id_fkey'
+            columns: ['jd_id']
             isOneToOne: false
-            referencedRelation: "sats_job_descriptions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_analyses_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'sats_analyses_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -774,18 +844,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_job_descriptions_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'sats_job_descriptions_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "sats_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_companies'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_descriptions_location_id_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'sats_job_descriptions_location_id_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "sats_locations"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_locations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -810,18 +880,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_job_skills_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'sats_job_skills_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "sats_job_descriptions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_skills_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_job_skills_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -927,25 +997,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_skill_experiences_analysis_id_fkey"
-            columns: ["analysis_id"]
+            foreignKeyName: 'sats_skill_experiences_analysis_id_fkey'
+            columns: ['analysis_id']
             isOneToOne: false
-            referencedRelation: "sats_analyses"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_skill_experiences_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'sats_skill_experiences_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "sats_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_companies'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_skill_experiences_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_skill_experiences_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1009,11 +1079,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_user_skills_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_user_skills_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1189,19 +1259,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database['public']['Enums']['app_role']
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database['public']['Enums']['app_role']
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database['public']['Enums']['app_role']
           user_id?: string
         }
         Relationships: []
@@ -1296,7 +1366,7 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database['public']['Enums']['app_role']
           _user_id: string
         }
         Returns: boolean
@@ -1337,7 +1407,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "admin"
+      app_role: 'user' | 'admin'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1345,33 +1415,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1380,23 +1448,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1405,23 +1473,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1430,42 +1498,42 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "admin"],
+      app_role: ['user', 'admin'],
     },
   },
 } as const

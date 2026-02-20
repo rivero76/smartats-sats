@@ -1,13 +1,28 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronRight, BookOpen, Lightbulb, AlertTriangle, CheckCircle, Clock, ArrowRight } from "lucide-react"
-import { useState } from "react"
-import type { HelpContent, HelpStep, TroubleshootingItem } from "@/data/helpContent"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Button } from '@/components/ui/button'
+import {
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Lightbulb,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  ArrowRight,
+} from 'lucide-react'
+import { useState } from 'react'
+import type { HelpContent, HelpStep, TroubleshootingItem } from '@/data/helpContent'
 
 interface HelpModalProps {
   open: boolean
@@ -19,7 +34,7 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview']))
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const next = new Set(prev)
       if (next.has(sectionId)) {
         next.delete(sectionId)
@@ -68,16 +83,14 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
             <BookOpen className="h-5 w-5" />
             <span>{content.title}</span>
           </DialogTitle>
-          <DialogDescription>
-            {content.description}
-          </DialogDescription>
+          <DialogDescription>{content.description}</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-6">
             {/* Overview Section */}
-            <Collapsible 
-              open={expandedSections.has('overview')} 
+            <Collapsible
+              open={expandedSections.has('overview')}
               onOpenChange={() => toggleSection('overview')}
             >
               <CollapsibleTrigger asChild>
@@ -86,15 +99,16 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
                     <BookOpen className="h-4 w-4 text-primary" />
                     <h3 className="text-lg font-semibold">Overview</h3>
                   </div>
-                  {expandedSections.has('overview') ? 
-                    <ChevronDown className="h-4 w-4" /> : 
+                  {expandedSections.has('overview') ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
                     <ChevronRight className="h-4 w-4" />
-                  }
+                  )}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4 pt-4">
                 <p className="text-muted-foreground">{content.overview}</p>
-                
+
                 {content.keyFeatures && content.keyFeatures.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
@@ -116,8 +130,8 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
             {/* Step-by-Step Guide */}
             {content.steps && content.steps.length > 0 && (
               <>
-                <Collapsible 
-                  open={expandedSections.has('steps')} 
+                <Collapsible
+                  open={expandedSections.has('steps')}
                   onOpenChange={() => toggleSection('steps')}
                 >
                   <CollapsibleTrigger asChild>
@@ -126,10 +140,11 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
                         <ArrowRight className="h-4 w-4 text-primary" />
                         <h3 className="text-lg font-semibold">Step-by-Step Guide</h3>
                       </div>
-                      {expandedSections.has('steps') ? 
-                        <ChevronDown className="h-4 w-4" /> : 
+                      {expandedSections.has('steps') ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
                         <ChevronRight className="h-4 w-4" />
-                      }
+                      )}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-4 pt-4">
@@ -145,8 +160,8 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
             {/* Best Practices */}
             {content.bestPractices && content.bestPractices.length > 0 && (
               <>
-                <Collapsible 
-                  open={expandedSections.has('practices')} 
+                <Collapsible
+                  open={expandedSections.has('practices')}
                   onOpenChange={() => toggleSection('practices')}
                 >
                   <CollapsibleTrigger asChild>
@@ -155,15 +170,19 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
                         <Lightbulb className="h-4 w-4 text-primary" />
                         <h3 className="text-lg font-semibold">Best Practices</h3>
                       </div>
-                      {expandedSections.has('practices') ? 
-                        <ChevronDown className="h-4 w-4" /> : 
+                      {expandedSections.has('practices') ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
                         <ChevronRight className="h-4 w-4" />
-                      }
+                      )}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 pt-4">
                     {content.bestPractices.map((practice, index) => (
-                      <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-start space-x-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg"
+                      >
                         <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-green-700 dark:text-green-300">{practice}</p>
                       </div>
@@ -176,8 +195,8 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
 
             {/* Troubleshooting */}
             {content.troubleshooting && content.troubleshooting.length > 0 && (
-              <Collapsible 
-                open={expandedSections.has('troubleshooting')} 
+              <Collapsible
+                open={expandedSections.has('troubleshooting')}
                 onOpenChange={() => toggleSection('troubleshooting')}
               >
                 <CollapsibleTrigger asChild>
@@ -186,10 +205,11 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
                       <AlertTriangle className="h-4 w-4 text-primary" />
                       <h3 className="text-lg font-semibold">Troubleshooting</h3>
                     </div>
-                    {expandedSections.has('troubleshooting') ? 
-                      <ChevronDown className="h-4 w-4" /> : 
+                    {expandedSections.has('troubleshooting') ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
                       <ChevronRight className="h-4 w-4" />
-                    }
+                    )}
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-3 pt-4">
@@ -208,7 +228,11 @@ export const HelpModal = ({ open, onOpenChange, content }: HelpModalProps) => {
                   <h3 className="text-lg font-semibold mb-3">Related Topics</h3>
                   <div className="flex flex-wrap gap-2">
                     {content.relatedTopics.map((topic, index) => (
-                      <Badge key={index} variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-secondary/80"
+                      >
                         {topic}
                       </Badge>
                     ))}

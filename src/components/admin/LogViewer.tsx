@@ -1,60 +1,70 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Download, RefreshCw, Filter, Calendar } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Search, Download, RefreshCw, Filter, Calendar } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
+import { format } from 'date-fns'
 
 interface LogEntry {
-  id: string;
-  script_name: string;
-  log_level: string;
-  message: string;
-  metadata: any;
-  user_id?: string;
-  session_id?: string;
-  request_id?: string;
-  timestamp: string;
+  id: string
+  script_name: string
+  log_level: string
+  message: string
+  metadata: any
+  user_id?: string
+  session_id?: string
+  request_id?: string
+  timestamp: string
 }
 
 export const LogViewer = () => {
-  const [filterScript, setFilterScript] = useState<string>('all');
-  const [filterLevel, setFilterLevel] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [limit, setLimit] = useState<number>(100);
+  const [filterScript, setFilterScript] = useState<string>('all')
+  const [filterLevel, setFilterLevel] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState<string>('')
+  const [limit, setLimit] = useState<number>(100)
 
   // Fetch log entries
-  const { data: logEntries, isLoading, refetch } = useQuery({
+  const {
+    data: logEntries,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['log-entries', filterScript, filterLevel, searchTerm, limit],
     queryFn: async () => {
       let query = supabase
         .from('log_entries')
         .select('*')
         .order('timestamp', { ascending: false })
-        .limit(limit);
+        .limit(limit)
 
       if (filterScript !== 'all') {
-        query = query.eq('script_name', filterScript);
+        query = query.eq('script_name', filterScript)
       }
 
       if (filterLevel !== 'all') {
-        query = query.eq('log_level', filterLevel);
+        query = query.eq('log_level', filterLevel)
       }
 
       if (searchTerm) {
-        query = query.ilike('message', `%${searchTerm}%`);
+        query = query.ilike('message', `%${searchTerm}%`)
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as LogEntry[];
-    }
-  });
+      const { data, error } = await query
+      if (error) throw error
+      return data as LogEntry[]
+    },
+  })
 
   // Fetch available scripts
   const { data: scripts } = useQuery({
@@ -63,50 +73,57 @@ export const LogViewer = () => {
       const { data, error } = await supabase
         .from('log_settings')
         .select('script_name')
-        .order('script_name');
-      
-      if (error) throw error;
-      return data.map(s => s.script_name);
-    }
-  });
+        .order('script_name')
+
+      if (error) throw error
+      return data.map((s) => s.script_name)
+    },
+  })
 
   const getLogLevelBadgeVariant = (level: string) => {
     switch (level) {
-      case 'ERROR': return 'destructive';
-      case 'INFO': return 'default';
-      case 'DEBUG': return 'secondary';
-      case 'TRACE': return 'outline';
-      default: return 'secondary';
+      case 'ERROR':
+        return 'destructive'
+      case 'INFO':
+        return 'default'
+      case 'DEBUG':
+        return 'secondary'
+      case 'TRACE':
+        return 'outline'
+      default:
+        return 'secondary'
     }
-  };
+  }
 
   const exportLogs = () => {
-    if (!logEntries) return;
+    if (!logEntries) return
 
     const csvContent = [
       'Timestamp,Script,Level,Message,Metadata,User ID,Session ID,Request ID',
-      ...logEntries.map(entry => [
-        entry.timestamp,
-        entry.script_name,
-        entry.log_level,
-        `"${entry.message.replace(/"/g, '""')}"`,
-        `"${JSON.stringify(entry.metadata || {}).replace(/"/g, '""')}"`,
-        entry.user_id || '',
-        entry.session_id || '',
-        entry.request_id || ''
-      ].join(','))
-    ].join('\n');
+      ...logEntries.map((entry) =>
+        [
+          entry.timestamp,
+          entry.script_name,
+          entry.log_level,
+          `"${entry.message.replace(/"/g, '""')}"`,
+          `"${JSON.stringify(entry.metadata || {}).replace(/"/g, '""')}"`,
+          entry.user_id || '',
+          entry.session_id || '',
+          entry.request_id || '',
+        ].join(',')
+      ),
+    ].join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `logs_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `logs_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-4">
@@ -116,9 +133,7 @@ export const LogViewer = () => {
             <Search className="h-5 w-5" />
             Log Viewer
           </CardTitle>
-          <CardDescription>
-            View and search through system logs in real-time
-          </CardDescription>
+          <CardDescription>View and search through system logs in real-time</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
@@ -144,8 +159,10 @@ export const LogViewer = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Scripts</SelectItem>
-                  {scripts?.map(script => (
-                    <SelectItem key={script} value={script}>{script}</SelectItem>
+                  {scripts?.map((script) => (
+                    <SelectItem key={script} value={script}>
+                      {script}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -212,10 +229,7 @@ export const LogViewer = () => {
             ) : (
               <div className="space-y-1">
                 {logEntries?.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="p-4 border-b hover:bg-muted/50 transition-colors"
-                  >
+                  <div key={entry.id} className="p-4 border-b hover:bg-muted/50 transition-colors">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 pt-1">
                         <Badge variant={getLogLevelBadgeVariant(entry.log_level)}>
@@ -250,9 +264,7 @@ export const LogViewer = () => {
                   </div>
                 ))}
                 {!logEntries || logEntries.length === 0 ? (
-                  <div className="text-center p-8 text-muted-foreground">
-                    No log entries found
-                  </div>
+                  <div className="text-center p-8 text-muted-foreground">No log entries found</div>
                 ) : null}
               </div>
             )}
@@ -260,5 +272,5 @@ export const LogViewer = () => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
