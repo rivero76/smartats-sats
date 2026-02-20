@@ -24,6 +24,7 @@ END;
 $function$;
 
 -- Create the trigger on auth.users for new signups
+DROP TRIGGER IF EXISTS on_auth_user_sats_signup ON auth.users;
 CREATE TRIGGER on_auth_user_sats_signup
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_sats_user_signup();

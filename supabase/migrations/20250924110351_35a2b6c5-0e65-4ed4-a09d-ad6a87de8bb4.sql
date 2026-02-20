@@ -1,20 +1,26 @@
 -- Fix Critical Security Issue: Admin Role Privilege Escalation
 -- Drop existing policies first
-DROP POLICY IF EXISTS "Allow first admin creation when none exist" ON public.user_roles;
-DROP POLICY IF EXISTS "Allow first admin creation only when no admins exist" ON public.user_roles;
-
--- Create a more secure policy for first admin creation that requires no existing admins
-CREATE POLICY "Allow first admin creation only when no admins exist"
-ON public.user_roles
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  role = 'admin'::app_role 
-  AND auth.uid() = user_id 
-  AND NOT EXISTS (
-    SELECT 1 FROM public.user_roles WHERE role = 'admin'::app_role
-  )
-);
+DO $$
+BEGIN
+  IF to_regclass('public.user_roles') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Allow first admin creation when none exist" ON public.user_roles';
+    EXECUTE 'DROP POLICY IF EXISTS "Allow first admin creation only when no admins exist" ON public.user_roles';
+    EXECUTE $p$
+      CREATE POLICY "Allow first admin creation only when no admins exist"
+      ON public.user_roles
+      FOR INSERT
+      TO authenticated
+      WITH CHECK (
+        role = 'admin'::app_role
+        AND auth.uid() = user_id
+        AND NOT EXISTS (
+          SELECT 1 FROM public.user_roles WHERE role = 'admin'::app_role
+        )
+      )
+    $p$;
+  END IF;
+END;
+$$;
 
 -- Fix Business Data Exposure: Restrict companies access
 DROP POLICY IF EXISTS "Authenticated users can view companies" ON public.sats_companies;

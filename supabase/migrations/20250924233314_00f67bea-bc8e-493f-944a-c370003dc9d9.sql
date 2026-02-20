@@ -46,25 +46,63 @@ ALTER TABLE public.log_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.log_cleanup_policies ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for admin-only access
+DROP POLICY IF EXISTS "Admins can manage log settings" ON public.log_settings;
 CREATE POLICY "Admins can manage log settings"
 ON public.log_settings
 FOR ALL
 TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role))
-WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public sup
+    WHERE sup.auth_user_id = auth.uid()
+      AND sup.role = 'admin'
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public sup
+    WHERE sup.auth_user_id = auth.uid()
+      AND sup.role = 'admin'
+  )
+);
 
+DROP POLICY IF EXISTS "Admins can view all log entries" ON public.log_entries;
 CREATE POLICY "Admins can view all log entries"
 ON public.log_entries
 FOR ALL
 TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role));
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public sup
+    WHERE sup.auth_user_id = auth.uid()
+      AND sup.role = 'admin'
+  )
+);
 
+DROP POLICY IF EXISTS "Admins can manage cleanup policies" ON public.log_cleanup_policies;
 CREATE POLICY "Admins can manage cleanup policies"
 ON public.log_cleanup_policies
 FOR ALL
 TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role))
-WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public sup
+    WHERE sup.auth_user_id = auth.uid()
+      AND sup.role = 'admin'
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public sup
+    WHERE sup.auth_user_id = auth.uid()
+      AND sup.role = 'admin'
+  )
+);
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_log_entries_script_timestamp ON public.log_entries(script_name, timestamp DESC);
@@ -85,10 +123,23 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS update_log_settings_updated_at ON public.log_settings;
 CREATE TRIGGER update_log_settings_updated_at
   BEFORE UPDATE ON public.log_settings
   FOR EACH ROW EXECUTE FUNCTION public.update_log_settings_updated_at();
 
+DROP TRIGGER IF EXISTS update_log_cleanup_policies_updated_at ON public.log_cleanup_policies;
 CREATE TRIGGER update_log_cleanup_policies_updated_at
   BEFORE UPDATE ON public.log_cleanup_policies
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

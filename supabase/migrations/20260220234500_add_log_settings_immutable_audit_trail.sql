@@ -26,7 +26,14 @@ BEGIN
     ON public.log_settings_audit
     FOR SELECT
     TO authenticated
-    USING (has_role(auth.uid(), 'admin'::app_role));
+    USING (
+      EXISTS (
+        SELECT 1
+        FROM public.sats_users_public sup
+        WHERE sup.auth_user_id = auth.uid()
+          AND sup.role = 'admin'
+      )
+    );
   END IF;
 END;
 $$;

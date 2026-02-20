@@ -31,7 +31,14 @@ USING (auth.uid() = auth_user_id);
 CREATE POLICY "Admins can view all users" 
 ON public.sats_users_public 
 FOR SELECT 
-USING (has_role(auth.uid(), 'admin'));
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public AS me
+    WHERE me.auth_user_id = auth.uid()
+      AND me.role = 'admin'
+  )
+);
 
 -- Create or replace function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_sats_user_signup()
@@ -58,6 +65,15 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 CREATE OR REPLACE TRIGGER on_sats_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_sats_user_signup();
+
+-- Ensure shared updated_at trigger function exists for shadow DB bootstrap order
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Create trigger for automatic timestamp updates
 CREATE TRIGGER update_sats_users_public_updated_at

@@ -1,16 +1,24 @@
 -- Add soft delete and audit columns to user-related tables
-ALTER TABLE public.profiles 
-  ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN deletion_requested_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN deletion_scheduled_for TIMESTAMP WITH TIME ZONE;
+DO $$
+BEGIN
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    ALTER TABLE public.profiles
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE,
+      ADD COLUMN IF NOT EXISTS deletion_requested_at TIMESTAMP WITH TIME ZONE,
+      ADD COLUMN IF NOT EXISTS deletion_scheduled_for TIMESTAMP WITH TIME ZONE;
+  END IF;
 
-ALTER TABLE public.sats_users_public 
-  ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN deletion_requested_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN deletion_scheduled_for TIMESTAMP WITH TIME ZONE;
+  IF to_regclass('public.sats_users_public') IS NOT NULL THEN
+    ALTER TABLE public.sats_users_public
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE,
+      ADD COLUMN IF NOT EXISTS deletion_requested_at TIMESTAMP WITH TIME ZONE,
+      ADD COLUMN IF NOT EXISTS deletion_scheduled_for TIMESTAMP WITH TIME ZONE;
+  END IF;
+END;
+$$;
 
 -- Create account deletion audit log table
-CREATE TABLE public.account_deletion_logs (
+CREATE TABLE IF NOT EXISTS public.account_deletion_logs (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
   action TEXT NOT NULL, -- 'requested', 'confirmed', 'cancelled', 'completed'
@@ -25,11 +33,20 @@ CREATE TABLE public.account_deletion_logs (
 ALTER TABLE public.account_deletion_logs ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for audit log (admin access only)
+DROP POLICY IF EXISTS "Admins can view deletion logs" ON public.account_deletion_logs;
 CREATE POLICY "Admins can view deletion logs" 
 ON public.account_deletion_logs 
 FOR SELECT 
-USING (has_role(auth.uid(), 'admin'::app_role));
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.sats_users_public me
+    WHERE me.auth_user_id = auth.uid()
+      AND me.role = 'admin'
+  )
+);
 
+DROP POLICY IF EXISTS "System can insert deletion logs" ON public.account_deletion_logs;
 CREATE POLICY "System can insert deletion logs" 
 ON public.account_deletion_logs 
 FOR INSERT 
@@ -185,23 +202,51 @@ END;
 $$;
 
 -- Add soft delete columns to tables that need them
-ALTER TABLE public.ats_jobs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.ats_resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.ats_runs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.sats_analyses ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.sats_job_descriptions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.sats_resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.sats_skill_experiences ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.sats_user_skills ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.work_experiences ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+DO $$
+BEGIN
+  IF to_regclass('public.ats_jobs') IS NOT NULL THEN
+    ALTER TABLE public.ats_jobs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.ats_resumes') IS NOT NULL THEN
+    ALTER TABLE public.ats_resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.ats_runs') IS NOT NULL THEN
+    ALTER TABLE public.ats_runs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.sats_analyses') IS NOT NULL THEN
+    ALTER TABLE public.sats_analyses ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.sats_job_descriptions') IS NOT NULL THEN
+    ALTER TABLE public.sats_job_descriptions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.sats_resumes') IS NOT NULL THEN
+    ALTER TABLE public.sats_resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.sats_skill_experiences') IS NOT NULL THEN
+    ALTER TABLE public.sats_skill_experiences ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.sats_user_skills') IS NOT NULL THEN
+    ALTER TABLE public.sats_user_skills ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF to_regclass('public.work_experiences') IS NOT NULL THEN
+    ALTER TABLE public.work_experiences ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+END;
+$$;
 
 -- Update RLS policies to respect soft-deleted status
 -- Profiles table policies
-DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
-CREATE POLICY "Users can view their own profile" 
-ON public.profiles 
-FOR SELECT 
-USING (auth.uid() = user_id AND deleted_at IS NULL);
+DO $$
+BEGIN
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+    CREATE POLICY "Users can view their own profile"
+    ON public.profiles
+    FOR SELECT
+    USING (auth.uid() = user_id AND deleted_at IS NULL);
+  END IF;
+END;
+$$;
 
 -- Update other table policies to respect soft delete
 DROP POLICY IF EXISTS "Users can access their own resumes" ON public.sats_resumes;

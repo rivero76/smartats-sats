@@ -119,7 +119,7 @@ BEGIN
       PERFORM cron.schedule(
         'sats_log_cleanup_daily',
         '0 3 * * *',
-        $$SELECT public.run_log_cleanup_policies();$$
+        'SELECT public.run_log_cleanup_policies();'
       );
     END IF;
   END IF;

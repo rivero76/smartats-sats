@@ -1,19 +1,25 @@
 -- Fix Critical Security Issue: Admin Role Privilege Escalation
 -- Remove the dangerous policy that allows any user to create admin roles
-DROP POLICY IF EXISTS "Allow first admin creation when none exist" ON public.user_roles;
-
--- Create a more secure policy for first admin creation that requires no existing admins
-CREATE POLICY "Allow first admin creation only when no admins exist"
-ON public.user_roles
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  role = 'admin'::app_role 
-  AND auth.uid() = user_id 
-  AND NOT EXISTS (
-    SELECT 1 FROM public.user_roles WHERE role = 'admin'::app_role
-  )
-);
+DO $$
+BEGIN
+  IF to_regclass('public.user_roles') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Allow first admin creation when none exist" ON public.user_roles';
+    EXECUTE $p$
+      CREATE POLICY "Allow first admin creation only when no admins exist"
+      ON public.user_roles
+      FOR INSERT
+      TO authenticated
+      WITH CHECK (
+        role = 'admin'::app_role
+        AND auth.uid() = user_id
+        AND NOT EXISTS (
+          SELECT 1 FROM public.user_roles WHERE role = 'admin'::app_role
+        )
+      )
+    $p$;
+  END IF;
+END;
+$$;
 
 -- Fix Business Data Exposure: Restrict companies access
 -- Companies should only be visible to users who have job descriptions using them
@@ -94,18 +100,24 @@ USING (
 );
 
 -- Add logging for security events
-INSERT INTO public.error_logs (
-  error_source,
-  error_type, 
-  error_message,
-  error_details
-) VALUES (
-  'security_update',
-  'rls_policy_update',
-  'Critical security policies updated',
-  jsonb_build_object(
-    'updated_tables', ARRAY['user_roles', 'sats_companies', 'sats_locations', 'sats_skills'],
-    'fixes_applied', ARRAY['admin_privilege_escalation', 'business_data_exposure'],
-    'timestamp', now()
-  )
-);
+DO $$
+BEGIN
+  IF to_regclass('public.error_logs') IS NOT NULL THEN
+    INSERT INTO public.error_logs (
+      error_source,
+      error_type,
+      error_message,
+      error_details
+    ) VALUES (
+      'security_update',
+      'rls_policy_update',
+      'Critical security policies updated',
+      jsonb_build_object(
+        'updated_tables', ARRAY['user_roles', 'sats_companies', 'sats_locations', 'sats_skills'],
+        'fixes_applied', ARRAY['admin_privilege_escalation', 'business_data_exposure'],
+        'timestamp', now()
+      )
+    );
+  END IF;
+END;
+$$;

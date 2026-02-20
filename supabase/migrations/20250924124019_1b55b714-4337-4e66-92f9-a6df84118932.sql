@@ -1,8 +1,14 @@
 -- Drop existing RLS policies for profiles table
-DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Users can create their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
+DO $$
+BEGIN
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can create their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
+  END IF;
+END;
+$$;
 
 -- Create more secure RLS policies with explicit authentication checks
 -- These policies ensure that:
@@ -11,54 +17,59 @@ DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
 -- 3. Soft-deleted profiles are not accessible
 -- 4. No data leakage when authentication fails
 
-CREATE POLICY "Authenticated users can view only their own active profile"
-ON public.profiles
-FOR SELECT
-TO authenticated
-USING (
-  auth.uid() IS NOT NULL 
-  AND auth.uid() = user_id 
-  AND deleted_at IS NULL
-);
+DO $$
+BEGIN
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    CREATE POLICY "Authenticated users can view only their own active profile"
+    ON public.profiles
+    FOR SELECT
+    TO authenticated
+    USING (
+      auth.uid() IS NOT NULL
+      AND auth.uid() = user_id
+      AND deleted_at IS NULL
+    );
 
-CREATE POLICY "Authenticated users can create only their own profile"
-ON public.profiles  
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  auth.uid() IS NOT NULL 
-  AND auth.uid() = user_id
-);
+    CREATE POLICY "Authenticated users can create only their own profile"
+    ON public.profiles
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      auth.uid() IS NOT NULL
+      AND auth.uid() = user_id
+    );
 
-CREATE POLICY "Authenticated users can update only their own profile"
-ON public.profiles
-FOR UPDATE
-TO authenticated
-USING (
-  auth.uid() IS NOT NULL 
-  AND auth.uid() = user_id 
-  AND deleted_at IS NULL
-)
-WITH CHECK (
-  auth.uid() IS NOT NULL 
-  AND auth.uid() = user_id
-);
+    CREATE POLICY "Authenticated users can update only their own profile"
+    ON public.profiles
+    FOR UPDATE
+    TO authenticated
+    USING (
+      auth.uid() IS NOT NULL
+      AND auth.uid() = user_id
+      AND deleted_at IS NULL
+    )
+    WITH CHECK (
+      auth.uid() IS NOT NULL
+      AND auth.uid() = user_id
+    );
 
-CREATE POLICY "Authenticated users can delete only their own profile"
-ON public.profiles
-FOR DELETE
-TO authenticated
-USING (
-  auth.uid() IS NOT NULL 
-  AND auth.uid() = user_id
-);
+    CREATE POLICY "Authenticated users can delete only their own profile"
+    ON public.profiles
+    FOR DELETE
+    TO authenticated
+    USING (
+      auth.uid() IS NOT NULL
+      AND auth.uid() = user_id
+    );
 
--- Add a policy to completely block access to anonymous users
-CREATE POLICY "Block all anonymous access to profiles"
-ON public.profiles
-FOR ALL
-TO anon
-USING (false);
+    CREATE POLICY "Block all anonymous access to profiles"
+    ON public.profiles
+    FOR ALL
+    TO anon
+    USING (false);
+  END IF;
+END;
+$$;
 
 -- Create a security function to validate profile access
 CREATE OR REPLACE FUNCTION public.validate_profile_access(target_user_id uuid)
@@ -114,6 +125,13 @@ END;
 $$;
 
 -- Create trigger to monitor profile access attempts
-CREATE TRIGGER profile_access_security_log
-  BEFORE INSERT OR UPDATE OR DELETE ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.log_profile_access_attempt();
+DO $$
+BEGIN
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS profile_access_security_log ON public.profiles;
+    CREATE TRIGGER profile_access_security_log
+      BEFORE INSERT OR UPDATE OR DELETE ON public.profiles
+      FOR EACH ROW EXECUTE FUNCTION public.log_profile_access_attempt();
+  END IF;
+END;
+$$;
