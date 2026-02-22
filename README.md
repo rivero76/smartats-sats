@@ -22,6 +22,7 @@
 - 2026-02-21 03:02:13 | Executed SDLC P1 provider-model parameterization: ATS and enrichment edge functions now read OpenAI endpoint/model/temperature (and ATS pricing) from environment variables.
 - 2026-02-21 03:06:56 | Executed SDLC P2 data-governance hardening: ATS function now disables prompt/raw LLM response persistence by default unless explicitly enabled via env flags.
 - 2026-02-21 03:09:09 | Executed SDLC P3 reliability parameterization: centralized logging limits, retry/backoff, and sampling/rate controls are now environment-driven in frontend and edge logger paths.
+- 2026-02-21 03:24:42 | Added P9 roadmap in `PRODUCT_IMPROVEMENTS.md` for AI runtime governance and unified LLM operations analytics (config editing + telemetry + KPI dashboards).
 
 SmartATS is a web application for resume management, job description management, ATS scoring, and AI-assisted experience enrichment.
 
@@ -216,3 +217,4 @@ bash ops/smartats.sh supabase-check
   - `ops/check-supabase.sh` to validate Supabase CLI status, migration visibility, and linked dry-run status when token is available.
   - GitHub Action quality gates in `.github/workflows/quality-gates.yml`.
 - SDLC P4 security hardening now enforces CORS allowlists in edge functions via `ALLOWED_ORIGINS` and rejects non-allowed origins with explicit `403` responses.
+- P9 roadmap now defines AI runtime governance and analytics foundations: editable model/runtime parameters, immutable config audit trail, unified LLM event capture, and cost/performance/product KPI dashboards.

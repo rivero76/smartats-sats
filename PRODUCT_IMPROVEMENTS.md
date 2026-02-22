@@ -8,6 +8,7 @@
 - 2026-02-21 02:18:11 | Implemented Phase P6 baseline: `ops` automation commands, CI quality gates, docs-required checks, and diff-based secret scanning.
 - 2026-02-21 02:32:24 | Added Phase P7 future priority for release-version synchronization across app artifacts, OS/runtime baselines, and database schema versions.
 - 2026-02-21 02:36:51 | Added Phase P8 future priority for global readiness (multi-user hardening, i18n/l10n, multi-country compliance, and regional deployment controls).
+- 2026-02-21 03:24:42 | Added Phase P9 future priority for AI runtime governance and LLM operation analytics (config editing, telemetry capture, and cost/performance/product dashboards).
 
 ## 1. Scope and Goals
 
@@ -33,6 +34,58 @@
 4. Existing logging UI still works.
 
 **Estimated effort**
+
+1. 5-9 days
+
+### Phase P9: AI Runtime Governance + LLM Operations Analytics (Future)
+
+1. Add AI runtime parameter management:
+
+- Create `llm_runtime_config` table to manage provider/model/temperature/max_tokens/retries/timeouts per workflow.
+- Add pricing parameters (`pricing_input_per_million`, `pricing_output_per_million`) per workflow and model.
+- Add admin-only UI to edit active runtime settings with validation and rollback support.
+
+2. Add immutable config governance and auditability:
+
+- Create `llm_runtime_config_audit` table with before/after snapshots, actor, timestamp, and reason.
+- Require admin role for edits and capture full change history.
+- Add "effective from" versioning for safe staged rollout.
+
+3. Add unified LLM operations telemetry:
+
+- Create `llm_operation_events` table with `request_id`, workflow, model, status, duration, token usage, and cost estimate.
+- Standardize ingestion from ATS and enrichment edge functions with a shared telemetry helper.
+- Persist structured error taxonomy (`error_type`, `http_status`, `safe_error_message`) for product and reliability analysis.
+
+4. Add privacy-safe prompt observability controls:
+
+- Default to storing prompt/response hashes and character counts, not raw payloads.
+- Add optional time-limited secure prompt snapshot mode for debugging.
+- Restrict raw prompt access with explicit admin scope and retention TTL.
+
+5. Add AI analytics dashboards and KPI views:
+
+- Build admin dashboard views for cost trend, token trend, latency p50/p95, and failure rate by workflow/model.
+- Add product KPIs (cost per successful ATS analysis, cost per accepted enrichment, acceptance/edit/rejection correlation).
+- Add anomaly alerts for cost spikes, error spikes, and latency degradation.
+
+6. Add operational and release controls:
+
+- Add migration-backed SQL views/materialized views for daily KPIs and model comparison.
+- Add release gate checks for AI runtime config completeness and pricing validity.
+- Add runbook steps for model switch, rollback, and post-change verification.
+
+**Acceptance criteria**
+
+1. Admin can edit AI runtime parameters safely with full immutable audit trail.
+2. Every ATS and enrichment LLM call is captured in a unified telemetry table with request correlation.
+3. Cost, latency, and error metrics are queryable without manual log parsing.
+4. Prompt storage remains privacy-safe by default, with controlled temporary override.
+5. Product, performance, and cost dashboards provide actionable trends per workflow/model.
+
+**Estimated effort**
+
+1. 6-10 days
 
 1. 1-2 days
 
