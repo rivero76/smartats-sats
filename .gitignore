@@ -38,3 +38,6 @@ Documents/
 db_restore/
 MEMORY.md
 SATS_CHANGES.txt
+
+# Supabase local CLI temp artifacts
+supabase/.temp/
