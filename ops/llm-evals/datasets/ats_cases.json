@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "ats_case_001",
+    "description": "Finance manager resume against fintech role",
+    "notes": "Use this case to assess score consistency and evidence quality."
+  },
+  {
+    "case_id": "ats_case_002",
+    "description": "Software engineer resume against data platform role",
+    "notes": "Use this case to assess missing skills and recommendation quality."
+  }
+]

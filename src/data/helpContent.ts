@@ -155,10 +155,11 @@ export const helpContentData: Record<string, HelpContent> = {
     description:
       'Learn how to create, manage, and optimize job descriptions for effective resume matching.',
     overview:
-      'Job descriptions are essential for ATS analysis as they define the requirements and keywords that resumes are matched against. You can upload job postings or create custom descriptions with company and location details.',
+      'Job descriptions are essential for ATS analysis as they define the requirements and keywords that resumes are matched against. For ingestion, prefer Paste Text first, then use URL only for public pages, or upload PDF/DOC files when available.',
     keyFeatures: [
       'Upload job posting files',
       'Paste job description text',
+      'Ingest from single public URL',
       'Add company information',
       'Set location details',
       'Search and filter descriptions',
@@ -188,13 +189,20 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         step: 4,
-        title: 'Add Job Content',
+        title: 'Choose Ingestion Method',
         description:
-          'Either upload a job posting file or paste the job description text, including requirements, responsibilities, and qualifications.',
-        tip: 'Include both required and preferred qualifications for more comprehensive matching analysis.',
+          'Use Paste Text for login-protected sites, Use URL for direct public pages, or Upload File for PDF/DOC exports.',
+        tip: 'If URL ingestion fails, switch to Paste Text or Upload File immediately.',
       },
       {
         step: 5,
+        title: 'Add Full Job Content',
+        description:
+          'Ensure the content includes role summary, responsibilities, required skills, preferred qualifications, and experience requirements.',
+        tip: 'Include both required and preferred qualifications for more comprehensive matching analysis.',
+      },
+      {
+        step: 6,
         title: 'Review and Save',
         description:
           'Review all information for accuracy and completeness before saving the job description.',
@@ -207,6 +215,8 @@ export const helpContentData: Record<string, HelpContent> = {
       'List both required and preferred qualifications',
       'Use industry-standard terminology and keywords',
       'Keep job descriptions updated with current requirements',
+      'Use URL ingestion only for publicly accessible pages (single page fetch)',
+      'Do not enter third-party credentials in Smart ATS',
       'Use the search function to find existing descriptions before creating duplicates',
     ],
     troubleshooting: [
@@ -214,6 +224,16 @@ export const helpContentData: Record<string, HelpContent> = {
         problem: 'Job description text appears corrupted after upload',
         solution:
           'Try copying and pasting the text directly instead of uploading a file, or use a simpler text format.',
+      },
+      {
+        problem: 'URL ingestion failed with 403/404 or blocked access',
+        solution:
+          'The source website likely blocked automated fetch. Use Paste Text or Upload File as fallback.',
+      },
+      {
+        problem: 'URL works in browser but fails in Smart ATS',
+        solution:
+          'Some sites require browser session state or anti-bot checks. Paste the job text manually for reliable ingestion.',
       },
       {
         problem: 'Search function not finding my job descriptions',

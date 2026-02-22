@@ -13,6 +13,16 @@ export interface JobInfo {
   employmentType: string | null
   department: string | null
   salaryRange: string | null
+  extractionMeta?: {
+    confidence: {
+      title: number
+      company: number
+      location: number
+      overall: number
+    }
+    rules: string[]
+    warnings: string[]
+  }
 }
 
 export interface ResumeInfo {
@@ -25,6 +35,235 @@ export interface ResumeInfo {
   education: string | null
   currentJobTitle: string | null
   recentJobTitles: string[]
+}
+
+const UI_NOISE_LINES = new Set([
+  'share',
+  'show more options',
+  'promoted by hirer',
+  'actively reviewing applicants',
+  'matches you',
+  'apply',
+  'save',
+  'cancel',
+])
+
+const LOCATION_WORDS = new Set([
+  'remote',
+  'hybrid',
+  'on-site',
+  'onsite',
+  'new zealand',
+  'australia',
+  'united states',
+  'united kingdom',
+  'canada',
+  'singapore',
+  'india',
+])
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function cleanExtractedText(value: string | null | undefined): string | null {
+  if (!value) return null
+  const cleaned = normalizeWhitespace(value)
+    .replace(/\s*[|·]\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  return cleaned.length ? cleaned : null
+}
+
+function normalizeCompanyName(value: string | null | undefined): string | null {
+  const cleaned = cleanExtractedText(value)
+  if (!cleaned) return null
+
+  // Collapse immediate duplicate tokens: "Databricks Databricks" -> "Databricks"
+  const parts = cleaned.split(' ')
+  const deduped: string[] = []
+  for (const part of parts) {
+    const prev = deduped[deduped.length - 1]
+    if (prev && prev.toLowerCase() === part.toLowerCase()) continue
+    deduped.push(part)
+  }
+  return deduped.join(' ').trim()
+}
+
+function sanitizeLine(line: string): string {
+  return normalizeWhitespace(line).replace(/\s*logo$/i, '').trim()
+}
+
+function parseLinkedInTitleLine(line: string): {
+  company: string | null
+  title: string | null
+  location: string | null
+} | null {
+  const cleaned = sanitizeLine(line).replace(/\s*\|\s*LinkedIn\s*$/i, '').trim()
+  const match = cleaned.match(/^(.+?)\s+hiring\s+(.+?)(?:\s+in\s+(.+))?$/i)
+  if (!match) return null
+
+  return {
+    company: cleanExtractedText(match[1]),
+    title: cleanExtractedText(match[2]),
+    location: cleanExtractedText(match[3]),
+  }
+}
+
+function extractLinkedInHeaderFromContent(content: string): {
+  source: 'linkedin'
+  company: string | null
+  title: string | null
+  location: string | null
+} | null {
+  const cleaned = normalizeWhitespace(content).replace(/\s*\|\s*LinkedIn\s*/gi, ' | LinkedIn ')
+  const headerRegex =
+    /([A-Za-z0-9&'. -]{2,80})\s+hiring\s+(.+?)\s+in\s+([A-Za-z0-9,.' -]{2,120})\s*\|\s*LinkedIn/i
+  const match = cleaned.match(headerRegex)
+  if (!match) return null
+
+  return {
+    source: 'linkedin',
+    company: cleanExtractedText(match[1]),
+    title: cleanExtractedText(match[2]),
+    location: cleanExtractedText(match[3]),
+  }
+}
+
+function parseHiringHeadline(value: string): {
+  company: string | null
+  title: string | null
+  location: string | null
+} | null {
+  const cleaned = normalizeWhitespace(value)
+    .replace(/\s*\|\s*LinkedIn\s*$/i, '')
+    .trim()
+  const match = cleaned.match(/^(.+?)\s+hiring\s+(.+?)(?:\s+in\s+(.+))?$/i)
+  if (!match) return null
+  return {
+    company: normalizeCompanyName(match[1]),
+    title: cleanExtractedText(match[2]),
+    location: cleanExtractedText(match[3]),
+  }
+}
+
+function extractLinkedInStructuredLines(lines: string[]): {
+  company: string | null
+  title: string | null
+  location: string | null
+} {
+  const cleaned = lines
+    .map(sanitizeLine)
+    .filter((line) => line.length > 1 && !isLikelyUiNoise(line))
+    .slice(0, 12)
+
+  let company: string | null = null
+  let title: string | null = null
+  let location: string | null = null
+
+  for (let i = 0; i < cleaned.length; i += 1) {
+    const line = cleaned[i]
+    if (!company && looksLikeCompanyName(line) && !/\bhiring\b/i.test(line)) {
+      company = normalizeCompanyName(line)
+      continue
+    }
+    if (!title && looksLikeJobTitle(line) && !/\bhiring\b/i.test(line)) {
+      title = cleanExtractedText(line)
+      continue
+    }
+    if (!location && /,/.test(line) && line.length < 120) {
+      location = cleanExtractedText(line)
+    }
+  }
+
+  return { company, title, location }
+}
+
+function extractProviderHeaderFromContent(content: string): {
+  source: 'seek' | 'indeed' | 'workday'
+  company: string | null
+  title: string | null
+  location: string | null
+} | null {
+  const compact = normalizeWhitespace(content)
+
+  const seek = compact.match(/^(.+?)\s+at\s+(.+?)\s+in\s+(.+?)\s*\|\s*SEEK/i)
+  if (seek) {
+    return {
+      source: 'seek',
+      title: cleanExtractedText(seek[1]),
+      company: cleanExtractedText(seek[2]),
+      location: cleanExtractedText(seek[3]),
+    }
+  }
+
+  const workday = compact.match(/^(.+?)\s+\|\s+(.+?)\s+\|\s+Workday/i)
+  if (workday) {
+    return {
+      source: 'workday',
+      title: cleanExtractedText(workday[1]),
+      company: cleanExtractedText(workday[2]),
+      location: null,
+    }
+  }
+
+  const indeed = compact.match(/^(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*\|\s*Indeed/i)
+  if (indeed) {
+    return {
+      source: 'indeed',
+      title: cleanExtractedText(indeed[1]),
+      company: cleanExtractedText(indeed[2]),
+      location: cleanExtractedText(indeed[3]),
+    }
+  }
+
+  return null
+}
+
+function isLikelyUiNoise(line: string): boolean {
+  const lower = line.toLowerCase()
+  if (UI_NOISE_LINES.has(lower)) return true
+  if (lower.includes('applicants')) return true
+  if (lower.includes('days ago')) return true
+  if (lower.includes('hours ago')) return true
+  return false
+}
+
+function looksLikeLocation(line: string): boolean {
+  const lower = line.toLowerCase()
+  if (LOCATION_WORDS.has(lower)) return true
+  if (lower.includes(',')) return true
+  return /\b(remote|hybrid|on-?site)\b/i.test(line)
+}
+
+function looksLikeJobTitle(line: string): boolean {
+  return /\b(engineer|developer|manager|analyst|specialist|coordinator|director|lead|designer)\b/i.test(
+    line
+  )
+}
+
+function looksLikeCompanyName(line: string): boolean {
+  const cleaned = sanitizeLine(line)
+  if (!cleaned || cleaned.length < 2 || cleaned.length > 80) return false
+
+  const lower = cleaned.toLowerCase()
+  if (
+    lower.includes('hiring') ||
+    lower.includes('about the job') ||
+    lower.includes('role summary') ||
+    lower.includes("what you'll") ||
+    lower.includes('how ') ||
+    lower.includes('why ')
+  ) {
+    return false
+  }
+
+  // Prefer short proper-name style lines: "The Good Source", "Acme Labs"
+  if (/^[A-Z][A-Za-z0-9&'.-]*(\s+[A-Z][A-Za-z0-9&'.-]*){0,5}$/.test(cleaned)) {
+    return true
+  }
+
+  return false
 }
 
 const COMMON_SKILLS = [
@@ -87,6 +326,8 @@ const COMMON_SKILLS = [
 
 export function extractJobDescriptionInfo(content: string, sessionId?: string): JobInfo {
   const logger = createContentExtractionLogger(sessionId)
+  const appliedRules: string[] = []
+  const warnings: string[] = []
 
   if (!content || content.trim().length < 10) {
     logger.info('Content extraction skipped - insufficient content', {
@@ -115,9 +356,33 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
     .filter(Boolean)
   const text = content.toLowerCase()
 
-  const title = extractJobTitle(content, lines)
-  const company = extractCompany(content, lines)
-  const location = extractLocation(content, lines)
+  const linkedInHeader = extractLinkedInHeaderFromContent(content)
+  const providerHeader = extractProviderHeaderFromContent(content)
+  if (linkedInHeader) appliedRules.push('linkedin_header')
+  if (providerHeader) appliedRules.push(`${providerHeader.source}_header`)
+
+  const headerLocation =
+    linkedInHeader?.location || providerHeader?.location
+      ? {
+          city:
+            (linkedInHeader?.location || providerHeader?.location || '')
+              .split(',')[0]
+              ?.trim() || null,
+          state:
+            (linkedInHeader?.location || providerHeader?.location || '')
+              .split(',')[1]
+              ?.trim() || null,
+          country:
+            (linkedInHeader?.location || providerHeader?.location || '')
+              .split(',')[2]
+              ?.trim() || null,
+        }
+      : null
+
+  const title = linkedInHeader?.title || providerHeader?.title || extractJobTitle(content, lines)
+  const company =
+    linkedInHeader?.company || providerHeader?.company || extractCompany(content, lines)
+  const location = headerLocation || extractLocation(content, lines)
   const skills = extractSkills(content)
   const employmentType = extractEmploymentType(text)
   const department = extractDepartment(content, lines)
@@ -131,6 +396,107 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
     employmentType,
     department,
     salaryRange,
+  }
+
+  // Final normalization: if headline contains "<Company> hiring <Role> in <Location>",
+  // split it into canonical fields to avoid title contamination and missing company.
+  const firstLine = lines[0] || ''
+  const hiringHeadline = parseHiringHeadline(firstLine) || parseHiringHeadline(content)
+  if (hiringHeadline) {
+    appliedRules.push('hiring_headline_split')
+    if (hiringHeadline.company) result.company = hiringHeadline.company
+    if (hiringHeadline.title) result.title = hiringHeadline.title
+    if (hiringHeadline.location) {
+      const parts = hiringHeadline.location
+        .split(',')
+        .map((part) => cleanExtractedText(part))
+        .filter(Boolean) as string[]
+      if (parts.length >= 2) {
+        result.location = {
+          city: parts[0] || null,
+          state: parts[1] || null,
+          country: parts[2] || null,
+        }
+      }
+    }
+  }
+
+  // If title still has "hiring", split from the title itself as last-resort safety.
+  if (/\bhiring\b/i.test(result.title || '')) {
+    const titleSplit = parseHiringHeadline(result.title || '')
+    if (titleSplit) {
+      appliedRules.push('title_hiring_split')
+      result.company = titleSplit.company || result.company
+      result.title = titleSplit.title || result.title
+      if (titleSplit.location) {
+        const parts = titleSplit.location
+          .split(',')
+          .map((part) => cleanExtractedText(part))
+          .filter(Boolean) as string[]
+        if (parts.length >= 2) {
+          result.location = {
+            city: parts[0] || null,
+            state: parts[1] || null,
+            country: parts[2] || null,
+          }
+        }
+      }
+    }
+  }
+
+  // LinkedIn structured-lines fallback for cases where page title parsing is noisy.
+  const structured = extractLinkedInStructuredLines(lines)
+  if (!result.company && structured.company) {
+    appliedRules.push('linkedin_lines_company')
+    result.company = structured.company
+  }
+  if ((/\bhiring\b/i.test(result.title || '') || !result.title) && structured.title) {
+    appliedRules.push('linkedin_lines_title')
+    result.title = structured.title
+  }
+  if (!result.location && structured.location) {
+    const parts = structured.location
+      .split(',')
+      .map((part) => cleanExtractedText(part))
+      .filter(Boolean) as string[]
+    if (parts.length >= 2) {
+      appliedRules.push('linkedin_lines_location')
+      result.location = {
+        city: parts[0] || null,
+        state: parts[1] || null,
+        country: parts[2] || null,
+      }
+    }
+  }
+
+  result.company = normalizeCompanyName(result.company)
+  if (result.title && result.company) {
+    const escapedCompany = result.company.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const prefixRegex = new RegExp(`^${escapedCompany}\\s+hiring\\s+`, 'i')
+    if (prefixRegex.test(result.title)) {
+      appliedRules.push('strip_company_hiring_prefix')
+      result.title = result.title.replace(prefixRegex, '').trim()
+    }
+  }
+
+  const titleHasHiring = /\bhiring\b/i.test(result.title || '')
+  if (titleHasHiring) {
+    warnings.push('Title still contains "hiring". Review title/company split.')
+  }
+
+  const confidence = {
+    title: result.title ? (titleHasHiring ? 0.55 : 0.92) : 0.1,
+    company: result.company ? 0.9 : 0.15,
+    location: result.location ? 0.88 : 0.2,
+    overall: 0,
+  }
+  confidence.overall =
+    confidence.title * 0.4 + confidence.company * 0.35 + confidence.location * 0.25
+
+  result.extractionMeta = {
+    confidence,
+    rules: appliedRules,
+    warnings,
   }
 
   const extractionTime = Date.now() - startTime
@@ -156,6 +522,9 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
         result.employmentType,
       ].filter(Boolean).length,
     },
+    extractionRules: appliedRules,
+    extractionWarnings: warnings,
+    confidence,
   })
 
   // Log the content extraction for debugging and analytics
@@ -184,6 +553,14 @@ export function extractResumeInfo(content: string): ResumeInfo {
 }
 
 function extractJobTitle(content: string, lines: string[]): string | null {
+  const linkedInHeader = extractLinkedInHeaderFromContent(content)
+  if (linkedInHeader?.title) return linkedInHeader.title
+
+  for (const line of lines.slice(0, 8)) {
+    const parsed = parseLinkedInTitleLine(line)
+    if (parsed?.title) return parsed.title
+  }
+
   // Look for common job title patterns
   const titlePatterns = [
     /(?:position|role|job\s+title|title):\s*(.+)/i,
@@ -202,7 +579,7 @@ function extractJobTitle(content: string, lines: string[]): string | null {
   for (const line of lines.slice(0, 5)) {
     if (
       line.length > 5 &&
-      line.length < 80 &&
+      line.length < 120 &&
       (line.includes('Engineer') ||
         line.includes('Developer') ||
         line.includes('Manager') ||
@@ -218,21 +595,45 @@ function extractJobTitle(content: string, lines: string[]): string | null {
 }
 
 function extractCompany(content: string, lines: string[]): string | null {
+  const linkedInHeader = extractLinkedInHeaderFromContent(content)
+  if (linkedInHeader?.company) return linkedInHeader.company
+
+  for (const line of lines.slice(0, 8)) {
+    const parsed = parseLinkedInTitleLine(line)
+    if (parsed?.company) return parsed.company
+  }
+
+  const cleanedLines = lines
+    .map(sanitizeLine)
+    .filter((line) => line.length > 1 && !isLikelyUiNoise(line))
+
+  for (let i = 0; i < Math.min(cleanedLines.length, 12); i += 1) {
+    const line = cleanedLines[i]
+    if (!line) continue
+    if (looksLikeJobTitle(line) || looksLikeLocation(line)) continue
+    if (/^\d+$/.test(line)) continue
+    if (looksLikeCompanyName(line)) {
+      return cleanExtractedText(line)
+    }
+  }
+
   const companyPatterns = [
     /(?:company|organization|at|join)\s*:\s*(.+)/i,
     /about\s+([A-Z][a-zA-Z\s&,.-]+)(?:\s+is|\s+was|\s+provides)/i,
     /([A-Z][a-zA-Z\s&,.-]+)\s+is\s+(?:looking|seeking|hiring)/i,
-    /@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/,
   ]
 
   for (const pattern of companyPatterns) {
     const match = content.match(pattern)
     if (match && match[1]) {
-      let company = match[1].trim()
+      let company = normalizeWhitespace(match[1])
       // Clean up common suffixes
       company = company.replace(/\s+(Inc\.?|LLC|Corp\.?|Ltd\.?|Co\.?)$/i, '')
+      const firstWord = company.split(/\s+/)[0]?.toLowerCase() || ''
+      const blockedFirstWords = new Set(['how', 'what', 'why', 'this', 'that', 'who', 'where'])
+      if (blockedFirstWords.has(firstWord)) continue
       if (company.length > 2 && company.length < 50) {
-        return company
+        return cleanExtractedText(company)
       }
     }
   }
@@ -241,44 +642,41 @@ function extractCompany(content: string, lines: string[]): string | null {
 }
 
 function extractLocation(content: string, lines: string[]): JobInfo['location'] {
-  const locationPatterns = [
-    /(?:location|based\s+in|office):\s*(.+)/i,
-    /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z]{2}|[A-Z][a-z]+)(?:,\s*([A-Z][a-z]+))?/,
-    /(remote|hybrid|on-site)/i,
-  ]
+  const linkedInHeader = extractLinkedInHeaderFromContent(content)
+  if (linkedInHeader?.location) {
+    const parts = linkedInHeader.location
+      .split(',')
+      .map((part) => cleanExtractedText(part))
+      .filter(Boolean) as string[]
+    if (parts.length >= 2) {
+      return {
+        city: parts[0] || null,
+        state: parts[1] || null,
+        country: parts[2] || null,
+      }
+    }
+  }
 
-  for (const pattern of locationPatterns) {
-    const match = content.match(pattern)
-    if (match) {
-      if (match[0].toLowerCase().includes('remote')) {
-        return { city: 'Remote', state: null, country: null }
-      }
-      if (match[3]) {
-        // City, State, Country
-        return {
-          city: match[1]?.trim() || null,
-          state: match[2]?.trim() || null,
-          country: match[3]?.trim() || null,
-        }
-      }
-      if (match[2]) {
-        // City, State
-        return {
-          city: match[1]?.trim() || null,
-          state: match[2]?.trim() || null,
-          country: null,
-        }
-      }
-      if (match[1]) {
-        const location = match[1].trim()
-        const parts = location.split(',').map((p) => p.trim())
-        if (parts.length >= 2) {
-          return {
-            city: parts[0] || null,
-            state: parts[1] || null,
-            country: parts[2] || null,
-          }
-        }
+  const cleanedLines = lines.map(sanitizeLine).filter((line) => line.length > 1)
+
+  for (const line of cleanedLines.slice(0, 20)) {
+    if (!line) continue
+    if (/\b(remote|hybrid|on-?site)\b/i.test(line)) {
+      return { city: 'Remote', state: null, country: null }
+    }
+
+    const labelMatch = line.match(/(?:location|based in|office)\s*:\s*(.+)/i)
+    const candidate = labelMatch?.[1] || line
+    const parts = candidate
+      .split(',')
+      .map((part) => cleanExtractedText(part))
+      .filter(Boolean) as string[]
+
+    if (parts.length >= 2 && parts[0].length < 60) {
+      return {
+        city: parts[0] || null,
+        state: parts[1] || null,
+        country: parts[2] || null,
       }
     }
   }

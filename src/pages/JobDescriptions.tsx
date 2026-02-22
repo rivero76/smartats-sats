@@ -33,6 +33,7 @@ import {
   File,
   Type,
   ExternalLink,
+  Link,
 } from 'lucide-react'
 import {
   useJobDescriptions,
@@ -214,7 +215,7 @@ const JobDescriptions = () => {
                     <HelpTooltip content="Geographic location for this job">Location</HelpTooltip>
                   </TableHead>
                   <TableHead>
-                    <HelpTooltip content="Whether this was uploaded as a file or entered as text">
+                    <HelpTooltip content="How this job description was ingested (text, URL, or file)">
                       Type
                     </HelpTooltip>
                   </TableHead>
@@ -259,7 +260,12 @@ const JobDescriptions = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {jd.file_url ? (
+                      {jd.source_type === 'url' || jd.source_url ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Link className="mr-1 h-3 w-3" />
+                          URL
+                        </Badge>
+                      ) : jd.file_url ? (
                         <Badge variant="secondary" className="text-xs">
                           <File className="mr-1 h-3 w-3" />
                           File

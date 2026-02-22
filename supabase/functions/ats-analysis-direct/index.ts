@@ -6,6 +6,7 @@
  * 2026-02-21 03:07:10 | P1 config hardening: parameterized AI provider endpoint, model, temperature, and pricing via environment variables.
  * 2026-02-21 03:13:40 | SDLC P2 data-governance hardening: prompt/raw LLM persistence disabled by default with explicit env flags.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
+ * 2026-02-22 10:00:00 | P10 execution start: added schema-locked ATS response contract, deterministic rubric prompt, and retry-on-invalid-output validation.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -58,12 +59,67 @@ const OPENAI_API_BASE_URL = (
   Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
 ).replace(/\/$/, '')
 const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
-const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4o-mini'
-const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.2)
+const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
+const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
+const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.1)
+const OPENAI_MAX_TOKENS_ATS = Math.max(
+  500,
+  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800))
+)
+const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
+  0,
+  Math.min(2, Math.floor(getEnvNumber('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS', 1)))
+)
 const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 0.15)
 const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 0.6)
 const STORE_LLM_PROMPTS = getEnvBoolean('STORE_LLM_PROMPTS', false)
 const STORE_LLM_RAW_RESPONSE = getEnvBoolean('STORE_LLM_RAW_RESPONSE', false)
+
+const ATS_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'match_score',
+    'keywords_found',
+    'keywords_missing',
+    'resume_warnings',
+    'recommendations',
+    'score_breakdown',
+    'evidence',
+  ],
+  properties: {
+    match_score: { type: 'number', minimum: 0, maximum: 1 },
+    keywords_found: { type: 'array', items: { type: 'string' } },
+    keywords_missing: { type: 'array', items: { type: 'string' } },
+    resume_warnings: { type: 'array', items: { type: 'string' } },
+    recommendations: { type: 'array', items: { type: 'string' } },
+    score_breakdown: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['skills_alignment', 'experience_relevance', 'domain_fit', 'format_quality'],
+      properties: {
+        skills_alignment: { type: 'number', minimum: 0, maximum: 1 },
+        experience_relevance: { type: 'number', minimum: 0, maximum: 1 },
+        domain_fit: { type: 'number', minimum: 0, maximum: 1 },
+        format_quality: { type: 'number', minimum: 0, maximum: 1 },
+      },
+    },
+    evidence: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['skill', 'jd_quote', 'resume_quote', 'reasoning'],
+        properties: {
+          skill: { type: 'string' },
+          jd_quote: { type: 'string' },
+          resume_quote: { type: 'string' },
+          reasoning: { type: 'string' },
+        },
+      },
+    },
+  },
+}
 
 const MODEL_PRICING_USD: Record<string, { input: number; output: number }> = {
   // Cost per 1M tokens (USD) based on OpenAI pricing
@@ -75,7 +131,10 @@ MODEL_PRICING_USD[OPENAI_MODEL_ATS] = {
   output: OPENAI_PRICE_OUTPUT_PER_MILLION,
 }
 
-function calculateLLMCost(tokenUsage: any, model: string): number | null {
+function calculateLLMCost(
+  tokenUsage: { prompt_tokens?: number; completion_tokens?: number } | null | undefined,
+  model: string
+): number | null {
   if (!tokenUsage || !model || !MODEL_PRICING_USD[model]) return null
 
   const pricing = MODEL_PRICING_USD[model]
@@ -101,6 +160,18 @@ interface ATSAnalysisResult {
   keywords_missing: string[]
   resume_warnings: string[]
   recommendations: string[]
+  score_breakdown: {
+    skills_alignment: number
+    experience_relevance: number
+    domain_fit: number
+    format_quality: number
+  }
+  evidence: Array<{
+    skill: string
+    jd_quote: string
+    resume_quote: string
+    reasoning: string
+  }>
 }
 
 async function logEvent(
@@ -253,7 +324,7 @@ async function processAnalysis(
   analysis_id: string,
   resume_id: string,
   jd_id: string,
-  supabase: any,
+  supabase: ReturnType<typeof createClient>,
   openAIApiKey: string,
   supabaseUrl: string,
   supabaseServiceKey: string,
@@ -318,7 +389,7 @@ async function processAnalysis(
     // Build optimized prompt
     const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent)
     const systemPrompt =
-      'You are an ATS scoring engine. Output STRICT JSON only (no code fences). Analyze all provided content carefully before responding.'
+      'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Never invent resume evidence. If evidence is weak, lower confidence and explain with resume_warnings.'
     const promptsMetadata = {
       system: systemPrompt,
       user: prompt,
@@ -326,47 +397,17 @@ async function processAnalysis(
 
     console.log('[processAnalysis] Calling OpenAI API with prompt length:', prompt.length)
 
-    // Call OpenAI API
+    // Call OpenAI API with schema-locked output
     const startTime = Date.now()
-    const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL_ATS,
-        temperature: OPENAI_TEMPERATURE_ATS,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    })
-
+    const llmResult = await runATSCompletionWithSchema(openAIApiKey, systemPrompt, prompt)
     const latencyMs = Date.now() - startTime
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
-
-      if (response.status === 429 && errorText.includes('rate_limit_exceeded')) {
-        throw new Error('Request too large. Please try with a shorter resume or job description.')
-      }
-
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
-    }
-
-    const data = await response.json()
-    const tokenUsage = data.usage || {}
-    const costEstimateUsd = calculateLLMCost(tokenUsage, OPENAI_MODEL_ATS)
-    const rawContent = data.choices[0].message.content.trim()
+    const tokenUsage = llmResult.tokenUsage
+    const costEstimateUsd = calculateLLMCost(tokenUsage, llmResult.modelUsed)
+    const rawContent = llmResult.rawContent
 
     console.log('[processAnalysis] Raw OpenAI response:', rawContent)
-    console.log('[processAnalysis] Token usage:', data.usage)
-
-    // Parse JSON with graceful fallbacks
-    const analysisResult = parseATSResponse(rawContent)
+    console.log('[processAnalysis] Token usage:', tokenUsage)
+    const analysisResult = llmResult.analysisResult
 
     const llmStorageFlags = {
       store_llm_prompts: STORE_LLM_PROMPTS,
@@ -384,12 +425,15 @@ async function processAnalysis(
         processing_completed_at: new Date().toISOString(),
         processing_time_ms: latencyMs,
         token_usage: tokenUsage,
-        model_used: OPENAI_MODEL_ATS,
+        model_used: llmResult.modelUsed,
         cost_estimate_usd: costEstimateUsd,
         prompt_characters: prompt.length,
         request_id: requestId || null,
         extracted_features: analysisResult.keywords_found,
         resume_warnings: analysisResult.resume_warnings,
+        score_breakdown: analysisResult.score_breakdown,
+        evidence_count: analysisResult.evidence.length,
+        schema_retry_attempts_used: llmResult.retryAttemptsUsed,
         ...llmStorageFlags,
         ...(STORE_LLM_PROMPTS ? { prompts: promptsMetadata } : {}),
         ...(STORE_LLM_RAW_RESPONSE
@@ -432,7 +476,7 @@ async function processAnalysis(
         ats_score: updateData.ats_score,
         processing_time_ms: latencyMs,
         duration_ms: latencyMs,
-        model_used: OPENAI_MODEL_ATS,
+        model_used: llmResult.modelUsed,
         cost_estimate_usd: costEstimateUsd,
       },
       supabaseUrl,
@@ -500,36 +544,235 @@ function buildATSPrompt(
   resumeTitle: string,
   resumeText: string
 ): string {
-  const maxJobLength = 15000 // ~3750 tokens
-  const maxResumeLength = 25000 // ~6250 tokens
+  const preparedJobText = buildSectionAwareContext(jdText, {
+    maxChars: 12000,
+    headingKeywords: [
+      'responsibilities',
+      'requirements',
+      'required',
+      'preferred',
+      'qualifications',
+      'must have',
+      'skills',
+      'experience',
+    ],
+    priorityRegex: /(must|required|responsib|qualif|skill|experience|certif|years|tool|stack)/i,
+  })
+  const preparedResumeText = buildSectionAwareContext(resumeText, {
+    maxChars: 16000,
+    headingKeywords: [
+      'summary',
+      'experience',
+      'work history',
+      'projects',
+      'skills',
+      'certifications',
+      'education',
+      'achievements',
+    ],
+    priorityRegex: /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
+  })
 
-  const truncatedJobText =
-    jdText.length > maxJobLength ? jdText.substring(0, maxJobLength) + '...[truncated]' : jdText
+  return `Task: Compare the resume against the job description using a deterministic ATS rubric.
 
-  const truncatedResumeText =
-    resumeText.length > maxResumeLength
-      ? resumeText.substring(0, maxResumeLength) + '...[truncated]'
-      : resumeText
+Scoring rubric (0.0-1.0):
+- skills_alignment (40%): overlap and depth of required skills.
+- experience_relevance (30%): relevance of accomplishments to role scope and seniority.
+- domain_fit (20%): industry/domain and tooling alignment.
+- format_quality (10%): clarity, ATS readability, chronology, and specificity.
 
-  return `Role: ATS simulator. Compare resume vs job description.
+Output constraints:
+- Return only valid JSON matching the required schema.
+- Use evidence-grounded findings only.
+- For each evidence item, include exact short quotes from JD and resume.
+- If evidence is weak or ambiguous, add a warning and reduce confidence.
 
-Output STRICT JSON (no fences):
-{
-  "match_score": 0.0,
-  "keywords_found": ["..."],
-  "keywords_missing": ["..."],
-  "resume_warnings": ["..."],
-  "recommendations": ["..."]
+Job:
+- title: ${jdTitle}
+- content:
+${preparedJobText}
+
+Resume:
+- title: ${resumeTitle}
+- content:
+${preparedResumeText}`.trim()
 }
 
-Job: ${jdTitle}
-${truncatedJobText}
+function buildSectionAwareContext(
+  text: string,
+  options: {
+    maxChars: number
+    headingKeywords: string[]
+    priorityRegex: RegExp
+  }
+): string {
+  const normalized = text.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim()
+  if (!normalized) return ''
 
-Resume: ${resumeTitle}
-${truncatedResumeText}`.trim()
+  const lines = normalized.split('\n').map((line) => line.trim())
+  const sectionBuckets: string[] = []
+  let currentHeading = 'general'
+  let activeLines: string[] = []
+
+  const flushSection = () => {
+    if (activeLines.length === 0) return
+    sectionBuckets.push(`## ${currentHeading}\n${activeLines.join('\n')}`)
+    activeLines = []
+  }
+
+  for (const rawLine of lines) {
+    if (!rawLine) continue
+    const line = rawLine.replace(/\s+/g, ' ').trim()
+    const looksLikeHeading =
+      line.length <= 80 &&
+      !line.startsWith('-') &&
+      !line.startsWith('*') &&
+      !line.startsWith('•') &&
+      /[A-Za-z]/.test(line)
+
+    if (
+      looksLikeHeading &&
+      options.headingKeywords.some((keyword) => line.toLowerCase().includes(keyword))
+    ) {
+      flushSection()
+      currentHeading = line
+      continue
+    }
+
+    activeLines.push(line)
+  }
+  flushSection()
+
+  const allSections = sectionBuckets.length > 0 ? sectionBuckets : [`## general\n${lines.join('\n')}`]
+  const rankedLines = allSections
+    .join('\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const highPriority = rankedLines.filter(
+    (line) => line.startsWith('## ') || options.priorityRegex.test(line)
+  )
+  const mediumPriority = rankedLines.filter(
+    (line) => !highPriority.includes(line) && (/^-|^\*|^•/.test(line) || line.length < 140)
+  )
+  const lowPriority = rankedLines.filter(
+    (line) => !highPriority.includes(line) && !mediumPriority.includes(line)
+  )
+
+  const merged = [...highPriority, ...mediumPriority, ...lowPriority].join('\n')
+  if (merged.length <= options.maxChars) return merged
+  return `${merged.slice(0, options.maxChars)}...[compressed]`
+}
+
+async function runATSCompletionWithSchema(
+  openAIApiKey: string,
+  systemPrompt: string,
+  prompt: string
+): Promise<{
+  tokenUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null
+  rawContent: string
+  analysisResult: ATSAnalysisResult
+  retryAttemptsUsed: number
+  modelUsed: string
+}> {
+  let lastParseError: string | null = null
+  const modelCandidates = [OPENAI_MODEL_ATS]
+  if (OPENAI_MODEL_ATS_FALLBACK && OPENAI_MODEL_ATS_FALLBACK !== OPENAI_MODEL_ATS) {
+    modelCandidates.push(OPENAI_MODEL_ATS_FALLBACK)
+  }
+
+  for (const modelName of modelCandidates) {
+    for (let attempt = 0; attempt <= OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS; attempt++) {
+      const retryHint =
+        attempt === 0
+          ? ''
+          : '\n\nIMPORTANT: Your previous response was invalid. Return strict JSON that exactly matches schema keys and value types.'
+      const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: modelName,
+          temperature: OPENAI_TEMPERATURE_ATS,
+          max_tokens: OPENAI_MAX_TOKENS_ATS,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `${prompt}${retryHint}` },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'ats_analysis_response',
+              strict: true,
+              schema: ATS_JSON_SCHEMA,
+            },
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('OpenAI API error:', errorText)
+
+        if (response.status === 429 && errorText.includes('rate_limit_exceeded')) {
+          throw new Error('Request too large. Please try with a shorter resume or job description.')
+        }
+
+        if (response.status >= 500 || response.status === 429) {
+          lastParseError = `Provider error on ${modelName}: ${response.status}`
+          continue
+        }
+
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      const tokenUsage = data.usage || {}
+      const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
+      const parsed = parseATSResponseOrNull(rawContent)
+      if (parsed) {
+        return {
+          tokenUsage,
+          rawContent,
+          analysisResult: parsed,
+          retryAttemptsUsed: attempt,
+          modelUsed: modelName,
+        }
+      }
+
+      lastParseError = `Model response did not satisfy ATS schema contract on ${modelName}.`
+    }
+  }
+
+  throw new Error(lastParseError || 'ATS response validation failed')
 }
 
 function parseATSResponse(rawResponse: string): ATSAnalysisResult {
+  const parsed = parseATSResponseOrNull(rawResponse)
+  if (parsed) return parsed
+
+  console.error('Failed to parse ATS response')
+  console.error('Raw response was:', rawResponse)
+  return {
+    match_score: 0.0,
+    keywords_found: [],
+    keywords_missing: [],
+    resume_warnings: ['Failed to parse analysis response'],
+    recommendations: ['Please retry the analysis'],
+    score_breakdown: {
+      skills_alignment: 0,
+      experience_relevance: 0,
+      domain_fit: 0,
+      format_quality: 0,
+    },
+    evidence: [],
+  }
+}
+
+function parseATSResponseOrNull(rawResponse: string): ATSAnalysisResult | null {
   let text = rawResponse.trim()
 
   if (text.startsWith('```')) {
@@ -552,22 +795,39 @@ function parseATSResponse(rawResponse: string): ATSAnalysisResult {
       keywords_missing: coerceToStringArray(data.keywords_missing),
       resume_warnings: coerceToStringArray(data.resume_warnings),
       recommendations: coerceToStringArray(data.recommendations),
+      score_breakdown: {
+        skills_alignment: clampScore(data?.score_breakdown?.skills_alignment),
+        experience_relevance: clampScore(data?.score_breakdown?.experience_relevance),
+        domain_fit: clampScore(data?.score_breakdown?.domain_fit),
+        format_quality: clampScore(data?.score_breakdown?.format_quality),
+      },
+      evidence: Array.isArray(data.evidence)
+        ? data.evidence
+            .map((item: unknown) => {
+              const evidenceItem =
+                typeof item === 'object' && item !== null
+                  ? (item as Record<string, unknown>)
+                  : ({} as Record<string, unknown>)
+              return {
+                skill: String(evidenceItem.skill || '').trim(),
+                jd_quote: String(evidenceItem.jd_quote || '').trim(),
+                resume_quote: String(evidenceItem.resume_quote || '').trim(),
+                reasoning: String(evidenceItem.reasoning || '').trim(),
+              }
+            })
+            .filter(
+              (item: { skill: string; jd_quote: string; resume_quote: string; reasoning: string }) =>
+                item.skill && item.jd_quote && item.resume_quote && item.reasoning
+            )
+        : [],
     }
   } catch (error) {
     console.error('Failed to parse ATS response:', error)
-    console.error('Raw response was:', rawResponse)
-
-    return {
-      match_score: 0.0,
-      keywords_found: [],
-      keywords_missing: [],
-      resume_warnings: ['Failed to parse analysis response'],
-      recommendations: ['Please retry the analysis'],
-    }
+    return null
   }
 }
 
-function clampScore(value: any): number {
+function clampScore(value: unknown): number {
   try {
     const num = parseFloat(value)
     if (isNaN(num)) return 0.0
@@ -577,7 +837,7 @@ function clampScore(value: any): number {
   }
 }
 
-function coerceToStringArray(value: any): string[] {
+function coerceToStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.map(String)
   }
@@ -587,7 +847,10 @@ function coerceToStringArray(value: any): string[] {
   return []
 }
 
-async function getResumeContent(resume: any, supabase: any): Promise<string> {
+async function getResumeContent(
+  resume: { id: string; name: string; file_url?: string | null; user_id?: string | null },
+  supabase: ReturnType<typeof createClient>
+): Promise<string> {
   console.log(`Checking for pre-extracted text for resume ${resume.id}`)
 
   const { data: extraction, error: extractionError } = await supabase

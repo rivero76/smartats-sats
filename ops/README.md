@@ -25,6 +25,10 @@ bash ops/smartats.sh logs-prod-follow
 bash ops/smartats.sh verify
 bash ops/smartats.sh verify --full
 
+# LLM prompt/model evals
+bash ops/smartats.sh llm-evals
+bash ops/smartats.sh llm-evals --gate
+
 # Supabase operational checks
 bash ops/smartats.sh supabase-check
 bash ops/smartats.sh supabase-check --strict
@@ -40,6 +44,7 @@ bash ops/smartats.sh git-safe-push
 - `ops/check-secrets.sh`: scans added diff lines for likely secret leaks.
 - `ops/check-format.sh`: runs Prettier checks only on changed files.
 - `ops/check-supabase.sh`: checks Supabase CLI, local status, migrations, and linked dry-run status.
+- `ops/check-llm-evals.sh`: validates ATS/enrichment output-contract metrics against baseline thresholds.
 
 ## Verify logs
 

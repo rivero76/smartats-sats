@@ -116,6 +116,10 @@ export const logContentExtraction = (
   sessionId?: string
 ) => {
   const payload = toRecord(extractedData)
+  const extractionMeta = toRecord(payload.extractionMeta)
+  const confidence = toRecord(extractionMeta.confidence)
+  const rules = Array.isArray(extractionMeta.rules) ? extractionMeta.rules : []
+  const warnings = Array.isArray(extractionMeta.warnings) ? extractionMeta.warnings : []
   const skills = Array.isArray(payload.skills) ? payload.skills : []
   const logger = createContentExtractionLogger(sessionId)
   logger.info('Content extraction completed', {
@@ -128,6 +132,9 @@ export const logContentExtraction = (
       employmentType: !!payload.employmentType,
       department: !!payload.department,
     },
+    extractionRules: rules,
+    extractionWarnings: warnings,
+    extractionConfidence: confidence,
     extractionSuccess: !!(payload.title || payload.company),
   })
 }

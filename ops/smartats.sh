@@ -31,6 +31,7 @@ Commands:
   logs-dev-follow           Follow development logs
   logs-prod-follow          Follow production logs
   verify [--full]           Run verification checks and save a timestamped log
+  llm-evals [--gate]        Run LLM eval metrics (and optional gate)
   supabase-check [--strict] Run Supabase operational checks
   health                    Show docker container status
   git-status                Print branch/status/last commit
@@ -87,6 +88,22 @@ run_verify() {
     if [[ \"$full\" == \"true\" ]]; then
       npm run lint
     fi
+  "
+}
+
+run_llm_evals() {
+  local mode="${1:-}"
+  if [[ "$mode" == "--gate" ]]; then
+    run_with_timestamp_log "llm_evals_gate" bash -c "
+      set -euo pipefail
+      bash ops/check-llm-evals.sh
+    "
+    return
+  fi
+
+  run_with_timestamp_log "llm_evals" bash -c "
+    set -euo pipefail
+    node ops/llm-evals/run-evals.mjs --input ops/llm-evals/reports/latest.responses.json
   "
 }
 
@@ -155,6 +172,9 @@ case "$cmd" in
     ;;
   verify)
     run_verify "${arg:-}"
+    ;;
+  llm-evals)
+    run_llm_evals "${arg:-}"
     ;;
   supabase-check)
     bash ops/check-supabase.sh "${arg:-}"

@@ -1,0 +1,11 @@
+{
+  "schema_valid_rate_min": 0.95,
+  "ats": {
+    "evidence_coverage_rate_min": 0.9,
+    "score_breakdown_presence_rate_min": 0.95
+  },
+  "enrichment": {
+    "evidence_presence_rate_min": 0.95,
+    "risk_flag_presence_rate_min": 0.95
+  }
+}

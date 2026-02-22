@@ -14,11 +14,15 @@
     "ops": "bash ops/smartats.sh",
     "verify": "bash ops/smartats.sh verify",
     "verify:full": "bash ops/smartats.sh verify --full",
+    "llm:eval": "node ops/llm-evals/run-evals.mjs --input ops/llm-evals/reports/latest.responses.json",
+    "llm:eval:gate": "bash ops/check-llm-evals.sh ops/llm-evals/reports/latest.responses.json",
     "format:check:changed": "bash ops/check-format.sh",
     "docs:check": "bash ops/check-docs.sh",
     "secrets:check": "bash ops/check-secrets.sh",
     "supabase:check": "bash ops/check-supabase.sh",
-    "supabase:check:strict": "bash ops/check-supabase.sh --strict"
+    "supabase:check:strict": "bash ops/check-supabase.sh --strict",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -95,6 +99,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vitest": "^2.1.8"
   }
 }

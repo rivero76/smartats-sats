@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-02-22T00:00:00.000Z",
+  "metadata": {
+    "model_primary": "gpt-4.1",
+    "model_fallback": "gpt-4o-mini"
+  },
+  "ats": [
+    {
+      "case_id": "ats_case_001",
+      "output": {
+        "match_score": 0.78,
+        "keywords_found": ["financial modeling", "stakeholder management"],
+        "keywords_missing": ["python", "ml ops"],
+        "resume_warnings": ["Limited direct machine learning production experience."],
+        "recommendations": [
+          "Add a bullet highlighting production analytics stack ownership.",
+          "Include measurable impact metrics for cost optimization work."
+        ],
+        "score_breakdown": {
+          "skills_alignment": 0.8,
+          "experience_relevance": 0.76,
+          "domain_fit": 0.79,
+          "format_quality": 0.74
+        },
+        "evidence": [
+          {
+            "skill": "financial modeling",
+            "jd_quote": "Lead financial modeling for strategic planning and scenario analysis.",
+            "resume_quote": "Built quarterly forecasting models across finance and operations.",
+            "reasoning": "Direct overlap between JD requirement and stated resume accomplishment."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ats_case_002",
+      "output": {
+        "match_score": 0.71,
+        "keywords_found": ["distributed systems", "sql", "etl"],
+        "keywords_missing": ["terraform"],
+        "resume_warnings": [],
+        "recommendations": ["Add IaC examples and infra ownership outcomes."],
+        "score_breakdown": {
+          "skills_alignment": 0.69,
+          "experience_relevance": 0.75,
+          "domain_fit": 0.7,
+          "format_quality": 0.73
+        },
+        "evidence": [
+          {
+            "skill": "etl",
+            "jd_quote": "Design and maintain ETL pipelines for large-scale data products.",
+            "resume_quote": "Implemented ETL workflows processing 20M+ records daily.",
+            "reasoning": "Resume includes ETL ownership with clear scale signal."
+          }
+        ]
+      }
+    }
+  ],
+  "enrichment": [
+    {
+      "case_id": "enrich_case_001",
+      "output": {
+        "suggestions": [
+          {
+            "skill_name": "Budget Forecasting",
+            "skill_type": "inferred",
+            "confidence": 0.82,
+            "explanation": "Program delivery ownership implies budget planning across initiatives.",
+            "suggestion": "Produced quarterly forecasts for a $1.2M initiative portfolio, enabling on-time delivery across 4 programs.",
+            "derived_context": "Cross-functional portfolio leadership references.",
+            "source_resume_evidence": "Led cross-functional delivery for multi-million dollar programs",
+            "risk_flag": "medium"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "enrich_case_002",
+      "output": {
+        "suggestions": [
+          {
+            "skill_name": "Dashboard Optimization",
+            "skill_type": "explicit",
+            "confidence": 0.91,
+            "explanation": "Resume explicitly mentions dashboard development and KPI tracking.",
+            "suggestion": "Redesigned KPI dashboards that reduced manual reporting time by 35% for weekly leadership reviews.",
+            "derived_context": "Business intelligence reporting responsibilities.",
+            "source_resume_evidence": "Built KPI dashboards and automated reporting for leadership",
+            "risk_flag": "low"
+          }
+        ]
+      }
+    }
+  ]
+}

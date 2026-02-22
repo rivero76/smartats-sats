@@ -34,6 +34,8 @@ export interface JobDescription {
   location_id: string | null
   pasted_text: string | null
   file_url: string | null
+  source_type: 'text' | 'url' | 'file' | null
+  source_url: string | null
   created_at: string
   updated_at: string
   company?: Company
@@ -46,6 +48,8 @@ export interface CreateJobDescriptionData {
   location_id?: string | null
   pasted_text?: string | null
   file_url?: string | null
+  source_type?: 'text' | 'url' | 'file' | null
+  source_url?: string | null
 }
 
 export interface UpdateJobDescriptionData {
@@ -54,6 +58,18 @@ export interface UpdateJobDescriptionData {
   location_id?: string | null
   pasted_text?: string | null
   file_url?: string | null
+  source_type?: 'text' | 'url' | 'file' | null
+  source_url?: string | null
+}
+
+const normalizeField = (value: string | null | undefined): string | null => {
+  if (!value) return null
+  const cleaned = value.replace(/\s+/g, ' ').trim()
+  return cleaned.length ? cleaned : null
+}
+
+const normalizeCompanyInput = (value: string): string => {
+  return normalizeField(value)?.replace(/\s+(inc\.?|llc|corp\.?|ltd\.?|co\.?)$/i, '') || value.trim()
 }
 
 export const useJobDescriptions = () => {
@@ -127,7 +143,7 @@ export const useCreateJobDescription = () => {
             hasName: !!data.name,
             hasCompany: !!data.company_id,
             hasLocation: !!data.location_id,
-            inputMethod: data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown',
+            inputMethod: data.source_type || (data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown'),
           },
         })
 
@@ -260,13 +276,15 @@ export const useCreateCompany = () => {
       const session = new JobDescriptionSession()
 
       try {
-        session.startProcess('company-creation', { companyName: data.name })
+        const normalizedName = normalizeCompanyInput(data.name)
+
+        session.startProcess('company-creation', { companyName: normalizedName })
 
         // Check if company exists first
         const { data: existingCompany } = await supabase
           .from('sats_companies')
           .select('*')
-          .ilike('name', `%${data.name}%`)
+          .ilike('name', normalizedName)
           .limit(1)
 
         if (existingCompany && existingCompany.length > 0) {
@@ -285,7 +303,10 @@ export const useCreateCompany = () => {
 
         const { data: company, error } = await supabase
           .from('sats_companies')
-          .insert(data)
+          .insert({
+            ...data,
+            name: normalizedName,
+          })
           .select()
           .single()
 
@@ -330,22 +351,27 @@ export const useCreateLocation = () => {
       const session = new JobDescriptionSession()
 
       try {
-        session.startProcess('location-creation', { locationData: data })
+        const normalized = {
+          city: normalizeField(data.city),
+          state: normalizeField(data.state),
+          country: normalizeField(data.country),
+        }
 
-        // Check if similar location exists
-        const { data: existingLocation } = await supabase
-          .from('sats_locations')
-          .select('*')
-          .or(
-            `city.ilike.%${data.city || ''}%,state.ilike.%${data.state || ''}%,country.ilike.%${data.country || ''}%`
-          )
-          .limit(1)
+        session.startProcess('location-creation', { locationData: normalized })
+
+        // Strict matching to avoid accidental matches from broad ilike/or queries.
+        let locationQuery = supabase.from('sats_locations').select('*').limit(1)
+        if (normalized.city) locationQuery = locationQuery.ilike('city', normalized.city)
+        if (normalized.state) locationQuery = locationQuery.ilike('state', normalized.state)
+        if (normalized.country) locationQuery = locationQuery.ilike('country', normalized.country)
+
+        const { data: existingLocation } = await locationQuery
 
         if (existingLocation && existingLocation.length > 0) {
           logCompanyLocationOperation(
             'lookup',
             'location',
-            data,
+            normalized,
             existingLocation[0],
             session.getSessionId()
           )
@@ -357,7 +383,7 @@ export const useCreateLocation = () => {
 
         const { data: location, error } = await supabase
           .from('sats_locations')
-          .insert(data)
+          .insert(normalized)
           .select()
           .single()
 
@@ -384,6 +410,66 @@ export const useCreateLocation = () => {
         variant: 'destructive',
         title: 'Failed to create location',
         description: error.message,
+      })
+    },
+  })
+}
+
+interface UrlIngestionResponse {
+  success: boolean
+  url: string
+  page_title: string | null
+  extracted_text: string
+  content_length: number
+}
+
+const getUrlIngestionErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error || '')
+  const lower = message.toLowerCase()
+
+  if (
+    lower.includes('failed to send a request to the edge function') ||
+    lower.includes('networkerror') ||
+    lower.includes('failed to fetch')
+  ) {
+    return 'Could not reach URL ingestion service. Refresh your session and try again. If it still fails, use Paste Text or Upload File.'
+  }
+
+  if (lower.includes('unable to fetch url content (403)') || lower.includes('(404)')) {
+    return 'The source page blocked or did not return accessible content. Use Paste Text or Upload File.'
+  }
+
+  if (lower.includes('origin not allowed')) {
+    return 'This app origin is not allowed for URL ingestion. Contact your admin or use Paste Text.'
+  }
+
+  return 'Could not fetch URL content. Try Paste Text or Upload File.'
+}
+
+export const useIngestJobDescriptionUrl = () => {
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (url: string): Promise<UrlIngestionResponse> => {
+      const trimmed = url.trim()
+      if (!trimmed) throw new Error('URL is required')
+
+      const { data, error } = await supabase.functions.invoke('job-description-url-ingest', {
+        body: { url: trimmed },
+      })
+
+      if (error) throw error
+      if (!data?.success) {
+        throw new Error(data?.error || 'Could not ingest URL content')
+      }
+
+      return data as UrlIngestionResponse
+    },
+    onError: (error: unknown) => {
+      toast({
+        variant: 'destructive',
+        title: 'URL ingestion failed',
+        description: getUrlIngestionErrorMessage(error),
       })
     },
   })

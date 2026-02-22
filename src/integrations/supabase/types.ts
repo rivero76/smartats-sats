@@ -824,6 +824,8 @@ export type Database = {
           location_id: string | null
           name: string
           pasted_text: string | null
+          source_type: string | null
+          source_url: string | null
           updated_at: string
           user_id: string
         }
@@ -836,6 +838,8 @@ export type Database = {
           location_id?: string | null
           name: string
           pasted_text?: string | null
+          source_type?: string | null
+          source_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -848,6 +852,8 @@ export type Database = {
           location_id?: string | null
           name?: string
           pasted_text?: string | null
+          source_type?: string | null
+          source_url?: string | null
           updated_at?: string
           user_id?: string
         }

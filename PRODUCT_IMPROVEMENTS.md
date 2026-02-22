@@ -9,6 +9,9 @@
 - 2026-02-21 02:32:24 | Added Phase P7 future priority for release-version synchronization across app artifacts, OS/runtime baselines, and database schema versions.
 - 2026-02-21 02:36:51 | Added Phase P8 future priority for global readiness (multi-user hardening, i18n/l10n, multi-country compliance, and regional deployment controls).
 - 2026-02-21 03:24:42 | Added Phase P9 future priority for AI runtime governance and LLM operation analytics (config editing, telemetry capture, and cost/performance/product dashboards).
+- 2026-02-22 10:00:00 | Added Phase P10 prompt reliability and model quality program; started implementation with schema-locked ATS/enrichment outputs and retry validation.
+- 2026-02-22 11:00:00 | Completed Phase P10 implementation: schema-locked ATS/enrichment contracts, model fallback escalation, section-aware prompt context compression, and ops eval gate tooling.
+- 2026-02-22 22:10:00 | Added Phase P11 for Job Description ETL and market intelligence analytics with text + URL ingestion (no external APIs required in initial release).
 
 ## 1. Scope and Goals
 
@@ -87,7 +90,120 @@
 
 1. 6-10 days
 
-1. 1-2 days
+### Phase P10: Prompt Reliability + Model Quality Execution (Completed)
+
+1. Upgrade prompt execution contracts with strict structured outputs:
+
+- Enforce `response_format.json_schema` for ATS and enrichment workflows.
+- Add strict server-side schema validation and reject malformed model output.
+- Add one retry path for schema/contract failures before marking request failed.
+
+2. Strengthen ATS scoring quality and auditability:
+
+- Replace ATS prompts with deterministic rubric-driven instructions.
+- Require evidence-linked output for skill decisions and missing-skill rationale.
+- Add score breakdown (`skills_alignment`, `experience_relevance`, `domain_fit`, `format_quality`) and preserve normalized `match_score`.
+
+3. Strengthen enrichment grounding and safety:
+
+- Require each enrichment suggestion to include `source_resume_evidence`.
+- Add `risk_flag` (`low|medium|high`) for inferred skill confidence control.
+- Reject unsupported suggestions without resume evidence.
+
+4. Improve runtime controls for quality/cost balance:
+
+- Add environment-driven runtime controls per workflow: model, temperature, `max_tokens`, schema retry attempts.
+- Use low-temperature defaults for ATS and moderate defaults for enrichment.
+- Add fallback escalation path hooks (future step) for high-reliability reruns.
+
+5. Improve prompt context quality:
+
+- Replace naive truncation-only behavior with section-aware extraction/compression (planned next increment).
+- Keep stable instruction prefix and dynamic context suffix to improve cache efficiency.
+
+6. Add evaluation harness and release gates:
+
+- Build baseline evaluation set for ATS and enrichment quality regressions.
+- Track schema-valid rate, hallucination rate, relevance score, and latency/cost metrics.
+- Block runtime prompt/model changes without baseline comparison results.
+
+**Acceptance criteria**
+
+1. ATS and enrichment outputs are schema-valid without free-form parser dependence.
+2. ATS output includes score breakdown and evidence lists with stable JSON shape.
+3. Enrichment output includes source evidence and risk flags for all suggestions.
+4. Runtime controls support model/temperature/max token/retry tuning via environment configuration.
+5. Eval metrics are produced for model/prompt revisions before production rollout.
+
+**Estimated effort**
+
+1. 5-9 days
+
+### Phase P11: Job Description ETL + Market Intelligence Analytics (Next Priority)
+
+**P11 Ingestion Rollout Sequence**
+
+1. `P11.1` CSV/XLS bulk import ingestion.
+2. `P11.2` PDF/DOC job description file upload ingestion.
+3. `P11.3` Browser extension clipper ingestion.
+4. `P11.4` Email forwarding ingestion.
+5. `P11.5` ATS export template ingestion (CSV/XML/JSON files, no direct API dependency).
+6. `P11.6` Feed/webhook-style secure dropbox ingestion (object storage or secure upload endpoint).
+
+1. Add JD ingestion channels for initial non-API release:
+
+- Support direct text ingestion (copy/paste job descriptions).
+- Support single-URL ingestion for user-provided job pages (no crawler behavior).
+- Record ingestion metadata (`source_type`, `source_url`, `ingested_at`, `ingested_by`, consent flag).
+
+2. Build safe ingestion and normalization pipeline:
+
+- Convert HTML pages to normalized plain text.
+- Deduplicate by normalized content hash and canonical URL.
+- Preserve raw payload and normalized text versions with immutable timestamps.
+
+3. Build structured extraction and enrichment:
+
+- Extract role, seniority, region, company size, estimated salary, required skills, and required experience.
+- Use hybrid extraction: deterministic rules first, LLM second, schema validation last.
+- Store confidence per extracted field and route low-confidence records to review queue.
+
+4. Add taxonomy mapping and analytics model:
+
+- Canonicalize role families, seniority ladders, and skill names.
+- Add warehouse-style tables/views for trend analysis by role, region, company size, and seniority.
+- Add daily materialized aggregates for dashboard performance.
+
+5. Add SaaS role model and subscription controls:
+
+- Admin scope controls ingestion policy, taxonomy curation, QA review, and system dashboards.
+- User scope consumes benchmark/report outputs based on plan entitlements.
+- Keep raw source content restricted; expose only approved analytics outputs to end users.
+
+6. Add reports and dashboards:
+
+- Role demand and skills heatmap reports.
+- Compensation benchmark reports by role/seniority/region/company size.
+- Experience requirement benchmarks and trend analysis views.
+- Export-ready report endpoints/CSV downloads by plan.
+
+7. Add compliance and anti-blocking safeguards:
+
+- Enforce terms-aware URL ingestion (single-page fetch, no recursive scraping).
+- Add rate limits, request throttling, and fallback to manual text ingestion.
+- Log ingestion provenance and data retention policy controls.
+
+**Acceptance criteria**
+
+1. Users can ingest JD data via text or URL without third-party API dependency.
+2. ETL produces schema-valid structured records with confidence scores.
+3. Dashboards report role, seniority, region, salary, skill, and experience metrics.
+4. Admin and user capabilities are separated and subscription-aware.
+5. URL ingestion follows non-crawler behavior and has auditable provenance metadata.
+
+**Estimated effort**
+
+1. 7-12 days
 
 ### Phase P1: Unified Structured Logging
 

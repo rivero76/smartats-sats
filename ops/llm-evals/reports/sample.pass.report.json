@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-02-22T08:45:34.194Z",
+  "input_path": "ops/llm-evals/reports/sample.pass.responses.json",
+  "totals": {
+    "records": 4,
+    "ats_records": 2,
+    "enrichment_records": 2
+  },
+  "metrics": {
+    "schema_valid_rate": 1,
+    "ats_evidence_coverage_rate": 1,
+    "ats_score_breakdown_presence_rate": 1,
+    "enrichment_evidence_presence_rate": 1,
+    "enrichment_risk_flag_presence_rate": 1
+  },
+  "gate": {
+    "pass": true,
+    "failures": []
+  }
+}

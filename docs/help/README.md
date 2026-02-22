@@ -7,3 +7,6 @@ User-facing documentation:
 - troubleshooting
 - FAQ
 - responsible use
+
+Key feature guides:
+- `features/job-description-ingestion-guidance.md`

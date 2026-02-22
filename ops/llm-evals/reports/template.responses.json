@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-02-22T08:44:37.131Z",
+  "metadata": {
+    "workflow": "manual_capture",
+    "notes": "Populate output blocks with real model responses before running --gate."
+  },
+  "ats": [
+    {
+      "case_id": "ats_case_001",
+      "output": null
+    },
+    {
+      "case_id": "ats_case_002",
+      "output": null
+    }
+  ],
+  "enrichment": [
+    {
+      "case_id": "enrich_case_001",
+      "output": null
+    },
+    {
+      "case_id": "enrich_case_002",
+      "output": null
+    }
+  ]
+}

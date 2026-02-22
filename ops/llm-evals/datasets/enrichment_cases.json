@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "enrich_case_001",
+    "description": "Program manager resume enrichment",
+    "notes": "Evaluate grounding and risk_flag behavior for inferred skills."
+  },
+  {
+    "case_id": "enrich_case_002",
+    "description": "Data analyst resume enrichment",
+    "notes": "Evaluate metrics-oriented bullet quality and evidence coverage."
+  }
+]
