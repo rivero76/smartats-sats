@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard'
 import MyResumes from './pages/MyResumes'
 import JobDescriptions from './pages/JobDescriptions'
 import ATSAnalyses from './pages/ATSAnalyses'
+import ProactiveMatches from './pages/ProactiveMatches'
 import EnrichedExperiences from './pages/EnrichedExperiences'
 import Settings from './pages/Settings'
 import AdminDashboard from './pages/AdminDashboard'
@@ -60,6 +61,7 @@ const App = () => {
                               <Route path="/resumes" element={<MyResumes />} />
                               <Route path="/jobs" element={<JobDescriptions />} />
                               <Route path="/analyses" element={<ATSAnalyses />} />
+                              <Route path="/opportunities" element={<ProactiveMatches />} />
                               <Route path="/experiences" element={<EnrichedExperiences />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route

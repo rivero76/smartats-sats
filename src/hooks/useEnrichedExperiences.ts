@@ -210,17 +210,10 @@ export const useDeleteEnrichedExperience = () => {
       const requestId = createRequestId('enrich-delete')
       const startedAt = Date.now()
 
-      const { data, error } = await supabase
-        .from('enriched_experiences')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_reason: payload.reason || 'user_deleted',
-        })
-        .eq('id', payload.id)
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .select()
-        .single()
+      const { data, error } = await supabase.rpc('soft_delete_enriched_experience', {
+        target_experience_id: payload.id,
+        deletion_reason: payload.reason || 'user_deleted',
+      })
 
       if (error) {
         logger.error('Failed to delete enriched experience', {
@@ -233,6 +226,24 @@ export const useDeleteEnrichedExperience = () => {
           details: { error: error.message, enriched_experience_id: payload.id },
         })
         throw error
+      }
+
+      if (!data?.success) {
+        const message =
+          typeof data?.error === 'string' && data.error.length > 0
+            ? data.error
+            : 'Experience not found or already deleted'
+        const rpcError = new Error(message)
+        logger.error('Failed to delete enriched experience', {
+          event_name: 'enrichment.delete_failed',
+          component: 'useDeleteEnrichedExperience',
+          operation: 'delete_enriched_experience',
+          outcome: 'failure',
+          request_id: requestId,
+          duration_ms: getDurationMs(startedAt),
+          details: { error: message, enriched_experience_id: payload.id },
+        })
+        throw rpcError
       }
 
       logger.info('Enriched experience deleted', {
@@ -248,7 +259,7 @@ export const useDeleteEnrichedExperience = () => {
         },
       })
 
-      return data as EnrichedExperience
+      return { id: payload.id } as Partial<EnrichedExperience>
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enriched-experiences'] })
@@ -287,6 +298,24 @@ export const useGenerateEnrichmentSuggestions = () => {
         const errorName = typeof error.name === 'string' ? error.name : 'UnknownError'
         const maybeResponse = error.context instanceof Response ? error.context : undefined
         const statusCode = maybeResponse?.status
+        let edgeMessage: string | null = null
+        let edgeCode: string | null = null
+        if (maybeResponse) {
+          try {
+            const errorBody = await maybeResponse.clone().json()
+            edgeMessage =
+              typeof errorBody?.error === 'string' && errorBody.error.trim().length > 0
+                ? errorBody.error
+                : null
+            edgeCode =
+              typeof errorBody?.code === 'string' && errorBody.code.trim().length > 0
+                ? errorBody.code
+                : null
+          } catch {
+            edgeMessage = null
+            edgeCode = null
+          }
+        }
         logger.error('Edge function invocation failed', {
           event_name: 'enrichment.invoke_failed',
           component: 'useGenerateEnrichmentSuggestions',
@@ -299,12 +328,14 @@ export const useGenerateEnrichmentSuggestions = () => {
             error_name: errorName,
             status_code: statusCode,
             error_context_present: !!error.context,
+            edge_message: edgeMessage,
+            edge_code: edgeCode,
             payload,
           },
         })
 
         const wrappedError: EnrichmentClientError = new Error(
-          error.message || 'Failed to generate suggestions'
+          edgeMessage || error.message || 'Failed to generate suggestions'
         )
         wrappedError.request_id = requestId
         wrappedError.original_name = errorName

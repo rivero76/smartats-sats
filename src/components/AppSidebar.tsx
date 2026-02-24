@@ -4,6 +4,7 @@ import {
   BriefcaseIcon,
   BarChart3,
   Sparkles,
+  Radar,
   Settings,
   ShieldCheck,
   LogOut,
@@ -33,6 +34,7 @@ const navigationItems = [
   { title: 'My Resumes', url: '/resumes', icon: FileText },
   { title: 'Job Descriptions', url: '/jobs', icon: BriefcaseIcon },
   { title: 'ATS Analyses', url: '/analyses', icon: BarChart3 },
+  { title: 'Opportunities', url: '/opportunities', icon: Radar },
   { title: 'Enriched Experiences', url: '/experiences', icon: Sparkles },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]

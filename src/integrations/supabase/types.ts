@@ -1402,6 +1402,10 @@ export type Database = {
         Args: { deletion_reason?: string; target_user_id: string }
         Returns: Json
       }
+      soft_delete_enriched_experience: {
+        Args: { deletion_reason?: string; target_experience_id: string }
+        Returns: Json
+      }
       update_service_status: {
         Args: {
           p_error_details?: Json

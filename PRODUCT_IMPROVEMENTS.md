@@ -2,6 +2,7 @@
 
 ## Update Log
 
+- 2026-02-24 17:55:00 | Ingested PM strategic audit assessment; added execution phases P13-P15 for LinkedIn ingestion loop, proactive search engine, and upskilling roadmap engine.
 - 2026-02-20 22:43:03 | Added concrete implementation plan for logging and debugging modernization for authorization review.
 - 2026-02-21 00:34:53 | Added Phase P5 priorities for enrichment record management and a full account data deletion analysis.
 - 2026-02-21 00:54:21 | Added Phase P6 priorities for modern SDLC operations, automation, documentation gates, and security/compliance controls.
@@ -12,6 +13,7 @@
 - 2026-02-22 10:00:00 | Added Phase P10 prompt reliability and model quality program; started implementation with schema-locked ATS/enrichment outputs and retry validation.
 - 2026-02-22 11:00:00 | Completed Phase P10 implementation: schema-locked ATS/enrichment contracts, model fallback escalation, section-aware prompt context compression, and ops eval gate tooling.
 - 2026-02-22 22:10:00 | Added Phase P11 for Job Description ETL and market intelligence analytics with text + URL ingestion (no external APIs required in initial release).
+- 2026-02-23 00:20:00 | Added Phase P12 roadmap for multi-language readiness, cloud migration/scaling (AWS/Azure), and enterprise architecture hardening.
 
 ## 1. Scope and Goals
 
@@ -19,6 +21,66 @@
 2. Standardize logs across frontend and all edge functions.
 3. Add reliable tracing, retention automation, and operational dashboards.
 4. Preserve current Admin Logging UI while upgrading backend behavior.
+
+## 1A. Strategic Direction Update (2026-02-24)
+
+1. Product position today: SmartATS is a trust-first ATS matcher with strong evidence-grounded AI quality controls.
+2. Product gap today: proactive orchestration is not complete yet (`bring your own job` flow remains dominant).
+3. Key onboarding gap: LinkedIn profile URL is captured, but profile data is not yet ingested into structured skills/experience entities.
+4. Strategy: preserve the trust moat and execute a three-phase sprint sequence focused on orchestration outcomes.
+
+## 1B. Release Safety Rule
+
+1. Any implemented change that is not fully tested must be recorded in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
+2. Those entries are `BLOCKED` for end-user release until required tests are completed and closure evidence is added.
+
+## 1C. Bug Backlog
+
+### BUG-2026-02-24-ENRICH-SCROLL
+
+1. Title: Enrichment modal has no effective vertical scroll for full review workflow when multiple suggestions exist.
+2. Severity: High (blocks core UX for reviewing/saving all suggestions).
+3. Priority: P1 (next UI bugfix batch).
+4. Affected area:
+- `src/components/EnrichExperienceModal.tsx`
+- `src/components/ui/dialog.tsx`
+- `src/components/ui/scroll-area.tsx`
+5. Current behavior:
+- After generating multiple suggestions, lower content in the modal becomes partially inaccessible.
+- Users do not see an obvious/usable scrollbar for navigating the whole modal.
+- Action controls for later suggestions can be clipped below viewport on common laptop resolutions.
+6. Expected behavior:
+- Modal remains fully navigable on desktop and mobile breakpoints.
+- Users can always scroll through all generated suggestions and reach all action buttons.
+- Scroll affordance is visible and discoverable.
+7. Reproduction steps:
+1. Open `Enriched Experiences` and launch `AI Experience Enrichment`.
+2. Select an ATS analysis with enough matched/missing skills to produce multiple suggestions.
+3. Click `Generate Suggestions`.
+4. Attempt to navigate to the final suggestions and their action controls.
+5. Observe that full content cannot be reliably reached or scrollbar is not apparent for the full modal context.
+8. User impact:
+- Prevents completion of review workflow (`Save Experience` / `Reject`) for all generated items.
+- Creates impression that content is missing or app is frozen.
+- Increases abandonment risk on a key product differentiator (trust-first enrichment review).
+9. Root-cause hypothesis (from code review):
+- `DialogContent` has no viewport height cap + no dedicated outer modal scroll container.
+- Nested scrolling is limited to suggestion list (`ScrollArea max-h-[360px]`) while other sections still expand total modal height.
+- Scrollbar styling/visibility in `ScrollArea` is subtle and can be missed.
+10. Proposed fix direction (for implementation phase):
+1. Constrain modal container height to viewport (`max-h`), make modal body scrollable.
+2. Keep suggestion list scroll bounded but rebalance heights to reduce nested-scroll friction.
+3. Improve scrollbar visibility/affordance for discoverability.
+4. Validate behavior on both `localhost:3000` and `localhost:8080` across desktop/mobile widths.
+11. Acceptance criteria:
+1. User can reach all suggestion cards and all action buttons in one modal session.
+2. Vertical scrolling is consistently available for long content.
+3. No clipped controls at 1366x768 and common mobile viewport sizes.
+4. Existing enrichment actions (generate/edit/save/reject/batch) remain functional.
+12. Testing requirements before release:
+1. Manual UI test with 8+ suggestions generated.
+2. Verify keyboard accessibility (`Tab`, arrow keys, page scroll) inside modal.
+3. Confirm no regression in modal close behavior and focus trap.
 
 ## 2. Delivery Phases
 
@@ -39,6 +101,240 @@
 **Estimated effort**
 
 1. 5-9 days
+
+
+### Phase P1: Unified Structured Logging
+
+1. Introduce a shared log event schema:
+   `event_name`, `component`, `operation`, `outcome`, `duration_ms`, `request_id`, `session_id`, `user_id`, `metadata`.
+2. Update frontend loggers (`authLogger`, `documentLogger`, `jobDescriptionLogger`, enrichment hooks) to emit schema-compliant events.
+3. Update edge functions (`ats-analysis-direct`, `delete-account`, `cancel-account-deletion`) to use centralized logger endpoint instead of only `console.*`.
+4. Add validation in `supabase/functions/centralized-logging/index.ts` for schema shape and payload size.
+
+**Acceptance criteria**
+
+1. 90%+ of new logs conform to schema fields.
+2. All core edge functions write to `log_entries`.
+3. Logs remain queryable in existing `LogViewer`.
+
+**Estimated effort**
+
+1. 3-5 days
+
+
+### Phase P2: Correlation + Tracing
+
+1. Generate `request_id` per user action in frontend hooks.
+2. Propagate `request_id` through edge function invocation payloads.
+3. Persist and display `request_id` in `LogViewer` and `ATSDebugModal`.
+4. Add operation timers for key flows:
+   ATS analysis trigger, retry, enrichment generation, document extraction.
+
+**Acceptance criteria**
+
+1. Single `request_id` can trace a full flow end-to-end.
+2. `duration_ms` present on key operations.
+3. Debug modal can link to related logs by `request_id`.
+
+**Estimated effort**
+
+1. 2-3 days
+
+
+### Phase P3: Retention Automation + Reliability
+
+1. Implement scheduled cleanup job based on `log_cleanup_policies`.
+2. Add write throttling/sampling for TRACE and DEBUG levels.
+3. Add retries with exponential backoff for transient logging failures.
+4. Add max size controls and truncation for oversized metadata.
+
+**Acceptance criteria**
+
+1. Old logs are cleaned automatically per policy.
+2. Logging failures do not break business flows.
+3. Storage growth is bounded and predictable.
+
+**Estimated effort**
+
+1. 2-4 days
+
+
+### Phase P4: Operational Features (Future-ready)
+
+1. Add admin dashboards for:
+   error rate, per-script volume, p95 latency, ATS/enrichment failure trends, model cost trends.
+2. Add alert rules:
+   error spikes, repeated failures, abnormal token/cost usage.
+3. Add immutable audit trail for log settings changes.
+
+**Acceptance criteria**
+
+1. Admin can detect and triage incidents without raw SQL.
+2. Alerts trigger on defined thresholds.
+3. Setting changes are fully auditable.
+
+**Estimated effort**
+
+1. 4-6 days
+
+
+### Phase P5: Enrichment Lifecycle + User Data Erasure (Next Priority)
+
+1. Add enriched experience record identity and time metadata in UI:
+
+- Show short record id.
+- Show `created_at` and `updated_at`.
+
+2. Add enriched experience update capability:
+
+- Edit existing suggestion text and metadata.
+- Keep audit metadata (`updated_at`, `edited_by_user` flag).
+
+3. Add enriched experience delete capability:
+
+- Soft-delete first (`deleted_at`, `deleted_reason`) with optional restore window.
+- Hard-delete via scheduled purge after retention window.
+
+4. Add self-serve full account data deletion:
+
+- One-click user request to delete all personal records.
+- Async job that deletes user-linked rows across all owned tables and storage objects.
+- Confirmation step with irreversible warning.
+
+5. Add compliance-grade deletion trail:
+
+- Track request timestamp, completion timestamp, status, and deletion scope summary.
+- Preserve minimal legal/audit artifact without storing recoverable personal data.
+
+**Acceptance criteria**
+
+1. Users can view id and timestamps for each enriched experience.
+2. Users can edit and delete enriched experiences without admin support.
+3. Users can trigger complete data deletion and receive status feedback.
+4. Deletion removes user-owned rows and files from storage.
+5. Deletion logs are auditable and privacy-safe.
+
+**Estimated effort**
+
+1. 5-8 days
+
+
+### Phase P6: Modern SDLC Operations and Product Governance
+
+1. Create repository automation layer (`ops/`):
+
+- Start/stop/restart dev and prod services.
+- Verification commands (`lint`, `build`, `test`, smoke checks).
+- Log tail/filter/export commands.
+- Safe git helper commands (`status`, branch checks, guarded push helpers).
+
+2. Add CI/CD quality gates:
+
+- Require passing verification pipeline before merge.
+- Require documentation updates for user-facing changes.
+- Add link checks and doc completeness checks.
+
+3. Enforce docs-as-release-artifact:
+
+- Product spec, release notes, help updates, and runbook updates included in Definition of Done.
+
+4. Strengthen observability and alerting operations:
+
+- Standard alert thresholds and incident runbook linkage.
+- Post-release monitoring checklist.
+
+5. Strengthen security/compliance workflow:
+
+- Secrets scanning and no-secrets-in-code policy checks.
+- Data retention/deletion policy enforcement checks.
+- Access/audit review cadence.
+
+**Acceptance criteria**
+
+1. Team can run common lifecycle tasks from a single `ops` entrypoint.
+2. PRs are blocked when required checks/docs are missing.
+3. Every release includes spec/help/release-note artifacts.
+4. Incident response and rollback steps are documented and tested.
+5. Security/compliance checks run consistently in pipeline.
+
+**Estimated effort**
+
+1. 4-7 days
+
+**Implementation status (2026-02-21 02:18:11)**
+
+1. Completed: repository automation layer via `ops/smartats.sh` and `ops/README.md`.
+2. Completed: CI quality gates via `.github/workflows/quality-gates.yml`.
+3. Completed: docs gate via `ops/check-docs.sh`.
+4. Completed: diff-based secret scan via `ops/check-secrets.sh`.
+5. Pending hardening: make lint fully blocking after legacy lint debt remediation.
+
+
+### Phase P7: Release Version Synchronization and Deployment Control (Future)
+
+1. Create a release manifest per version (tag, commit SHA, image digest, migration set, config version).
+2. Pin runtime baselines (OS/base image digests and critical toolchain versions).
+3. Enforce migration-state parity gate before deploy (`supabase migration list --linked` + `db push --dry-run` clean result).
+4. Enforce artifact-to-release linkage (deploy only immutable image digest built from tagged commit).
+5. Add post-deploy reconciliation report (running app version, deployed image digest, DB migration head, env/config checksum).
+
+**Acceptance criteria**
+
+1. Every deployment has a single traceable release manifest.
+2. App image digest and Git tag match for all deployed environments.
+3. Database remote migration head matches repo release migration set.
+4. Drift detection blocks deployment when mismatches exist.
+5. Post-deploy report confirms app/runtime/database/config version alignment.
+
+**Estimated effort**
+
+1. 3-5 days
+
+
+### Phase P8: Global MVP/1.0 Readiness for Multi-User and Multi-Country Distribution (Future)
+
+1. Security and tenant isolation hardening:
+
+- Independent application security assessment and threat model review.
+- End-to-end RLS/policy regression tests across all user-owned tables, storage, and edge functions.
+- Secrets governance hardening (rotation policy, environment scoping, and incident playbook).
+
+2. Robustness and operations readiness:
+
+- Define SLIs/SLOs and error budgets for auth, analysis, enrichment, and admin paths.
+- Load and concurrency testing for multi-user behavior.
+- Backup/restore validation drills and disaster-recovery runbook testing.
+
+3. Multi-language product readiness (i18n/l10n):
+
+- Introduce localization framework and translation key architecture.
+- Add locale-aware date/number formatting and language switching.
+- Add content review workflow for translated UX/help/legal text.
+
+4. Multi-country compliance readiness:
+
+- Legal/compliance mapping by target country/region (privacy, retention, deletion, consent).
+- Data processing agreement and subprocessor transparency artifacts.
+- Country-aware consent and policy presentation where required.
+
+5. Regional deployment and data residency:
+
+- Define region strategy for backend/data hosting.
+- Control cross-border data transfer handling and fallback behavior.
+- Add deployment gates that validate region + compliance prerequisites.
+
+**Acceptance criteria**
+
+1. Multi-user security controls are validated by automated tests and external review.
+2. Core user journeys meet defined performance/reliability SLOs under concurrent load.
+3. Product supports at least one additional language end-to-end (UI + help + key product flows).
+4. Country-specific compliance checklist is documented and approved for initial launch regions.
+5. Release gates block deployment if region/compliance/security prerequisites are missing.
+
+**Estimated effort**
+
+1. 8-14 days
+
 
 ### Phase P9: AI Runtime Governance + LLM Operations Analytics (Future)
 
@@ -90,6 +386,7 @@
 
 1. 6-10 days
 
+
 ### Phase P10: Prompt Reliability + Model Quality Execution (Completed)
 
 1. Upgrade prompt execution contracts with strict structured outputs:
@@ -138,6 +435,7 @@
 **Estimated effort**
 
 1. 5-9 days
+
 
 ### Phase P11: Job Description ETL + Market Intelligence Analytics (Next Priority)
 
@@ -205,230 +503,113 @@
 
 1. 7-12 days
 
-### Phase P1: Unified Structured Logging
 
-1. Introduce a shared log event schema:
-   `event_name`, `component`, `operation`, `outcome`, `duration_ms`, `request_id`, `session_id`, `user_id`, `metadata`.
-2. Update frontend loggers (`authLogger`, `documentLogger`, `jobDescriptionLogger`, enrichment hooks) to emit schema-compliant events.
-3. Update edge functions (`ats-analysis-direct`, `delete-account`, `cancel-account-deletion`) to use centralized logger endpoint instead of only `console.*`.
-4. Add validation in `supabase/functions/centralized-logging/index.ts` for schema shape and payload size.
+### Phase P12: Multi-language + Cloud Migration + Enterprise Scale Readiness (New)
 
-**Acceptance criteria**
+1. Multi-language product foundation:
 
-1. 90%+ of new logs conform to schema fields.
-2. All core edge functions write to `log_entries`.
-3. Logs remain queryable in existing `LogViewer`.
+- Introduce i18n framework and translation key architecture.
+- Externalize all user-visible strings from UI/help content.
+- Add language selector and locale-aware date/number/currency formatting.
+- Add translation quality gates (missing keys, fallback checks, glossary consistency).
 
-**Estimated effort**
+2. Cloud migration baseline (AWS/Azure):
 
-1. 3-5 days
+- Define reference deployment topologies for AWS and Azure.
+- Introduce environment separation (`dev/stage/prod`) with configuration parity checks.
+- Implement IaC baseline (Terraform/Bicep) for repeatable provisioning.
+- Move secrets/config to managed secret stores and rotation policies.
 
-### Phase P2: Correlation + Tracing
+3. Scalability and reliability:
 
-1. Generate `request_id` per user action in frontend hooks.
-2. Propagate `request_id` through edge function invocation payloads.
-3. Persist and display `request_id` in `LogViewer` and `ATSDebugModal`.
-4. Add operation timers for key flows:
-   ATS analysis trigger, retry, enrichment generation, document extraction.
+- Add queue-first async processing for heavy ETL/enrichment workloads.
+- Define autoscaling rules and backpressure/rate-limiting controls.
+- Define and monitor SLOs/SLIs for auth, ingestion, ATS, enrichment, and dashboards.
+- Add synthetic checks, p95/p99 latency monitoring, and failure budget alerts.
 
-**Acceptance criteria**
+4. Enterprise security and governance:
 
-1. Single `request_id` can trace a full flow end-to-end.
-2. `duration_ms` present on key operations.
-3. Debug modal can link to related logs by `request_id`.
+- Add SSO/SAML readiness and SCIM-compatible user lifecycle model.
+- Strengthen audit trails for admin/config/runtime changes.
+- Add tenant-aware access controls and enterprise policy enforcement.
+- Add data residency controls and regional routing strategy.
 
-**Estimated effort**
+5. Enterprise operations readiness:
 
-1. 2-3 days
-
-### Phase P3: Retention Automation + Reliability
-
-1. Implement scheduled cleanup job based on `log_cleanup_policies`.
-2. Add write throttling/sampling for TRACE and DEBUG levels.
-3. Add retries with exponential backoff for transient logging failures.
-4. Add max size controls and truncation for oversized metadata.
+- Add release manifest + deploy parity checks (artifact, config, migration, runtime).
+- Add blue/green or canary rollout with automated rollback gates.
+- Add DR/backup recovery objectives and periodic restore drills.
+- Add workload cost attribution and usage metering by tenant/plan.
 
 **Acceptance criteria**
 
-1. Old logs are cleaned automatically per policy.
-2. Logging failures do not break business flows.
-3. Storage growth is bounded and predictable.
+1. Product supports at least one additional language end-to-end in core user workflows.
+2. Cloud environments are reproducible via IaC with validated config/secret parity.
+3. ETL and analysis workloads meet target SLOs under concurrent load tests.
+4. Enterprise controls (SSO readiness, auditability, tenant boundaries) are verified.
+5. Deployment strategy supports safe rollout and rollback with drift detection.
 
 **Estimated effort**
 
-1. 2-4 days
+1. 10-16 days (phased by platform and compliance scope)
 
-### Phase P4: Operational Features (Future-ready)
 
-1. Add admin dashboards for:
-   error rate, per-script volume, p95 latency, ATS/enrichment failure trends, model cost trends.
-2. Add alert rules:
-   error spikes, repeated failures, abnormal token/cost usage.
-3. Add immutable audit trail for log settings changes.
+### Phase P13: LinkedIn Ingestion Loop Upgrade (Next 1-2 Weeks)
+
+1. Upgrade LinkedIn handling from URL storage to structured profile ingestion.
+2. Parse profile-relevant signals into `sats_user_skills` and `sats_skill_experiences`.
+3. Define identity merge rules and dedupe logic against existing resume-derived data.
+4. Add consent, provenance metadata, and failure fallbacks for partial parsing.
 
 **Acceptance criteria**
 
-1. Admin can detect and triage incidents without raw SQL.
-2. Alerts trigger on defined thresholds.
-3. Setting changes are fully auditable.
+1. LinkedIn ingest writes usable skill and experience rows for downstream matching.
+2. Merge logic avoids duplicate or conflicting entries.
+3. Users can review and confirm imported profile data before finalization.
+4. Parsed profile baseline is available for later proactive scoring workflows.
 
 **Estimated effort**
 
-1. 4-6 days
+1. 1-2 weeks
 
-### Phase P5: Enrichment Lifecycle + User Data Erasure (Next Priority)
 
-1. Add enriched experience record identity and time metadata in UI:
+### Phase P14: Proactive Search Engine (Next 3-4 Weeks)
 
-- Show short record id.
-- Show `created_at` and `updated_at`.
-
-2. Add enriched experience update capability:
-
-- Edit existing suggestion text and metadata.
-- Keep audit metadata (`updated_at`, `edited_by_user` flag).
-
-3. Add enriched experience delete capability:
-
-- Soft-delete first (`deleted_at`, `deleted_reason`) with optional restore window.
-- Hard-delete via scheduled purge after retention window.
-
-4. Add self-serve full account data deletion:
-
-- One-click user request to delete all personal records.
-- Async job that deletes user-linked rows across all owned tables and storage objects.
-- Confirmation step with irreversible warning.
-
-5. Add compliance-grade deletion trail:
-
-- Track request timestamp, completion timestamp, status, and deletion scope summary.
-- Preserve minimal legal/audit artifact without storing recoverable personal data.
+1. Build background worker pipeline to discover jobs asynchronously from approved external sources.
+2. Map discovered jobs into internal JD schema and run ATS scoring in the background.
+3. Trigger user notification when a scored opportunity exceeds `60%` match threshold.
+4. Add dedupe/freshness controls and source-policy compliance safeguards.
 
 **Acceptance criteria**
 
-1. Users can view id and timestamps for each enriched experience.
-2. Users can edit and delete enriched experiences without admin support.
-3. Users can trigger complete data deletion and receive status feedback.
-4. Deletion removes user-owned rows and files from storage.
-5. Deletion logs are auditable and privacy-safe.
+1. System can discover and score jobs without manual user JD input for each run.
+2. Users receive opportunity notifications only when match score exceeds threshold.
+3. Job ingestion/scoring pipeline is traceable and resilient to source/API failures.
+4. Policy and provenance controls are auditable.
 
 **Estimated effort**
 
-1. 5-8 days
+1. 3-4 weeks
 
-### Phase P6: Modern SDLC Operations and Product Governance
 
-1. Create repository automation layer (`ops/`):
+### Phase P15: Upskilling Roadmap Engine (Next 4-6 Weeks)
 
-- Start/stop/restart dev and prod services.
-- Verification commands (`lint`, `build`, `test`, smoke checks).
-- Log tail/filter/export commands.
-- Safe git helper commands (`status`, branch checks, guarded push helpers).
-
-2. Add CI/CD quality gates:
-
-- Require passing verification pipeline before merge.
-- Require documentation updates for user-facing changes.
-- Add link checks and doc completeness checks.
-
-3. Enforce docs-as-release-artifact:
-
-- Product spec, release notes, help updates, and runbook updates included in Definition of Done.
-
-4. Strengthen observability and alerting operations:
-
-- Standard alert thresholds and incident runbook linkage.
-- Post-release monitoring checklist.
-
-5. Strengthen security/compliance workflow:
-
-- Secrets scanning and no-secrets-in-code policy checks.
-- Data retention/deletion policy enforcement checks.
-- Access/audit review cadence.
+1. Convert ATS missing-skill output into actionable multi-step learning plans.
+2. Add prompt/program logic that maps skill gaps to sequenced learning milestones.
+3. Include practical outcomes (portfolio/project/interview readiness checkpoints).
+4. Add roadmap persistence and progress tracking hooks for iterative updates.
 
 **Acceptance criteria**
 
-1. Team can run common lifecycle tasks from a single `ops` entrypoint.
-2. PRs are blocked when required checks/docs are missing.
-3. Every release includes spec/help/release-note artifacts.
-4. Incident response and rollback steps are documented and tested.
-5. Security/compliance checks run consistently in pipeline.
+1. Users receive step-by-step upskilling plans tied to their identified gaps.
+2. Roadmaps are role-aware and reference measurable outcomes.
+3. Plan output can be saved, revisited, and updated over time.
+4. Output quality remains evidence-grounded and aligned with trust-first product standards.
 
 **Estimated effort**
 
-1. 4-7 days
+1. 4-6 weeks
 
-**Implementation status (2026-02-21 02:18:11)**
-
-1. Completed: repository automation layer via `ops/smartats.sh` and `ops/README.md`.
-2. Completed: CI quality gates via `.github/workflows/quality-gates.yml`.
-3. Completed: docs gate via `ops/check-docs.sh`.
-4. Completed: diff-based secret scan via `ops/check-secrets.sh`.
-5. Pending hardening: make lint fully blocking after legacy lint debt remediation.
-
-### Phase P7: Release Version Synchronization and Deployment Control (Future)
-
-1. Create a release manifest per version (tag, commit SHA, image digest, migration set, config version).
-2. Pin runtime baselines (OS/base image digests and critical toolchain versions).
-3. Enforce migration-state parity gate before deploy (`supabase migration list --linked` + `db push --dry-run` clean result).
-4. Enforce artifact-to-release linkage (deploy only immutable image digest built from tagged commit).
-5. Add post-deploy reconciliation report (running app version, deployed image digest, DB migration head, env/config checksum).
-
-**Acceptance criteria**
-
-1. Every deployment has a single traceable release manifest.
-2. App image digest and Git tag match for all deployed environments.
-3. Database remote migration head matches repo release migration set.
-4. Drift detection blocks deployment when mismatches exist.
-5. Post-deploy report confirms app/runtime/database/config version alignment.
-
-**Estimated effort**
-
-1. 3-5 days
-
-### Phase P8: Global MVP/1.0 Readiness for Multi-User and Multi-Country Distribution (Future)
-
-1. Security and tenant isolation hardening:
-
-- Independent application security assessment and threat model review.
-- End-to-end RLS/policy regression tests across all user-owned tables, storage, and edge functions.
-- Secrets governance hardening (rotation policy, environment scoping, and incident playbook).
-
-2. Robustness and operations readiness:
-
-- Define SLIs/SLOs and error budgets for auth, analysis, enrichment, and admin paths.
-- Load and concurrency testing for multi-user behavior.
-- Backup/restore validation drills and disaster-recovery runbook testing.
-
-3. Multi-language product readiness (i18n/l10n):
-
-- Introduce localization framework and translation key architecture.
-- Add locale-aware date/number formatting and language switching.
-- Add content review workflow for translated UX/help/legal text.
-
-4. Multi-country compliance readiness:
-
-- Legal/compliance mapping by target country/region (privacy, retention, deletion, consent).
-- Data processing agreement and subprocessor transparency artifacts.
-- Country-aware consent and policy presentation where required.
-
-5. Regional deployment and data residency:
-
-- Define region strategy for backend/data hosting.
-- Control cross-border data transfer handling and fallback behavior.
-- Add deployment gates that validate region + compliance prerequisites.
-
-**Acceptance criteria**
-
-1. Multi-user security controls are validated by automated tests and external review.
-2. Core user journeys meet defined performance/reliability SLOs under concurrent load.
-3. Product supports at least one additional language end-to-end (UI + help + key product flows).
-4. Country-specific compliance checklist is documented and approved for initial launch regions.
-5. Release gates block deployment if region/compliance/security prerequisites are missing.
-
-**Estimated effort**
-
-1. 8-14 days
 
 ## 3. Technical Work Packages (Concrete)
 
@@ -481,6 +662,7 @@
 5. Approve **P6** (modern SDLC automation, docs quality gates, and governance controls).
 6. Approve **P7** (release manifest + app/runtime/database version synchronization controls).
 7. Approve **P8** (global v1 readiness: security hardening, i18n/l10n, compliance, and regional deployment controls).
+8. Approve **P12** (multi-language foundation + cloud migration/scaling + enterprise architecture hardening).
 
 ## 6. Full Data Deletion Analysis (Subscription Stop / Right to Erasure)
 

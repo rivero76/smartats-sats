@@ -121,6 +121,16 @@ export const useATSAnalyses = () => {
       return analysesWithUserData as ATSAnalysis[]
     },
     enabled: !!user,
+    // Fallback polling keeps UI fresh when realtime events are delayed/missed.
+    refetchInterval: (query) => {
+      const analyses = query.state.data as ATSAnalysis[] | undefined
+      const hasInFlight = analyses?.some((analysis) =>
+        ['initial', 'queued', 'processing'].includes(analysis.status)
+      )
+      return hasInFlight ? 3000 : false
+    },
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   // Set up real-time subscription

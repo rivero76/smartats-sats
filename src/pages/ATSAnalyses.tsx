@@ -2,7 +2,7 @@
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS analyses page updates and added timestamped file header tracking.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
 import ATSDebugModal from '@/components/ATSDebugModal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,10 +47,24 @@ const ATSAnalyses = () => {
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('atsAnalysis')
 
-  const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
+  const {
+    data: analyses,
+    isLoading: analysesLoading,
+    isFetching: analysesFetching,
+    refetch: refetchAnalyses,
+    dataUpdatedAt,
+  } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
   const deleteAnalysis = useDeleteATSAnalysis()
   const retryAnalysis = useRetryATSAnalysis()
+
+  const inFlightCount = useMemo(
+    () =>
+      analyses?.filter((analysis) =>
+        ['initial', 'queued', 'processing'].includes(analysis.status)
+      ).length || 0,
+    [analyses]
+  )
 
   const getScoreColor = (score?: number) => {
     if (!score) return 'text-muted-foreground'
@@ -192,6 +206,19 @@ const ATSAnalyses = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => refetchAnalyses()}
+            disabled={analysesFetching}
+            title="Refresh analyses now"
+          >
+            {analysesFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh
+          </Button>
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Analysis
@@ -268,7 +295,20 @@ const ATSAnalyses = () => {
       <Card>
         <CardHeader>
           <CardTitle>Your Analyses</CardTitle>
-          <CardDescription>View and manage your ATS analyses and their results.</CardDescription>
+          <CardDescription>
+            View and manage your ATS analyses and their results.
+            {inFlightCount > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-blue-700">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Live updates on ({inFlightCount} in progress, auto-refresh every ~3s)
+              </span>
+            )}
+            {!!dataUpdatedAt && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                Last sync {formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })}
+              </span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {analysesLoading ? (

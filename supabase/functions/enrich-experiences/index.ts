@@ -114,7 +114,19 @@ interface EnrichmentSuggestion {
   risk_flag: 'low' | 'medium' | 'high'
 }
 
-function mapProviderError(status: number): { safeMessage: string; errorType: string } {
+class EnrichmentConfigError extends Error {
+  code: string
+  constructor(message: string, code = 'CONFIG_ERROR') {
+    super(message)
+    this.name = 'EnrichmentConfigError'
+    this.code = code
+  }
+}
+
+function mapProviderError(
+  status: number,
+  providerBody?: string
+): { safeMessage: string; errorType: string } {
   if (status === 401 || status === 403) {
     return {
       safeMessage: 'AI provider key misconfigured. Please contact support.',
@@ -136,10 +148,45 @@ function mapProviderError(status: number): { safeMessage: string; errorType: str
     }
   }
 
+  if (status === 400) {
+    const normalizedBody = (providerBody || '').toLowerCase()
+    if (
+      normalizedBody.includes('response_format') ||
+      normalizedBody.includes('json_schema') ||
+      normalizedBody.includes('schema')
+    ) {
+      return {
+        safeMessage: 'AI model does not support required structured output settings.',
+        errorType: 'provider_model_capability_error',
+      }
+    }
+    if (
+      normalizedBody.includes('model') &&
+      (normalizedBody.includes('not found') ||
+        normalizedBody.includes('does not exist') ||
+        normalizedBody.includes('invalid'))
+    ) {
+      return {
+        safeMessage: 'AI model configuration is invalid. Check OPENAI_MODEL_ENRICH settings.',
+        errorType: 'provider_model_config_error',
+      }
+    }
+  }
+
   return {
     safeMessage: `AI provider request failed (${status}).`,
     errorType: 'provider_request_error',
   }
+}
+
+function isSchemaUnsupportedError(providerBody: string): boolean {
+  const normalizedBody = providerBody.toLowerCase()
+  return (
+    (normalizedBody.includes('response_format') || normalizedBody.includes('json_schema')) &&
+    (normalizedBody.includes('unsupported') ||
+      normalizedBody.includes('not support') ||
+      normalizedBody.includes('invalid'))
+  )
 }
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -210,7 +257,10 @@ serve(async (req) => {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured')
+      throw new EnrichmentConfigError(
+        'Missing required secret OPENAI_API_KEY for enrich-experiences',
+        'MISSING_OPENAI_API_KEY'
+      )
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -306,21 +356,32 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Enrichment function error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorCode =
+      error instanceof EnrichmentConfigError
+        ? error.code
+        : error instanceof Error
+          ? error.name
+          : 'UNKNOWN'
+    const statusCode = error instanceof EnrichmentConfigError ? 503 : 500
+
     await logEvent(
       'ERROR',
       'Enrichment function error',
       {
-        message: error instanceof Error ? error.message : String(error),
+        message: errorMessage,
+        code: errorCode,
       },
       payload.request_id
     )
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        code: errorCode,
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
@@ -538,53 +599,83 @@ async function runEnrichmentCompletionWithSchema(
         attempt === 0
           ? ''
           : '\n\nIMPORTANT: previous response was invalid. Return strict JSON only with exact keys and valid enum values.'
-      const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+      const userContent = `${prompt}${retryHint}`
+      const buildBody = (useSchemaResponse: boolean) => ({
+        model: modelName,
+        temperature: OPENAI_TEMPERATURE_ENRICH,
+        max_tokens: OPENAI_MAX_TOKENS_ENRICH,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: userContent,
+          },
+        ],
+        ...(useSchemaResponse
+          ? {
+              response_format: {
+                type: 'json_schema',
+                json_schema: {
+                  name: 'enrichment_response',
+                  strict: true,
+                  schema: ENRICHMENT_JSON_SCHEMA,
+                },
+              },
+            }
+          : {}),
+      })
+
+      let response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: modelName,
-          temperature: OPENAI_TEMPERATURE_ENRICH,
-          max_tokens: OPENAI_MAX_TOKENS_ENRICH,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: `${prompt}${retryHint}`,
-            },
-          ],
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'enrichment_response',
-              strict: true,
-              schema: ENRICHMENT_JSON_SCHEMA,
-            },
-          },
-      })
+        body: JSON.stringify(buildBody(true)),
       })
 
       if (!response.ok) {
-        const { safeMessage, errorType } = mapProviderError(response.status)
-        await response.text()
-        console.error('OpenAI API error status:', response.status)
+        let providerBody = await response.text()
 
-        if (response.status >= 500 || response.status === 429) {
-          lastError = `Provider error on ${modelName}: ${response.status}`
-          continue
+        if (response.status === 400 && isSchemaUnsupportedError(providerBody)) {
+          await logEvent('INFO', 'Schema output unsupported; retrying without schema mode', {
+            model: modelName,
+            attempt,
+          })
+          response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(buildBody(false)),
+          })
+          if (!response.ok) {
+            providerBody = await response.text()
+          } else {
+            providerBody = ''
+          }
         }
 
-        await logEvent('ERROR', 'OpenAI request failed', {
-          status: response.status,
-          safe_message: safeMessage,
-          error_type: errorType,
-        })
-        throw new Error(safeMessage)
+        if (!response.ok) {
+          const { safeMessage, errorType } = mapProviderError(response.status, providerBody)
+          console.error('OpenAI API error status:', response.status)
+
+          if (response.status >= 500 || response.status === 429) {
+            lastError = `Provider error on ${modelName}: ${response.status}`
+            continue
+          }
+
+          await logEvent('ERROR', 'OpenAI request failed', {
+            status: response.status,
+            safe_message: safeMessage,
+            error_type: errorType,
+          })
+          throw new Error(safeMessage)
+        }
       }
 
       const data = await response.json()

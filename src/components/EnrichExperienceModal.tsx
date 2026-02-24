@@ -410,8 +410,8 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>AI Experience Enrichment</DialogTitle>
           <DialogDescription>
             Select an ATS analysis and let the enrichment engine infer missing-yet-relevant
@@ -419,135 +419,136 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm">
-          <div className="flex items-center gap-2">
-            <Gauge className="h-4 w-4 text-primary" />
-            <span>Workflow status:</span>
-            <Badge variant="outline">{progressLabel}</Badge>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Reviewed: {totalReviewed} | Remaining: {suggestions.length}
-          </div>
-        </div>
-
-        <form onSubmit={handleGenerate} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="analysis-select">Choose an ATS Analysis</Label>
-            <Select value={selectedAnalysisId} onValueChange={setSelectedAnalysisId}>
-              <SelectTrigger id="analysis-select" disabled={analysesLoading || generate.isPending}>
-                <SelectValue placeholder="Select resume + job pairing" />
-              </SelectTrigger>
-              <SelectContent>
-                {analyses?.map((analysis) => (
-                  <SelectItem key={analysis.id} value={analysis.id}>
-                    {analysis.resume?.name || 'Untitled Resume'} {'->'}{' '}
-                    {analysis.job_description?.name || 'Job Description'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Sentence Tone</Label>
-            <RadioGroup
-              value={toneMode}
-              onValueChange={(value) => setToneMode(value as ToneMode)}
-              className="grid grid-cols-1 gap-2 md:grid-cols-3"
-            >
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
-                <RadioGroupItem value="assertive" />
-                Assertive
-              </Label>
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
-                <RadioGroupItem value="balanced" />
-                Balanced
-              </Label>
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
-                <RadioGroupItem value="conservative" />
-                Conservative
-              </Label>
-            </RadioGroup>
-          </div>
-
-          {selectedAnalysis && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-primary" />
-                  Context Summary
-                </CardTitle>
-                <CardDescription>{selectedAnalysis.job_description?.name}</CardDescription>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <div>
-                  <span className="font-medium text-foreground">Matched Skills:</span>{' '}
-                  {selectedAnalysis.matched_skills.join(', ') || 'None detected'}
-                </div>
-                <div>
-                  <span className="font-medium text-foreground">Missing Skills:</span>{' '}
-                  {selectedAnalysis.missing_skills.join(', ') || 'None detected'}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <DialogFooter className="flex-row justify-between gap-2">
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-6">
+          <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Gauge className="h-4 w-4 text-primary" />
+              <span>Workflow status:</span>
+              <Badge variant="outline">{progressLabel}</Badge>
+            </div>
             <div className="text-xs text-muted-foreground">
-              The enrichment engine uses GPT-4o with traceable explanations. Nothing is saved until
-              you approve it.
+              Reviewed: {totalReviewed} | Remaining: {suggestions.length}
             </div>
-            <Button
-              type="submit"
-              disabled={!selectedAnalysis || generate.isPending}
-              className="min-w-[190px]"
-            >
-              {generate.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Suggestions
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+          </div>
 
-        {hasSuggestions && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-green-600" />
-                Review & Approve
-              </h3>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={saveExperience.isPending}
-                  onClick={() => handleBatchDecision('rejected')}
-                >
-                  Reject All
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={saveExperience.isPending}
-                  onClick={() => handleBatchDecision('accepted')}
-                >
-                  Save All
-                </Button>
+          <form onSubmit={handleGenerate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="analysis-select">Choose an ATS Analysis</Label>
+              <Select value={selectedAnalysisId} onValueChange={setSelectedAnalysisId}>
+                <SelectTrigger id="analysis-select" disabled={analysesLoading || generate.isPending}>
+                  <SelectValue placeholder="Select resume + job pairing" />
+                </SelectTrigger>
+                <SelectContent>
+                  {analyses?.map((analysis) => (
+                    <SelectItem key={analysis.id} value={analysis.id}>
+                      {analysis.resume?.name || 'Untitled Resume'} {'->'}{' '}
+                      {analysis.job_description?.name || 'Job Description'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Sentence Tone</Label>
+              <RadioGroup
+                value={toneMode}
+                onValueChange={(value) => setToneMode(value as ToneMode)}
+                className="grid grid-cols-1 gap-2 md:grid-cols-3"
+              >
+                <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
+                  <RadioGroupItem value="assertive" />
+                  Assertive
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
+                  <RadioGroupItem value="balanced" />
+                  Balanced
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm">
+                  <RadioGroupItem value="conservative" />
+                  Conservative
+                </Label>
+              </RadioGroup>
+            </div>
+
+            {selectedAnalysis && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Wand2 className="h-4 w-4 text-primary" />
+                    Context Summary
+                  </CardTitle>
+                  <CardDescription>{selectedAnalysis.job_description?.name}</CardDescription>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <div>
+                    <span className="font-medium text-foreground">Matched Skills:</span>{' '}
+                    {selectedAnalysis.matched_skills.join(', ') || 'None detected'}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Missing Skills:</span>{' '}
+                    {selectedAnalysis.missing_skills.join(', ') || 'None detected'}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <DialogFooter className="flex-row justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                The enrichment engine uses GPT-4o with traceable explanations. Nothing is saved until
+                you approve it.
               </div>
-            </div>
+              <Button
+                type="submit"
+                disabled={!selectedAnalysis || generate.isPending}
+                className="min-w-[190px]"
+              >
+                {generate.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate Suggestions
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
 
-            <ScrollArea className="max-h-[360px] pr-4">
-              <div className="space-y-4">
-                {suggestions.map((suggestion) => {
+          {hasSuggestions && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-green-600" />
+                  Review & Approve
+                </h3>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={saveExperience.isPending}
+                    onClick={() => handleBatchDecision('rejected')}
+                  >
+                    Reject All
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={saveExperience.isPending}
+                    onClick={() => handleBatchDecision('accepted')}
+                  >
+                    Save All
+                  </Button>
+                </div>
+              </div>
+
+              <ScrollArea type="always" className="h-[44vh] min-h-[260px] pr-4">
+                <div className="space-y-4">
+                  {suggestions.map((suggestion) => {
                   const key = getSuggestionKey(suggestion)
                   const reviewState = reviewStates[key]
                   const textValue = reviewState?.text ?? suggestion.suggestion
@@ -750,19 +751,20 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                       </CardContent>
                     </Card>
                   )
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
 
-        {!hasSuggestions && !generate.isPending && (
-          <div className="text-center text-sm text-muted-foreground border border-dashed rounded-md p-6">
-            {workflowState === 'saved'
-              ? 'All reviewed suggestions were saved. You can generate a new batch.'
-              : 'Select an analysis and click "Generate Suggestions" to begin.'}
-          </div>
-        )}
+          {!hasSuggestions && !generate.isPending && (
+            <div className="text-center text-sm text-muted-foreground border border-dashed rounded-md p-6">
+              {workflowState === 'saved'
+                ? 'All reviewed suggestions were saved. You can generate a new batch.'
+                : 'Select an analysis and click "Generate Suggestions" to begin.'}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
