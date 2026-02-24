@@ -16,6 +16,7 @@ import ATSAnalyses from './pages/ATSAnalyses'
 import ProactiveMatches from './pages/ProactiveMatches'
 import EnrichedExperiences from './pages/EnrichedExperiences'
 import Settings from './pages/Settings'
+import HelpHub from './pages/HelpHub'
 import AdminDashboard from './pages/AdminDashboard'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
@@ -63,6 +64,7 @@ const App = () => {
                               <Route path="/analyses" element={<ATSAnalyses />} />
                               <Route path="/opportunities" element={<ProactiveMatches />} />
                               <Route path="/experiences" element={<EnrichedExperiences />} />
+                              <Route path="/help" element={<HelpHub />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route
                                 path="/admin"

@@ -40,6 +40,45 @@ Commands:
 EOF
 }
 
+is_container_running() {
+  local container_name="$1"
+  local status
+  status="$(docker ps --filter "name=^/${container_name}$" --format '{{.Status}}' | head -n 1 || true)"
+  [[ -n "$status" ]]
+}
+
+wait_for_container_running() {
+  local container_name="$1"
+  local timeout_seconds="${2:-30}"
+  local waited=0
+
+  while (( waited < timeout_seconds )); do
+    if is_container_running "$container_name"; then
+      return 0
+    fi
+    sleep 1
+    ((waited+=1))
+  done
+
+  return 1
+}
+
+ensure_container_started() {
+  local container_name="$1"
+
+  if wait_for_container_running "$container_name" 30; then
+    local status
+    status="$(docker ps --filter "name=^/${container_name}$" --format '{{.Status}}' | head -n 1)"
+    echo "✅ ${container_name} is running (${status})"
+    return 0
+  fi
+
+  echo "❌ ${container_name} did not start successfully."
+  echo "Recent logs:"
+  $COMPOSE_CMD logs --tail 80 "$container_name" || true
+  exit 1
+}
+
 run_with_timestamp_log() {
   local check_name="$1"
   shift
@@ -138,6 +177,7 @@ case "$cmd" in
     else
       $COMPOSE_CMD up smartats-app -d
     fi
+    ensure_container_started smartats-app
     ;;
   prod-stop)
     $COMPOSE_CMD stop smartats-app
@@ -157,6 +197,7 @@ case "$cmd" in
     else
       $COMPOSE_CMD up smartats-app -d
     fi
+    ensure_container_started smartats-app
     ;;
   logs-dev)
     $COMPOSE_CMD logs --tail "${arg:-200}" smartats-dev

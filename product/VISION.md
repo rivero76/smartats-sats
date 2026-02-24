@@ -1,6 +1,6 @@
 # Product Vision
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-02-25
 **Source of Truth:** Current codebase implementation (`src/`, `supabase/`, `docs/specs/`)
 **Roadmap File:** `product/ROADMAP.md`
 
@@ -23,11 +23,13 @@ Current positioning:
 5. Enriched experience generation with evidence constraints, review, save, edit, soft-delete.
 6. Dashboard + ATS analytics views.
 7. Centralized observability/logging with correlation IDs, retention automation, admin controls.
+8. In-app Help Hub (`/help`) with searchable feature guides sourced from `helpContent`.
+9. Upskilling roadmap backend foundation: persisted roadmap/milestone schema + `generate-upskill-roadmap` edge function.
 
 ## 3) Future Features (Not Yet Fully Implemented)
 1. Phase 1 (Next 1-2 weeks): upgrade LinkedIn ingestion from URL storage to structured profile parsing into `sats_user_skills` and `sats_skill_experiences`.
 2. Phase 2 (Next 3-4 weeks): build an asynchronous proactive search engine that finds jobs externally and alerts users on matches above 60%.
-3. Phase 3 (Next 4-6 weeks): convert missing-skill output into actionable, step-by-step upskilling roadmaps.
+3. Phase 3 (In progress, next 4-6 weeks): complete roadmap UX/progress tracking on top of the deployed roadmap generation backend.
 4. LLM career questionnaire and goal-based pathing.
 5. P11 multi-channel job description ETL rollout (CSV/XLS, PDF/DOC bulk, extension, email, feeds).
 6. P12 globalization, enterprise cloud architecture, and large-scale readiness.
@@ -44,7 +46,7 @@ Current positioning:
 | Job ingestion from URL | Some competitors support browser workflows | Partial (single URL fetch only, no crawler recursion) | `supabase/functions/job-description-url-ingest/index.ts`, `src/components/JobDescriptionModal.tsx` |
 | LinkedIn data ingestion | Some tools support profile imports/extensions | Partial (LinkedIn URL field + extraction heuristics from pasted text) | `src/pages/Settings.tsx`, `src/hooks/useProfile.ts`, `src/utils/contentExtraction.ts` |
 | Skill-gap analysis | ATS Matchers basic keyword gap | Partial (missing skills surfaced, no sequenced roadmap) | `sats_analyses.missing_skills` via `src/hooks/useATSAnalyses.ts` and ATS edge function |
-| Upskilling roadmap engine | Career Pathing tools stronger here | Not Supported | No roadmap generator service found |
+| Upskilling roadmap engine | Career Pathing tools stronger here | In Progress (backend live, UI pending) | `supabase/functions/generate-upskill-roadmap/index.ts`, `sats_learning_roadmaps`, `sats_roadmap_milestones` |
 | AI experience rewriting/enrichment | Mixed across competitor categories | Supported | `supabase/functions/enrich-experiences/index.ts`, `src/hooks/useEnrichedExperiences.ts`, `src/components/EnrichExperienceModal.tsx` |
 | Admin observability + governance | Usually internal-only in competitors | Supported | `supabase/functions/centralized-logging/index.ts`, `src/pages/AdminDashboard.tsx`, `src/components/admin/ObservabilityPanel.tsx` |
 

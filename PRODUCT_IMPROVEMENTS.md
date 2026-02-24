@@ -2,6 +2,8 @@
 
 ## Update Log
 
+- 2026-02-25 10:20:00 | Delivered P15 Story 2 backend (`generate-upskill-roadmap`) and added `/help` hub route/page; moved P15 into active execution with Story 3 as next implementation target.
+- 2026-02-24 23:50:00 | Added P8 RLS hardening execution bundle and set comprehensive tenant-isolation policy remediation as next priority.
 - 2026-02-24 17:55:00 | Ingested PM strategic audit assessment; added execution phases P13-P15 for LinkedIn ingestion loop, proactive search engine, and upskilling roadmap engine.
 - 2026-02-20 22:43:03 | Added concrete implementation plan for logging and debugging modernization for authorization review.
 - 2026-02-21 00:34:53 | Added Phase P5 priorities for enrichment record management and a full account data deletion analysis.
@@ -298,6 +300,18 @@
 - Independent application security assessment and threat model review.
 - End-to-end RLS/policy regression tests across all user-owned tables, storage, and edge functions.
 - Secrets governance hardening (rotation policy, environment scoping, and incident playbook).
+
+**Next priority (P8.1 - Immediate)**
+
+1. Execute the migration bundle `supabase/migrations/20260224235000_p8_rls_tenant_isolation_hardening.sql`.
+2. Validate RLS policy convergence:
+- no overlapping/conflicting policy sets on tenant tables.
+- explicit `WITH CHECK` present on all user-writable owner policies.
+- role scope tightened to `authenticated` for owner/admin policies unless explicitly anonymous.
+3. Run post-migration tenant-isolation verification:
+- positive tests for owner CRUD.
+- negative tests for cross-tenant access and ownership reassignment attempts.
+4. Publish audit evidence (policy dump + test results) and close P8.1 only after evidence is stored in release docs.
 
 2. Robustness and operations readiness:
 
@@ -609,6 +623,13 @@
 **Estimated effort**
 
 1. 4-6 weeks
+
+**Execution status update (2026-02-25)**
+
+1. Story 1 completed: schema and RLS for `sats_learning_roadmaps` and `sats_roadmap_milestones` delivered.
+2. Story 2 completed: `generate-upskill-roadmap` edge function delivered/deployed with schema-locked output, mandatory project milestone enforcement, and persistence.
+3. Story 3 pending: roadmap timeline UI, completion toggles, and visual progress bar.
+4. Release note: Story 1/2 remain blocked for end-user release until E2E validation entries are closed in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
 
 
 ## 3. Technical Work Packages (Concrete)
