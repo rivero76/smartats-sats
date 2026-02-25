@@ -10,3 +10,4 @@ This folder contains product, technical, help, release, and compliance documenta
 - `changelog/`: global product changelog
 - `runbooks/`: operational procedures
 - `compliance/`: data/privacy and audit policies
+- `sessions/`: AI/session checkpoints for resumable work

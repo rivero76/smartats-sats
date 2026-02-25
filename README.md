@@ -2,6 +2,7 @@
 
 ## Update Log
 
+- 2026-02-25 16:20:00 | Added Codex session continuity guidance and runbook links to preserve context across large/long-running implementation sessions.
 - 2026-02-20 22:25:31 | Replaced Lovable deployment documentation with the current SmartATS architecture and product feature set.
 - 2026-02-20 23:22:57 | Implemented P1 logging improvements: structured schema normalization, centralized validation, and edge-function lifecycle telemetry.
 - 2026-02-20 23:29:40 | Implemented P2 correlation and timing: request_id propagation, debug visibility, and duration tracking for key workflows.
@@ -185,6 +186,24 @@ bash ops/smartats.sh supabase-check
 
 - `verify` now writes a timestamped report in `ops/logs/`:
   - `ops/logs/verify_YYYY-MM-DD_HH-MM-SS.log`
+
+## Codex Session Continuity
+
+When resuming work in a new Codex session, use checkpoint artifacts instead of chat history.
+
+1. Pull latest branch state:
+   - `git checkout p14`
+   - `git pull`
+2. Open the latest checkpoint in `docs/sessions/`.
+3. Start a new checkpoint immediately:
+   - `NOTE="session start: <goal>" make checkpoint`
+4. Use short execution loops:
+   - change -> verify -> checkpoint -> commit
+5. End each session by updating `Next Actions` in the checkpoint file.
+
+Detailed workflow:
+- `docs/runbooks/CODEX_SESSION_CONTINUITY.md`
+- `docs/sessions/README.md`
 
 ## Change Tracking Functionality
 

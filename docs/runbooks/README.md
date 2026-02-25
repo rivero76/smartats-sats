@@ -7,3 +7,4 @@ Operational procedures for deployment, rollback, incidents, and critical workflo
 - `incident-response.md`
 - `data-deletion-operations.md`
 - `llm-runtime-quality.md`
+- `CODEX_SESSION_CONTINUITY.md`
