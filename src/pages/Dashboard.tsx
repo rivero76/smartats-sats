@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -328,10 +329,13 @@ const Dashboard = () => {
             </div>
 
             {/* Future Features */}
-            <div className="space-y-3">
+            <div className="space-y-3 opacity-60">
               <div className="flex items-center space-x-2">
                 <Clock4 className="h-4 w-4 text-orange-600" />
                 <h3 className="font-semibold">Future Features</h3>
+                <Badge variant="secondary" className="text-xs">
+                  Planned
+                </Badge>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center space-x-2">

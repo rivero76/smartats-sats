@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import {
   ShieldCheck,
   Users,
@@ -86,9 +87,9 @@ const AdminDashboard = () => {
             Monitor system performance, user activity, and manage Smart ATS platform.
           </p>
         </div>
-        <Button>
+        <Button disabled className="opacity-60 cursor-not-allowed">
           <Settings className="mr-2 h-4 w-4" />
-          System Settings
+          System Settings (Coming Soon)
         </Button>
       </div>
 
@@ -102,8 +103,15 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <div className="flex items-center justify-between rounded-md border border-dashed p-3 bg-muted/40">
+            <p className="text-sm text-muted-foreground">
+              This overview is a placeholder preview and is not fully wired to live system telemetry yet.
+            </p>
+            <Badge variant="secondary">Preview</Badge>
+          </div>
+
           {/* System Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 opacity-60">
             {systemStats.map((stat, index) => (
               <Card key={index} className="transition-shadow hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -118,7 +126,7 @@ const AdminDashboard = () => {
             ))}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 opacity-60">
             {/* Recent Activity */}
             <Card className="col-span-4">
               <CardHeader>
@@ -201,8 +209,8 @@ const AdminDashboard = () => {
           </div>
 
           {/* Admin Actions */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="transition-shadow hover:shadow-md cursor-pointer">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 opacity-60">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Users className="h-5 w-5 text-blue-600" />
@@ -213,13 +221,13 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   View, edit, and manage user accounts and permissions.
                 </p>
-                <Button variant="outline" className="w-full">
-                  Manage Users
+                <Button variant="outline" className="w-full" disabled>
+                  Manage Users (Coming Soon)
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="transition-shadow hover:shadow-md cursor-pointer">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Database className="h-5 w-5 text-green-600" />
@@ -230,13 +238,13 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Monitor database performance and manage data storage.
                 </p>
-                <Button variant="outline" className="w-full">
-                  View Database
+                <Button variant="outline" className="w-full" disabled>
+                  View Database (Coming Soon)
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="transition-shadow hover:shadow-md cursor-pointer">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Activity className="h-5 w-5 text-purple-600" />
@@ -247,15 +255,15 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Generate detailed reports on system usage and performance.
                 </p>
-                <Button variant="outline" className="w-full">
-                  View Analytics
+                <Button variant="outline" className="w-full" disabled>
+                  View Analytics (Coming Soon)
                 </Button>
               </CardContent>
             </Card>
           </div>
 
           {/* System Alerts */}
-          <Card>
+          <Card className="opacity-60">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
@@ -274,8 +282,8 @@ const AdminDashboard = () => {
                     <p className="text-sm text-orange-700 mt-1">
                       Database storage is at 67% capacity. Consider upgrading or archiving old data.
                     </p>
-                    <Button size="sm" variant="outline" className="mt-2">
-                      Manage Storage
+                    <Button size="sm" variant="outline" className="mt-2" disabled>
+                      Manage Storage (Coming Soon)
                     </Button>
                   </div>
                 </div>
@@ -287,8 +295,8 @@ const AdminDashboard = () => {
                     <p className="text-sm text-blue-700 mt-1">
                       System maintenance scheduled for this Sunday at 2:00 AM UTC (4 hours).
                     </p>
-                    <Button size="sm" variant="outline" className="mt-2">
-                      View Details
+                    <Button size="sm" variant="outline" className="mt-2" disabled>
+                      View Details (Coming Soon)
                     </Button>
                   </div>
                 </div>
@@ -300,8 +308,8 @@ const AdminDashboard = () => {
                     <p className="text-sm text-yellow-700 mt-1">
                       Current user count (1,234) is approaching the plan limit (1,500).
                     </p>
-                    <Button size="sm" variant="outline" className="mt-2">
-                      Upgrade Plan
+                    <Button size="sm" variant="outline" className="mt-2" disabled>
+                      Upgrade Plan (Coming Soon)
                     </Button>
                   </div>
                 </div>

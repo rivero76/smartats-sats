@@ -58,10 +58,26 @@
 | Enrichment Modal Scroll Reliability (`BUG-2026-02-24-ENRICH-SCROLL`) | Planned | Core UX | Ensure all generated suggestions/actions are reachable in modal review | TBD | `Dialog` height/overflow constraints + scroll affordance tuning | Next patch |
 | JD ETL Text + URL Ingestion | Live | Core + Data | Faster job input with URL fallback | TBD | URL ingest edge function + metadata fields | Current |
 | JD ETL Multi-Channel Ingestion (`P11.1-P11.6`) | In Progress | Data Platform | Higher ingestion scale and coverage | TBD | File pipelines + ingestion queue + QA workflow | TBD |
+| UI Placeholder Features Bundle (Dashboard/Settings/Admin Overview) | Planned | Core UX | Clear roadmap for currently visible but disabled controls | TBD | Feature specs + backend endpoints + permissions + UX validation | TBD |
+
+## 4A) UI Placeholder Features (Formal Tracking)
+1. Dashboard placeholders:
+- `Advanced Reports` quick action.
+- Future features panel entries (advanced analytics, notifications, data export/import).
+2. Settings placeholders:
+- Notification Preferences.
+- Password update and 2FA controls.
+- Data export control.
+- API key generation.
+3. Admin Dashboard placeholders (overview tab):
+- Mock system stats/activity/health widgets.
+- User/Database/Analytics action cards.
+- Alert action controls and system settings button.
 
 ## 5) Change Log (Roadmap-Level)
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
+| 2026-02-25 | v0.7 | Scope Clarification | Added formal `UI Placeholder Features` tracking section and feature register entry for visible-but-not-implemented controls across Dashboard/Settings/Admin | Prevent roadmap drift between visible UI affordances and actual delivery status | TPM/Architecture | TBD |
 | 2026-02-24 | v0.5 | Security Priority | Added P8.1 RLS tenant-isolation hardening as next execution priority, linked to migration bundle rollout and verification gates | Close horizontal privilege-escalation risk before broader enterprise rollout | TPM/Architecture | TBD |
 | 2026-02-25 | v0.6 | Delivery Sync | Marked P14 and P15 as In Progress; recorded `/help` hub as Live and adjusted Now/Next priorities | Keep roadmap aligned with shipped features and active execution | TPM/Architecture | TBD |
 | 2026-02-24 | v0.4 | Bug Intake | Added `BUG-2026-02-24-ENRICH-SCROLL` to Now backlog and feature register for enrichment modal usability | Track blocking UX defect in sprint planning view | TPM/Architecture | TBD |

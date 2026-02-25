@@ -34,6 +34,21 @@ Current positioning:
 5. P11 multi-channel job description ETL rollout (CSV/XLS, PDF/DOC bulk, extension, email, feeds).
 6. P12 globalization, enterprise cloud architecture, and large-scale readiness.
 
+## 3A) UI Placeholder Features (Tracked)
+The following items are visible in product UI but intentionally not fully implemented yet:
+1. Dashboard:
+- `Advanced Reports` quick action.
+- Future features panel entries: advanced analytics, email notifications, data export/import.
+2. Settings:
+- Notification Preferences (all toggles).
+- Security: password update and 2FA controls.
+- Data Management: export control.
+- API Access key generation.
+3. Admin Dashboard (overview tab):
+- System stats/activity/health preview widgets.
+- Action cards: user management, database management, analytics/reports.
+- Alert action buttons and system settings control.
+
 ## 4) Feature Matrix (Competitor Baseline vs MVP)
 
 | Feature | Competitors | My MVP | File/Service in Code |
