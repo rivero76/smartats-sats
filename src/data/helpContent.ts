@@ -426,7 +426,277 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['Dashboard Overview', 'Resume Management', 'Account Security'],
   },
+
+  enrichedExperiences: {
+    id: 'enrichedExperiences',
+    title: 'Experience Enrichment',
+    description:
+      'Learn how to generate, review, and apply AI-powered improvements to your resume experience bullets.',
+    overview:
+      'Experience Enrichment uses AI to transform vague job descriptions into compelling, ATS-friendly achievement statements. Each suggestion is checked against honest guardrails so you only apply content that reflects your real work. You review every suggestion before it is saved.',
+    keyFeatures: [
+      'AI-generated experience bullet suggestions',
+      'Accept, edit, or reject each suggestion',
+      'Interview-safe guardrail badges',
+      'Copy approved bullets to clipboard',
+      'Edit saved experiences at any time',
+      'Metrics dashboard: Acceptance Rate, ATS Delta',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Open the Enrichment Wizard',
+        description: "Click the 'Enrich Experience' button at the top of the page to open the enrichment modal.",
+        tip: 'You need at least one uploaded resume and one job description before generating suggestions.',
+      },
+      {
+        step: 2,
+        title: 'Select Resume and Job Description',
+        description: 'Choose the resume version and the target job description you want to optimize for.',
+        tip: 'Select the job description that best matches the role you are actively applying for.',
+      },
+      {
+        step: 3,
+        title: 'Generate a Suggestion',
+        description: 'The AI analyzes the gap between your resume and the job description and generates an enhanced experience bullet.',
+        tip: 'Generation takes a few seconds. The AI focuses on measurable outcomes and relevant keywords.',
+      },
+      {
+        step: 4,
+        title: 'Review the Suggestion',
+        description:
+          "Read the suggestion carefully. Check the 'Interview-safe' badge and confidence score. Accept if accurate, or edit to correct metrics.",
+        tip: 'Only accept suggestions whose metrics and achievements you can genuinely defend in an interview.',
+      },
+      {
+        step: 5,
+        title: 'Save or Reject',
+        description: 'Click Accept to save the suggestion as-is, Edit to customize wording before saving, or Reject to discard it.',
+        tip: 'Rejected suggestions are tracked to help improve future generation quality.',
+      },
+      {
+        step: 6,
+        title: 'Copy to Your Resume',
+        description: "Use the 'Copy text' button on any saved experience to copy the bullet to your clipboard, then paste it into your resume.",
+        tip: 'Copy bullets directly into your resume editor for immediate improvement.',
+      },
+    ],
+    bestPractices: [
+      'Only accept suggestions that accurately describe your real work and outcomes',
+      'Edit AI metrics (e.g. percentages, team sizes) to match your actual experience before saving',
+      'Use the Interview-safe badge as a signal, but always verify the content yourself',
+      'Enrich experiences for each job description you actively target',
+      'Review the Acceptance Rate metric — low rates may indicate your resume needs more detail as input',
+      'Use the Avg ATS Delta to measure how much enrichment is improving your scores',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Suggestion seems inflated or inaccurate',
+        solution:
+          'Click Edit and adjust the figures to reflect your actual outcomes before saving. Never save inaccurate claims.',
+      },
+      {
+        problem: 'No suggestions are generated',
+        solution:
+          'Ensure your resume has sufficient experience text and the selected job description contains skill requirements. Try a different resume or job description.',
+      },
+      {
+        problem: 'Cannot delete or edit a saved experience',
+        solution: 'Refresh the page and try again. If the problem persists, contact support.',
+      },
+      {
+        problem: 'Copy button is not working',
+        solution:
+          'Allow clipboard permissions in your browser settings, or manually select and copy the suggestion text.',
+      },
+    ],
+    relatedTopics: ['Resume Management', 'ATS Analysis', 'Upskilling Roadmaps'],
+  },
+
+  upskillingRoadmaps: {
+    id: 'upskillingRoadmaps',
+    title: 'Upskilling Roadmaps',
+    description:
+      'Learn how to use AI-generated learning roadmaps to close skill gaps and improve your ATS scores over time.',
+    overview:
+      'Upskilling Roadmaps are personalized learning plans generated from your ATS analysis results. Each roadmap contains sequenced milestones targeting the skill gaps identified between your resume and a specific job. Check off milestones as you complete them to track your progress toward being a stronger candidate.',
+    keyFeatures: [
+      'AI-generated milestone sequences from ATS analysis',
+      'Sequenced learning steps to close role-specific skill gaps',
+      'Progress tracking with per-milestone completion toggles',
+      'Multiple roadmaps for different target roles',
+      'Roadmap selector when tracking multiple roles',
+      'Refresh button to sync latest progress from server',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Generate a Roadmap from an ATS Analysis',
+        description:
+          'Go to the ATS Analyses page, open a completed analysis, and use the Generate Roadmap option to create a roadmap for that job.',
+        tip: 'Run a fresh ATS analysis before generating a roadmap to ensure the skill gap data is current.',
+      },
+      {
+        step: 2,
+        title: 'Navigate to Upskilling Roadmaps',
+        description:
+          "Open the Upskilling Roadmaps page from the main navigation. Your generated roadmap will appear here automatically.",
+        tip: 'Roadmaps are tied to the target role from your ATS analysis.',
+      },
+      {
+        step: 3,
+        title: 'Select a Roadmap (if multiple)',
+        description:
+          'If you have roadmaps for multiple roles, use the roadmap selector at the top to switch between them.',
+        tip: 'Create separate roadmaps for each job type you are actively targeting.',
+      },
+      {
+        step: 4,
+        title: 'Work Through Milestones',
+        description:
+          'Read each milestone and complete the recommended learning activities. Milestones are ordered by sequence — work from top to bottom.',
+        tip: 'Earlier milestones often build the foundational skills required by later ones.',
+      },
+      {
+        step: 5,
+        title: 'Mark Milestones Complete',
+        description:
+          "Check the checkbox next to each milestone when you have completed the learning activity. Your progress is saved automatically.",
+        tip: 'Completed milestones are preserved across sessions so you can track long-term progress.',
+      },
+      {
+        step: 6,
+        title: 'Re-run ATS Analysis to Measure Improvement',
+        description:
+          'After completing several milestones, upload an updated resume and re-run your ATS analysis to see whether your score has improved.',
+        tip: 'Consistent upskilling combined with resume updates should move your ATS score closer to 80%+.',
+      },
+    ],
+    bestPractices: [
+      'Create roadmaps for every role type you are actively targeting',
+      'Work milestones sequentially — foundational skills are ordered first',
+      'Re-run ATS analyses after completing milestones to track score improvement',
+      'Focus on required-skill milestones before preferred-skill milestones',
+      'Use the Refresh button if your latest milestone progress is not showing',
+      'Combine upskilling with Experience Enrichment to maximize ATS score gains',
+    ],
+    troubleshooting: [
+      {
+        problem: 'No roadmaps are showing',
+        solution:
+          'Roadmaps are generated from completed ATS analyses. Go to the ATS Analyses page and generate a roadmap from a completed analysis.',
+      },
+      {
+        problem: 'Milestone completion is not saving',
+        solution: "Click the Refresh button and try toggling the milestone again. If it persists, reload the page.",
+      },
+      {
+        problem: 'Roadmap content seems too generic',
+        solution:
+          'Provide a more detailed and complete job description when running the ATS analysis. More specific job requirements produce more targeted milestones.',
+      },
+      {
+        problem: 'Cannot see my roadmap after generating it',
+        solution: 'Use the Refresh button on this page. If the roadmap still does not appear, try navigating away and back.',
+      },
+    ],
+    relatedTopics: ['ATS Analysis', 'Experience Enrichment', 'Resume Management'],
+  },
+
+  proactiveMatches: {
+    id: 'proactiveMatches',
+    title: 'Proactive Opportunities',
+    description:
+      'Understand how the system discovers high-match job opportunities for you automatically and how to act on them.',
+    overview:
+      'The Opportunities page shows job listings that the system has proactively discovered and scored against your profile. Only opportunities with an ATS compatibility score above 60% appear here, sorted from highest to lowest match. Use this page to quickly identify positions you are well-qualified for without manual searching.',
+    keyFeatures: [
+      'Automatic job discovery above 60% ATS match',
+      'Score sorted from highest to lowest match',
+      'Score breakdown: Skills Alignment, Experience Relevance, Domain Fit, Format Quality',
+      'Missing skills list per opportunity',
+      'Link to original job posting',
+      'Discovery date for each match',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Check Your Opportunities Regularly',
+        description:
+          'The system continuously discovers and scores job postings in the background. Visit this page regularly to see new high-match opportunities.',
+        tip: 'Opportunities are ordered by ATS score, so the best matches always appear at the top.',
+      },
+      {
+        step: 2,
+        title: 'Review the ATS Score Badge',
+        description:
+          "Each opportunity card shows a score badge. Green badges (80%+) indicate strong matches. Blue badges (60–79%) indicate good potential matches.",
+        tip: 'Prioritize green-badged opportunities for your immediate applications.',
+      },
+      {
+        step: 3,
+        title: 'Examine the Score Breakdown',
+        description:
+          'Expand the score breakdown to see how you scored on Skills Alignment, Experience Relevance, Domain Fit, and Format Quality.',
+        tip: 'Low sub-scores point to the specific areas most worth addressing in your resume or skills.',
+      },
+      {
+        step: 4,
+        title: 'Identify Missing Skills',
+        description:
+          "Review the 'Missing Skills' section on each card to see the skill gaps between your resume and this opportunity.",
+        tip: 'Use these missing skills to guide your Upskilling Roadmap priorities.',
+      },
+      {
+        step: 5,
+        title: 'View the Original Job Posting',
+        description:
+          "Click 'View Original Posting' to open the full job listing in a new tab and read the complete requirements.",
+        tip: 'Always read the full posting before applying — the ATS score is a signal, not a guarantee of fit.',
+      },
+      {
+        step: 6,
+        title: 'Run a Manual ATS Analysis for Deep Review',
+        description:
+          'For your top matches, go to ATS Analyses and run a manual analysis to get detailed improvement suggestions and generate an upskilling roadmap.',
+        tip: 'Manual analyses give you AI-powered suggestions for exactly how to improve your resume for that posting.',
+      },
+    ],
+    bestPractices: [
+      'Check this page at least a few times per week as new opportunities are discovered continuously',
+      'Keep your resumes updated so the system scores against your latest and strongest experience',
+      'Treat 80%+ scores as high-priority opportunities and apply promptly',
+      'Use missing skills from each card to update your Upskilling Roadmap',
+      'Run a manual ATS analysis on your top matches for deeper insight and resume suggestions',
+      'Save the original job posting URL before it expires — postings can be taken down quickly',
+    ],
+    troubleshooting: [
+      {
+        problem: 'No opportunities are showing',
+        solution:
+          'The system needs time to discover and score job listings after your account is set up. Check back in 24–48 hours. Ensure your profile is complete to improve discovery quality.',
+      },
+      {
+        problem: 'Score seems lower than expected',
+        solution:
+          "Run a manual ATS analysis using your newest resume version for a more detailed view. The proactive score uses the system's best available resume at discovery time.",
+      },
+      {
+        problem: "'View Original Posting' button is missing",
+        solution:
+          'Some automatically discovered jobs may not have a traceable source URL. Search for the job title and company directly on the job board.',
+      },
+      {
+        problem: 'An opportunity listing seems outdated',
+        solution:
+          'The discovery date shown on each card indicates when the system found it. Always verify the posting is still active before applying.',
+      },
+    ],
+    relatedTopics: ['ATS Analysis', 'Resume Management', 'Upskilling Roadmaps'],
+  },
 }
+
+// Updated: 2026-03-01 00:00:00 - Added help content for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

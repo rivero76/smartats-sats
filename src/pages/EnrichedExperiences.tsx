@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-21 00:40:00 | Added product metrics dashboard, trust signals, and usability framing for enrichment outcomes.
  * 2026-02-21 00:54:21 | P5: Added enriched experience lifecycle management (id/timestamps, edit, soft-delete).
+ * 2026-03-01 00:00:00 | Added HelpButton and HelpModal for contextual user guide.
  */
 import { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +33,9 @@ import {
   type EnrichedExperience,
 } from '@/hooks/useEnrichedExperiences'
 import { EnrichExperienceModal } from '@/components/EnrichExperienceModal'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
 import { useToast } from '@/hooks/use-toast'
 
 const statusStyles: Record<
@@ -80,8 +84,10 @@ const formatDateTime = (value?: string | null): string => {
 
 const EnrichedExperiences = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
+  const helpContent = getHelpContent('enrichedExperiences')
   const { data: experiences, isLoading } = useEnrichedExperiences()
   const updateExperience = useUpdateEnrichedExperience()
   const deleteExperience = useDeleteEnrichedExperience()
@@ -218,19 +224,27 @@ const EnrichedExperiences = () => {
             Enhance your resume experiences with AI-powered suggestions and optimizations.
           </p>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={() => setIsModalOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Enrich Experience
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Generate and approve AI-powered experience bullets</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-2">
+          {helpContent && (
+            <HelpButton
+              onClick={() => setShowHelp(true)}
+              tooltip="Learn how to use Experience Enrichment"
+            />
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={() => setIsModalOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Enrich Experience
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate and approve AI-powered experience bullets</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -610,6 +624,9 @@ const EnrichedExperiences = () => {
       </Card>
 
       <EnrichExperienceModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      {helpContent && (
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
+      )}
     </div>
   )
 }

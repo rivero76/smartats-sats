@@ -1,4 +1,6 @@
-import { useMemo } from 'react'
+// Updated: 2026-03-01 00:00:00 - Added HelpButton and HelpModal for contextual user guide.
+// Updated: 2026-03-01 00:00:00 - Added Beta badge to page header to reflect validation status.
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
@@ -7,6 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Target, TriangleAlert } from 'lucide-react'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
 
 type ProactiveMatchRow = {
   id: string
@@ -24,6 +29,8 @@ type ProactiveMatchRow = {
 
 const ProactiveMatches = () => {
   const { user } = useAuth()
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('proactiveMatches')
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['proactive-matches', user?.id],
@@ -82,11 +89,27 @@ const ProactiveMatches = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Opportunities</h1>
-        <p className="text-muted-foreground">
-          High-match proactive opportunities discovered by the system, ordered by ATS score.
-        </p>
+      {helpContent && (
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
+      )}
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Opportunities</h1>
+            <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50">
+              Beta
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">
+            High-match proactive opportunities discovered by the system, ordered by ATS score.
+          </p>
+        </div>
+        {helpContent && (
+          <HelpButton
+            onClick={() => setShowHelp(true)}
+            tooltip="Learn how Proactive Opportunities work"
+          />
+        )}
       </div>
 
       {isLoading ? (

@@ -1,10 +1,9 @@
 // Updated: 2026-03-01 00:00:00 - P13 Story 3: Wired LinkedIn import handler, ProfileImportReviewModal, and Import Profile button into Settings page.
+// Updated: 2026-03-01 00:00:00 - Replaced opacity-60 placeholder sections with LockedFeatureCard for clearer UX.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
@@ -22,9 +21,11 @@ import {
   Shield,
   Database,
   Key,
+  Lock,
   Loader2,
   AlertTriangle,
 } from 'lucide-react'
+import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -313,59 +314,11 @@ const Settings = () => {
       </Card>
 
       {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Bell className="h-5 w-5" />
-            <span>
-              Notification Preferences{' '}
-              <span className="text-sm text-muted-foreground">(Coming Soon)</span>
-            </span>
-          </CardTitle>
-          <CardDescription>Choose what notifications you'd like to receive.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 opacity-60">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">Analysis Complete</Label>
-              <p className="text-sm text-muted-foreground">
-                Get notified when your ATS analysis is ready
-              </p>
-            </div>
-            <Switch disabled />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">New Features</Label>
-              <p className="text-sm text-muted-foreground">
-                Stay updated on new Smart ATS features and improvements
-              </p>
-            </div>
-            <Switch disabled />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">Weekly Summary</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive weekly summaries of your ATS activities
-              </p>
-            </div>
-            <Switch disabled />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">Marketing Communications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive tips and insights about resume optimization
-              </p>
-            </div>
-            <Switch disabled />
-          </div>
-        </CardContent>
-      </Card>
+      <LockedFeatureCard
+        icon={Bell}
+        title="Notification Preferences"
+        description="Configure email alerts for analysis completion, new features, and weekly activity summaries."
+      />
 
       {/* Security Settings */}
       <Card>
@@ -377,47 +330,21 @@ const Settings = () => {
           <CardDescription>Manage your account security and data privacy settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-4 opacity-60">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                placeholder="Enter current password"
-                disabled
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input id="newPassword" type="password" placeholder="Enter new password" disabled />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
-                disabled
-              />
-            </div>
-            <Button disabled>
-              Update Password <span className="ml-2 text-xs">(Coming Soon)</span>
-            </Button>
-          </div>
+          <LockedFeatureCard
+            icon={Lock}
+            title="Change Password"
+            description="Update your account password with a new one."
+            variant="row"
+          />
 
-          <Separator className="my-6" />
+          <Separator className="my-2" />
 
-          <div className="flex items-center justify-between opacity-60">
-            <div className="space-y-0.5">
-              <Label className="text-base">Two-Factor Authentication</Label>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security to your account
-              </p>
-            </div>
-            <Button variant="outline" disabled>
-              Enable 2FA <span className="ml-2 text-xs">(Coming Soon)</span>
-            </Button>
-          </div>
+          <LockedFeatureCard
+            icon={Shield}
+            title="Two-Factor Authentication"
+            description="Add an extra layer of security by requiring a second verification step at sign-in."
+            variant="row"
+          />
         </CardContent>
       </Card>
 
@@ -431,17 +358,12 @@ const Settings = () => {
           <CardDescription>Export your data or manage your account data.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
-            <div>
-              <h4 className="font-medium">Export Data</h4>
-              <p className="text-sm text-muted-foreground">
-                Download all your resumes, analyses, and job descriptions
-              </p>
-            </div>
-            <Button variant="outline" disabled>
-              Export <span className="ml-2 text-xs">(Coming Soon)</span>
-            </Button>
-          </div>
+          <LockedFeatureCard
+            icon={Database}
+            title="Export Data"
+            description="Download all your resumes, analyses, and job descriptions as a portable archive."
+            variant="row"
+          />
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
               <h4 className="font-medium">Delete Account</h4>
@@ -491,23 +413,11 @@ const Settings = () => {
       </Card>
 
       {/* API Settings (Future) */}
-      <Card className="opacity-75">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Key className="h-5 w-5" />
-            <span>API Access (Coming Soon)</span>
-          </CardTitle>
-          <CardDescription>
-            Generate API keys for integrating Smart ATS with your applications.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            API access will allow you to programmatically analyze resumes and job descriptions.
-          </p>
-          <Button disabled>Generate API Key</Button>
-        </CardContent>
-      </Card>
+      <LockedFeatureCard
+        icon={Key}
+        title="API Access"
+        description="Generate API keys to programmatically analyze resumes and job descriptions from your own applications."
+      />
 
       <DeleteAccountModal
         isOpen={showDeleteModal}

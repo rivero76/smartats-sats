@@ -1,10 +1,13 @@
 /**
  * UPDATE LOG
  * 2026-02-25 16:55:00 | P15 Story 3: Added upskilling roadmap dashboard with milestone completion tracking.
+ * 2026-03-01 00:00:00 | Added HelpButton and HelpModal for contextual user guide.
+ * 2026-03-01 00:00:00 | Added Beta badge to page header to reflect validation status.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { GraduationCap, RefreshCw } from 'lucide-react'
 import UpskillingRoadmap from '@/components/UpskillingRoadmap'
@@ -13,10 +16,15 @@ import {
   useRoadmapMilestones,
   useToggleRoadmapMilestone,
 } from '@/hooks/useUpskillingRoadmaps'
+import { HelpButton } from '@/components/help/HelpButton'
+import { HelpModal } from '@/components/help/HelpModal'
+import { getHelpContent } from '@/data/helpContent'
 
 const UpskillingRoadmaps = () => {
   const [selectedRoadmapId, setSelectedRoadmapId] = useState<string | null>(null)
   const [pendingMilestoneId, setPendingMilestoneId] = useState<string | undefined>(undefined)
+  const [showHelp, setShowHelp] = useState(false)
+  const helpContent = getHelpContent('upskillingRoadmaps')
 
   const { data: roadmaps, isLoading: roadmapsLoading, refetch: refetchRoadmaps } = useLearningRoadmaps()
   const roadmapIds = useMemo(() => roadmaps?.map((roadmap) => roadmap.id) || [], [roadmaps])
@@ -69,17 +77,33 @@ const UpskillingRoadmaps = () => {
 
   return (
     <div className="space-y-6">
+      {helpContent && (
+        <HelpModal open={showHelp} onOpenChange={setShowHelp} content={helpContent} />
+      )}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Upskilling Roadmaps</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Upskilling Roadmaps</h1>
+            <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50">
+              Beta
+            </Badge>
+          </div>
           <p className="text-muted-foreground">
             Track your milestone completion and close role-specific skill gaps over time.
           </p>
         </div>
-        <Button variant="outline" onClick={handleRefresh}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {helpContent && (
+            <HelpButton
+              onClick={() => setShowHelp(true)}
+              tooltip="Learn how to use Upskilling Roadmaps"
+            />
+          )}
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

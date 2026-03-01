@@ -1,3 +1,4 @@
+// Updated: 2026-03-01 00:00:00 - Removed disabled Advanced Reports button; updated Working/Planned feature lists to reflect current state.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +9,6 @@ import {
   BarChart3,
   FileText,
   BriefcaseIcon,
-  Users,
   TrendingUp,
   Clock,
   Target,
@@ -227,24 +227,6 @@ const Dashboard = () => {
                 </div>
               </Button>
 
-              <Button
-                className="h-auto p-4 justify-start opacity-60 cursor-not-allowed relative"
-                variant="outline"
-                disabled
-              >
-                <div className="flex flex-col items-start space-y-1 w-full min-w-0">
-                  <div className="flex items-center space-x-2 w-full">
-                    <Users className="h-4 w-4 flex-shrink-0" />
-                    <span className="font-medium truncate">Advanced Reports</span>
-                  </div>
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded self-start">
-                    Coming Soon
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Detailed analytics and performance metrics
-                  </span>
-                </div>
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -306,7 +288,7 @@ const Dashboard = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <h3 className="font-semibold">Working Features</h3>
+                <h3 className="font-semibold">Available Features</h3>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center space-x-2">
@@ -323,36 +305,48 @@ const Dashboard = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="h-3 w-3 text-green-600" />
-                  <span>User Profile Management</span>
+                  <span>AI Experience Enrichment</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Upskilling Roadmaps</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Proactive Job Opportunities</span>
                 </li>
               </ul>
             </div>
 
-            {/* Future Features */}
-            <div className="space-y-3 opacity-60">
+            {/* Planned Features */}
+            <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Clock4 className="h-4 w-4 text-orange-600" />
-                <h3 className="font-semibold">Future Features</h3>
+                <h3 className="font-semibold">Planned Features</h3>
                 <Badge variant="secondary" className="text-xs">
-                  Planned
+                  Upcoming
                 </Badge>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>Email Notifications</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Clock4 className="h-3 w-3 text-orange-600" />
+                  <span>Data Export & Import</span>
+                </li>
                 <li className="flex items-center space-x-2">
                   <Clock4 className="h-3 w-3 text-orange-600" />
                   <span>Advanced Analytics Dashboard</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Clock4 className="h-3 w-3 text-orange-600" />
-                  <span>AI-Powered Experience Enhancement</span>
+                  <span>Two-Factor Authentication</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Clock4 className="h-3 w-3 text-orange-600" />
-                  <span>Email Notifications System</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Clock4 className="h-3 w-3 text-orange-600" />
-                  <span>Data Export/Import Tools</span>
+                  <span>API Access</span>
                 </li>
               </ul>
             </div>
