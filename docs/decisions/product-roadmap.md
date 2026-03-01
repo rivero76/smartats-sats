@@ -1,6 +1,6 @@
 # Product Roadmap and Change Tracking
 
-**Last Updated:** 2026-03-01 (P16 added)
+**Last Updated:** 2026-03-01 (P16 added; DX-1 Claude Code tooling added)
 **Vision File:** `docs/decisions/product-vision.md`
 **Execution Source:** `plans/product-improvements.md`
 
@@ -25,6 +25,7 @@
 | P14 Proactive Search Engine | In Progress | Highest | Core async pipeline and opportunities UI foundation delivered; end-to-end rollout hardening remains. |
 | P15 Upskilling Roadmap Engine | In Progress | High | Stories 1-3 are implemented (schema, generation, roadmap UI/progress); release validation remains before rollout. |
 | P16 Career Fit & Live Job Discovery | Approved | Highest | LLM abstraction (Story 0), Persona model (Story 1), Resume storage upgrade (Story 2), Reconciliation engine (Story 3), Live job discovery via JSearch/Adzuna (Story 4), Career fit AI engine (Story 5), `/career-fit` UI (Story 6), Skill gap → P15 roadmap bridge (Story 7). Full spec: `docs/specs/product/p16-career-fit-live-job-discovery.md`. |
+| DX-1 Claude Code Developer Tooling | Planned | Low | Supabase MCP (highest ROI — live schema/RLS access), GitHub MCP (CI/PR status in-context), and four Claude Code skills: `/new-edge-function`, `/release-check`, `/new-migration`, `/verify`. Reduces scaffolding friction and shortens post-push feedback loop. Not a product feature; developer experience only. |
 
 ## 2) Strategic Assessment (From Technical Audit)
 1. Current strength: advanced trust-first ATS matcher with evidence-grounded AI outputs.
@@ -47,6 +48,7 @@
 ### Later
 1. Continue P9, P8, and P12 platform programs after orchestration core is in motion.
 2. P16 backlog items: Playwright for SEEK/Gupy/Computrabajo, salary intelligence, application tracker, cover letter generation, persona PDF export.
+3. DX-1: Claude Code tooling — Supabase MCP first, then GitHub MCP, then skills (`/new-edge-function`, `/release-check`, `/new-migration`, `/verify`).
 
 ### P16 Delivery Sequence
 Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 → Story 7
@@ -69,6 +71,12 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 | Career Fit UI — /career-fit (P16 S6) | Approved | Core UX | Live job discovery page with role cards and job panels | TBD | New page + sidebar nav entry | P16 Story 6 |
 | Skill Gap → Roadmap Bridge (P16 S7) | Approved | AI | Pre-populated roadmap from career fit gap to P15 engine | TBD | P15 E2E validation must be complete first | P16 Story 7 |
 | Enrichment Modal Scroll Reliability (`BUG-2026-02-24-ENRICH-SCROLL`) | Planned | Core UX | Ensure all generated suggestions/actions are reachable in modal review | TBD | `Dialog` height/overflow constraints + scroll affordance tuning | Next patch |
+| **DX-1** Supabase MCP | Planned | Platform/DX | Live schema + RLS + migration state accessible to Claude Code without reading SQL files; catches type drift between DB and `types.ts` | Claude Code | Supabase MCP server install + project secrets config | DX-1 |
+| **DX-1** GitHub MCP | Planned | Platform/DX | CI workflow status, PR review state, and failed check details accessible in-context after `git push` | Claude Code | GitHub MCP server install + PAT config | DX-1 |
+| **DX-1** `/new-edge-function` skill | Planned | Platform/DX | Scaffolds `index.ts` with `_shared/` imports, CORS, env wiring, and UPDATE LOG header pre-filled | Claude Code | Skill definition file in `~/.claude/` | DX-1 |
+| **DX-1** `/release-check` skill | Planned | Platform/DX | Reads `UNTESTED_IMPLEMENTATIONS.md`, cross-references recent commits, outputs go/no-go release summary | Claude Code | Skill definition file in `~/.claude/` | DX-1 |
+| **DX-1** `/new-migration` skill | Planned | Platform/DX | Generates correctly timestamped `YYYYMMDDHHMMSS_<description>.sql` with header and `sats_` prefix reminder | Claude Code | Skill definition file in `~/.claude/` | DX-1 |
+| **DX-1** `/verify` skill | Planned | Platform/DX | Runs `npm run build && npm run test && npm run lint` and summarises only new errors vs baseline | Claude Code | Skill definition file in `~/.claude/` | DX-1 |
 | JD ETL Text + URL Ingestion | Live | Core + Data | Faster job input with URL fallback | TBD | URL ingest edge function + metadata fields | Current |
 | JD ETL Multi-Channel Ingestion (`P11.1-P11.6`) | In Progress | Data Platform | Higher ingestion scale and coverage | TBD | File pipelines + ingestion queue + QA workflow | TBD |
 | UI Placeholder Features Bundle (Dashboard/Settings/Admin Overview) | Planned | Core UX | Clear roadmap for currently visible but disabled controls | TBD | Feature specs + backend endpoints + permissions + UX validation | TBD |
@@ -90,6 +98,7 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 ## 5) Change Log (Roadmap-Level)
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
+| 2026-03-01 | v1.1 | DX Intake | Added DX-1 Claude Code Developer Tooling backlog: Supabase MCP (highest ROI), GitHub MCP, and four skills (`/new-edge-function`, `/release-check`, `/new-migration`, `/verify`). Added to roadmap snapshot, Later queue, and feature register. Recommended by Claude Code architecture review based on observed workflow friction. | Reduce scaffolding and post-push feedback loop friction | Architecture | N/A |
 | 2026-03-01 | v1.0 | Feature Intake | Added P16 Career Fit & Live Job Discovery (Stories 0-7): LLM abstraction, persona model, resume security, reconciliation engine, live job APIs, career fit AI, /career-fit UI, roadmap bridge. Added to roadmap snapshot, Now/Next/Later, feature register, and decision log. ADR-0002 written. Architecture.md and product-vision.md updated. | PM refinement sessions confirmed scope, user intent, API strategy, schema design, and help content requirements | TPM/Architecture | TBD |
 | 2026-03-01 | v0.9 | Delivery Sync | Updated P13 status to In Progress (Stories 1-2 done, Story 3 pending); removed stale P15 "Later" entry (Stories 1-3 implemented, release-blocked); updated Now/Next/Later; corrected strategic assessment onboarding gap note; synced feature register | Align roadmap with implemented code and release blocker state | TPM/Architecture | TBD |
 | 2026-02-25 | v0.7 | Scope Clarification | Added formal `UI Placeholder Features` tracking section and feature register entry for visible-but-not-implemented controls across Dashboard/Settings/Admin | Prevent roadmap drift between visible UI affordances and actual delivery status | TPM/Architecture | TBD |
