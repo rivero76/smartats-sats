@@ -55,8 +55,8 @@ SESSION_FILE="docs/sessions/p15-story-2-handoff.md" make checkpoint
 ## Source-of-Truth Files for Handoff
 
 - `docs/sessions/*.md` (latest checkpoint)
-- `P14.md` / `P15.md` (story progress and constraints)
-- `product/ROADMAP.md` and `product/VISION.md` (planned scope)
+- `plans/p14.md` / `plans/p15.md` (story progress and constraints)
+- `docs/decisions/product-roadmap.md` and `docs/decisions/product-vision.md` (planned scope)
 - `docs/security/*` for security-sensitive work
 
 ## Failure Modes to Avoid

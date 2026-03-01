@@ -2,6 +2,8 @@
 
 ## Update Log
 
+- 2026-02-25 17:50:00 | Delivered P13 Story 2 frontend merge/dedupe layer (`linkedinImportMerge` + `useLinkedinImportPreparation`) with fuzzy skill matching, experience fingerprinting, and provenance-tagged insert preparation.
+- 2026-02-25 17:20:00 | Delivered P13 Story 1 backend (`linkedin-profile-ingest`) with mock provider payload retrieval and strict-schema LinkedIn normalization for preview-only HITL review.
 - 2026-02-25 10:20:00 | Delivered P15 Story 2 backend (`generate-upskill-roadmap`) and added `/help` hub route/page; moved P15 into active execution with Story 3 as next implementation target.
 - 2026-02-24 23:50:00 | Added P8 RLS hardening execution bundle and set comprehensive tenant-isolation policy remediation as next priority.
 - 2026-02-24 17:55:00 | Ingested PM strategic audit assessment; added execution phases P13-P15 for LinkedIn ingestion loop, proactive search engine, and upskilling roadmap engine.
@@ -223,7 +225,7 @@
 
 ### Phase P6: Modern SDLC Operations and Product Governance
 
-1. Create repository automation layer (`ops/`):
+1. Create repository automation layer (`scripts/ops/`):
 
 - Start/stop/restart dev and prod services.
 - Verification commands (`lint`, `build`, `test`, smoke checks).
@@ -265,10 +267,10 @@
 
 **Implementation status (2026-02-21 02:18:11)**
 
-1. Completed: repository automation layer via `ops/smartats.sh` and `ops/README.md`.
+1. Completed: repository automation layer via `scripts/ops/smartats.sh` and `scripts/ops/README.md`.
 2. Completed: CI quality gates via `.github/workflows/quality-gates.yml`.
-3. Completed: docs gate via `ops/check-docs.sh`.
-4. Completed: diff-based secret scan via `ops/check-secrets.sh`.
+3. Completed: docs gate via `scripts/ops/check-docs.sh`.
+4. Completed: diff-based secret scan via `scripts/ops/check-secrets.sh`.
 5. Pending hardening: make lint fully blocking after legacy lint debt remediation.
 
 
@@ -628,8 +630,8 @@
 
 1. Story 1 completed: schema and RLS for `sats_learning_roadmaps` and `sats_roadmap_milestones` delivered.
 2. Story 2 completed: `generate-upskill-roadmap` edge function delivered/deployed with schema-locked output, mandatory project milestone enforcement, and persistence.
-3. Story 3 pending: roadmap timeline UI, completion toggles, and visual progress bar.
-4. Release note: Story 1/2 remain blocked for end-user release until E2E validation entries are closed in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
+3. Story 3 completed: `/roadmaps` timeline UI delivered with completion toggles and progress bar.
+4. Release note: Stories 1-3 remain blocked for end-user release until E2E validation entries are closed in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
 
 
 ## 3. Technical Work Packages (Concrete)

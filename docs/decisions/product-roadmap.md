@@ -1,8 +1,8 @@
 # Product Roadmap and Change Tracking
 
 **Last Updated:** 2026-02-25
-**Vision File:** `product/VISION.md`
-**Execution Source:** `PRODUCT_IMPROVEMENTS.md`
+**Vision File:** `docs/decisions/product-vision.md`
+**Execution Source:** `plans/product-improvements.md`
 
 ## 1) Roadmap Snapshot
 
@@ -14,7 +14,7 @@
 | P3 Retention + Reliability | Completed | Done | Cleanup automation, retry/backoff, and reliability controls delivered. |
 | P4 Observability + Governance | Completed | Done | Admin observability panels, alert checks, immutable audit trail delivered. |
 | P5 Enrichment Lifecycle + Deletion Scope | Completed | Done | Enriched experience edit/delete lifecycle and account deletion scope alignment delivered. |
-| P6 SDLC Operations + Governance | Completed | Done | `ops/` automation, CI quality gates, docs/secrets checks delivered. |
+| P6 SDLC Operations + Governance | Completed | Done | `scripts/ops/` automation, CI quality gates, docs/secrets checks delivered. |
 | P7 Release Version Synchronization | Planned | Medium | Manifest and parity controls across app/runtime/database versions. |
 | P8 Global v1 Readiness | Planned | Medium | Multi-user hardening, i18n/l10n, compliance, regional controls. |
 | P9 AI Runtime Governance + LLM Ops Analytics | Planned | High | Runtime config governance, telemetry, cost/perf analytics. |
@@ -23,7 +23,7 @@
 | P12 Multi-language + Cloud + Enterprise Scale | Planned | High | Cloud migration/scaling and enterprise architecture readiness. |
 | P13 LinkedIn Ingestion Loop Upgrade | Planned | Highest | Move from LinkedIn URL storage to parsed profile ingestion into skills/experience tables. |
 | P14 Proactive Search Engine | In Progress | Highest | Core async pipeline and opportunities UI foundation delivered; end-to-end rollout hardening remains. |
-| P15 Upskilling Roadmap Engine | In Progress | High | Roadmap schema + generation edge function are delivered; UI progress tracking and release validation remain. |
+| P15 Upskilling Roadmap Engine | In Progress | High | Stories 1-3 are implemented (schema, generation, roadmap UI/progress); release validation remains before rollout. |
 
 ## 2) Strategic Assessment (From Technical Audit)
 1. Current strength: advanced trust-first ATS matcher with evidence-grounded AI outputs.
@@ -34,9 +34,9 @@
 ## 3) Now, Next, Later
 
 ### Now
-1. P15 Story 3 delivery: ship interactive roadmap UI and completion tracking on top of the new `sats_learning_roadmaps` backend.
-2. P15 release hardening: complete authenticated E2E validation for `generate-upskill-roadmap` and milestone persistence paths.
-3. P13 delivery (1-2 weeks): LinkedIn structured ingestion into `sats_user_skills` and `sats_skill_experiences`.
+1. P15 release hardening: complete authenticated E2E validation for `generate-upskill-roadmap` and milestone persistence paths.
+2. P13 delivery (1-2 weeks): LinkedIn structured ingestion into `sats_user_skills` and `sats_skill_experiences`.
+3. P14 rollout completion: close remaining proactive pipeline release blockers in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
 
 ### Next
 1. P14 rollout completion: finalize source policy, dedupe, and threshold-notification reliability checks.
@@ -52,7 +52,7 @@
 |---|---|---|---|---|---|---|
 | Proactive >60% Job Discovery | Planned | Core + AI + Data | Show only high-fit opportunities | TBD | Async job collector + ATS scoring queue + notifications | 3-4 weeks |
 | LinkedIn Structured Ingestion | Planned | Core + Data | Faster onboarding, richer profile baseline | TBD | Profile parser + merge engine + consent controls | 1-2 weeks |
-| Skill-Gap Roadmap | In Progress | AI | Actionable upskilling plan from ATS gaps with persisted milestones | TBD | Roadmap UI + progress completion loop + release validation | 4-6 weeks |
+| Skill-Gap Roadmap | In Progress | AI | Actionable upskilling plan from ATS gaps with persisted milestones and in-app progress tracking | TBD | Release validation for schema/function/UI flows | 4-6 weeks |
 | In-App Help Hub (`/help`) | Live | Core UX | Centralized discoverability of workflows, troubleshooting, and feature guidance | TBD | `helpContent` coverage + page-level docs hygiene | Current |
 | LLM Career Questionnaire | Planned | AI/Product | Personalize role pathing | TBD | Questionnaire schema + inference | TBD |
 | Enrichment Modal Scroll Reliability (`BUG-2026-02-24-ENRICH-SCROLL`) | Planned | Core UX | Ensure all generated suggestions/actions are reachable in modal review | TBD | `Dialog` height/overflow constraints + scroll affordance tuning | Next patch |
@@ -78,11 +78,12 @@
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
 | 2026-02-25 | v0.7 | Scope Clarification | Added formal `UI Placeholder Features` tracking section and feature register entry for visible-but-not-implemented controls across Dashboard/Settings/Admin | Prevent roadmap drift between visible UI affordances and actual delivery status | TPM/Architecture | TBD |
+| 2026-02-25 | v0.8 | Delivery Sync | Updated P15 status summary to reflect Story 3 UI completion (`/roadmaps` timeline + milestone toggle + progress bar) while keeping release validation as remaining gate | Keep roadmap state aligned with implemented code and release blocker policy | TPM/Architecture | TBD |
 | 2026-02-24 | v0.5 | Security Priority | Added P8.1 RLS tenant-isolation hardening as next execution priority, linked to migration bundle rollout and verification gates | Close horizontal privilege-escalation risk before broader enterprise rollout | TPM/Architecture | TBD |
 | 2026-02-25 | v0.6 | Delivery Sync | Marked P14 and P15 as In Progress; recorded `/help` hub as Live and adjusted Now/Next priorities | Keep roadmap aligned with shipped features and active execution | TPM/Architecture | TBD |
 | 2026-02-24 | v0.4 | Bug Intake | Added `BUG-2026-02-24-ENRICH-SCROLL` to Now backlog and feature register for enrichment modal usability | Track blocking UX defect in sprint planning view | TPM/Architecture | TBD |
 | 2026-02-24 | v0.3 | Strategy Sync | Ingested PM strategy assessment and introduced sprint sequence P13-P15 (LinkedIn ingestion, proactive search, upskilling roadmap) | Align roadmap with audit-driven priorities | TPM/Architecture | TBD |
-| 2026-02-24 | v0.2 | Sync Update | Synced roadmap phase statuses with `PRODUCT_IMPROVEMENTS.md` and split into Now/Next/Later | Keep roadmap aligned with delivery reality | TPM/Architecture | TBD |
+| 2026-02-24 | v0.2 | Sync Update | Synced roadmap phase statuses with `plans/product-improvements.md` and split into Now/Next/Later | Keep roadmap aligned with delivery reality | TPM/Architecture | TBD |
 | 2026-02-24 | v0.1 | Baseline | Established initial roadmap structure after document split | Create product planning baseline | TPM/Architecture | TBD |
 
 ## 6) Decision Log (Architecture/Product)
@@ -99,8 +100,8 @@
 | Enrichment Acceptance Rate | accepted or edited suggestions / generated suggestions | TBD | TBD | Weekly | TBD |
 
 ## 8) Update Protocol
-1. Update phase status in Section 1 from `PRODUCT_IMPROVEMENTS.md` evidence.
+1. Update phase status in Section 1 from `plans/product-improvements.md` evidence.
 2. Refresh Now/Next/Later in Section 2.
 3. Update feature statuses in Section 3.
 4. Append roadmap-level change in Section 4.
-5. Keep detailed implementation notes in `PRODUCT_IMPROVEMENTS.md` only.
+5. Keep detailed implementation notes in `plans/product-improvements.md` only.

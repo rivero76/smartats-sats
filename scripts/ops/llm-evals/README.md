@@ -17,7 +17,7 @@ Priority 10 introduces a release gate for prompt/model changes.
 1. Initialize a response template:
 
 ```bash
-node ops/llm-evals/run-evals.mjs --init-template --input ops/llm-evals/reports/latest.responses.json
+node scripts/ops/llm-evals/run-evals.mjs --init-template --input scripts/ops/llm-evals/reports/latest.responses.json
 ```
 
 2. Fill `output` sections with real ATS/enrichment model responses.
@@ -25,13 +25,13 @@ node ops/llm-evals/run-evals.mjs --init-template --input ops/llm-evals/reports/l
 3. Run eval report:
 
 ```bash
-node ops/llm-evals/run-evals.mjs --input ops/llm-evals/reports/latest.responses.json
+node scripts/ops/llm-evals/run-evals.mjs --input scripts/ops/llm-evals/reports/latest.responses.json
 ```
 
 4. Run release gate:
 
 ```bash
-bash ops/check-llm-evals.sh ops/llm-evals/reports/latest.responses.json
+bash scripts/ops/check-llm-evals.sh scripts/ops/llm-evals/reports/latest.responses.json
 ```
 
 ## Gate metrics

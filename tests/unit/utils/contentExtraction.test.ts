@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractJobDescriptionInfo } from './contentExtraction'
+import { extractJobDescriptionInfo } from '@/utils/contentExtraction'
 
 describe('contentExtraction - provider headers', () => {
   it('extracts linkedin LAB3 header correctly', () => {
@@ -67,4 +67,3 @@ describe('contentExtraction - provider headers', () => {
     expect(result.extractionMeta?.rules).toContain('workday_header')
   })
 })
-

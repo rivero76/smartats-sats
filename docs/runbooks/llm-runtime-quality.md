@@ -8,7 +8,7 @@ Standard operating procedure for ATS/enrichment prompt or model changes under Ph
 
 - `supabase/functions/ats-analysis-direct/index.ts`
 - `supabase/functions/enrich-experiences/index.ts`
-- `ops/llm-evals/*`
+- `scripts/ops/llm-evals/*`
 
 ## Change Checklist
 
@@ -17,13 +17,13 @@ Standard operating procedure for ATS/enrichment prompt or model changes under Ph
 3. Run eval report against captured outputs:
 
 ```bash
-node ops/llm-evals/run-evals.mjs --input ops/llm-evals/reports/latest.responses.json
+node scripts/ops/llm-evals/run-evals.mjs --input scripts/ops/llm-evals/reports/latest.responses.json
 ```
 
 4. Enforce quality gate:
 
 ```bash
-bash ops/check-llm-evals.sh ops/llm-evals/reports/latest.responses.json
+bash scripts/ops/check-llm-evals.sh scripts/ops/llm-evals/reports/latest.responses.json
 ```
 
 5. Record report artifact path in release notes.

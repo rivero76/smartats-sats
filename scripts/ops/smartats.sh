@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 COMPOSE_CMD="docker compose"
@@ -9,7 +9,7 @@ if ! docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD="docker-compose"
 fi
 
-OPS_LOG_DIR="$ROOT_DIR/ops/logs"
+OPS_LOG_DIR="$ROOT_DIR/scripts/ops/logs"
 mkdir -p "$OPS_LOG_DIR"
 
 usage() {
@@ -17,7 +17,7 @@ usage() {
 SmartATS ops helper
 
 Usage:
-  bash ops/smartats.sh <command> [options]
+  bash scripts/ops/smartats.sh <command> [options]
 
 Commands:
   dev-start [--build]       Start development container (smartats-dev)
@@ -119,11 +119,11 @@ run_verify() {
 
   run_with_timestamp_log "verify" bash -c "
     set -euo pipefail
-    bash ops/check-format.sh
+    bash scripts/ops/check-format.sh
     npm run build
-    bash ops/check-docs.sh
-    bash ops/check-secrets.sh
-    bash ops/check-supabase.sh
+    bash scripts/ops/check-docs.sh
+    bash scripts/ops/check-secrets.sh
+    bash scripts/ops/check-supabase.sh
     if [[ \"$full\" == \"true\" ]]; then
       npm run lint
     fi
@@ -135,14 +135,14 @@ run_llm_evals() {
   if [[ "$mode" == "--gate" ]]; then
     run_with_timestamp_log "llm_evals_gate" bash -c "
       set -euo pipefail
-      bash ops/check-llm-evals.sh
+      bash scripts/ops/check-llm-evals.sh
     "
     return
   fi
 
   run_with_timestamp_log "llm_evals" bash -c "
     set -euo pipefail
-    node ops/llm-evals/run-evals.mjs --input ops/llm-evals/reports/latest.responses.json
+    node scripts/ops/llm-evals/run-evals.mjs --input scripts/ops/llm-evals/reports/latest.responses.json
   "
 }
 
@@ -218,7 +218,7 @@ case "$cmd" in
     run_llm_evals "${arg:-}"
     ;;
   supabase-check)
-    bash ops/check-supabase.sh "${arg:-}"
+    bash scripts/ops/check-supabase.sh "${arg:-}"
     ;;
   health)
     docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 required_files=(
   "README.md"
-  "PRODUCT_IMPROVEMENTS.md"
-  "SATS_CHANGES.txt"
+  "plans/product-improvements.md"
+  "docs/changelog/SATS_CHANGES.txt"
   "docs/changelog/CHANGELOG.md"
   "docs/help/README.md"
   "docs/runbooks/incident-response.md"
@@ -54,10 +54,10 @@ if [[ -z "$CHANGED_FILES" ]]; then
   exit 0
 fi
 
-if echo "$CHANGED_FILES" | grep -Eq '^(src/|supabase/|ops/|Dockerfile|Dockerfile.dev|docker-compose.yml|\.github/workflows/)'; then
-  if ! echo "$CHANGED_FILES" | grep -Eq '^(README\.md|SATS_CHANGES\.txt|PRODUCT_IMPROVEMENTS\.md|docs/|ops/README\.md)'; then
+if echo "$CHANGED_FILES" | grep -Eq '^(src/|supabase/|scripts/ops/|Dockerfile|Dockerfile.dev|docker-compose.yml|\.github/workflows/)'; then
+  if ! echo "$CHANGED_FILES" | grep -Eq '^(README\.md|docs/changelog/SATS_CHANGES\.txt|plans/product-improvements\.md|docs/|scripts/ops/README\.md)'; then
     echo "Code/infrastructure changed, but no docs were updated."
-    echo "Update at least one of: README.md, SATS_CHANGES.txt, PRODUCT_IMPROVEMENTS.md, docs/*."
+    echo "Update at least one of: README.md, docs/changelog/SATS_CHANGES.txt, plans/product-improvements.md, docs/*."
     exit 1
   fi
 

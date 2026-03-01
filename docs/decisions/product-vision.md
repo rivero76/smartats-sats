@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-02-25
 **Source of Truth:** Current codebase implementation (`src/`, `supabase/`, `docs/specs/`)
-**Roadmap File:** `product/ROADMAP.md`
+**Roadmap File:** `docs/decisions/product-roadmap.md`
 
 ## 1) Product Vision (Current)
 Build an AI-assisted career platform that helps users improve job fit by combining:

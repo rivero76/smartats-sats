@@ -910,6 +910,44 @@ export type Database = {
           },
         ]
       }
+      sats_learning_roadmaps: {
+        Row: {
+          created_at: string
+          id: string
+          source_ats_analysis_id: string | null
+          status: string
+          target_role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_ats_analysis_id?: string | null
+          status?: string
+          target_role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_ats_analysis_id?: string | null
+          status?: string
+          target_role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_learning_roadmaps_source_ats_analysis_id_fkey'
+            columns: ['source_ats_analysis_id']
+            isOneToOne: false
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       sats_locations: {
         Row: {
           city: string | null
@@ -1030,6 +1068,50 @@ export type Database = {
             columns: ['skill_id']
             isOneToOne: false
             referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      sats_roadmap_milestones: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_completed: boolean
+          milestone_type: string
+          order_index: number
+          roadmap_id: string
+          skill_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_completed?: boolean
+          milestone_type: string
+          order_index: number
+          roadmap_id: string
+          skill_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_completed?: boolean
+          milestone_type?: string
+          order_index?: number
+          roadmap_id?: string
+          skill_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_roadmap_milestones_roadmap_id_fkey'
+            columns: ['roadmap_id']
+            isOneToOne: false
+            referencedRelation: 'sats_learning_roadmaps'
             referencedColumns: ['id']
           },
         ]

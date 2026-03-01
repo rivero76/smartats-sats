@@ -15,6 +15,7 @@ import JobDescriptions from './pages/JobDescriptions'
 import ATSAnalyses from './pages/ATSAnalyses'
 import ProactiveMatches from './pages/ProactiveMatches'
 import EnrichedExperiences from './pages/EnrichedExperiences'
+import UpskillingRoadmaps from './pages/UpskillingRoadmaps'
 import Settings from './pages/Settings'
 import HelpHub from './pages/HelpHub'
 import AdminDashboard from './pages/AdminDashboard'
@@ -64,6 +65,7 @@ const App = () => {
                               <Route path="/analyses" element={<ATSAnalyses />} />
                               <Route path="/opportunities" element={<ProactiveMatches />} />
                               <Route path="/experiences" element={<EnrichedExperiences />} />
+                              <Route path="/roadmaps" element={<UpskillingRoadmaps />} />
                               <Route path="/help" element={<HelpHub />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route

@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-02-22T08:45:34.194Z",
-  "input_path": "ops/llm-evals/reports/sample.pass.responses.json",
+  "input_path": "scripts/ops/llm-evals/reports/sample.pass.responses.json",
   "totals": {
     "records": 4,
     "ats_records": 2,

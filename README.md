@@ -1,7 +1,26 @@
 # SmartATS
 
+## Repository Organization
+
+- `AGENTS.md`: Codex operating rules and execution guardrails
+- `CLAUDE.md`: Claude Code review/architecture guardrails
+- `docs/architecture.md`: current architecture baseline
+- `docs/decisions/`: ADRs and strategy decisions
+- `plans/`: phase plans and implementation workpacks (`p13`, `p14`, `p15`, and product improvements)
+- `scripts/ops/`: operational automation and quality gates
+- `tests/`: top-level test suites
+
+## Agent Task Split
+
+1. Codex: implementation, refactors, tests, scripts/CI updates.
+2. Claude Code: architecture tradeoffs, large-diff review, risk/security/performance review.
+3. Human owner: final decisions, merge/release approvals, and scope prioritization.
+
 ## Update Log
 
+- 2026-02-25 17:50:00 | Implemented P13 Story 2 frontend dedupe/merge preparation: fuzzy skill matching, experience fingerprint dedupe, and provenance-tagged import buckets for HITL flow.
+- 2026-02-25 17:20:00 | Implemented P13 Story 1 backend preview flow: new `linkedin-profile-ingest` edge function with mock LinkedIn payload fetch and schema-locked LLM normalization for HITL review.
+- 2026-02-25 16:55:00 | Implemented P15 Story 3 roadmap UI: new `/roadmaps` dashboard with sequenced milestones, completion toggles, and progress tracking.
 - 2026-02-25 16:20:00 | Added Codex session continuity guidance and runbook links to preserve context across large/long-running implementation sessions.
 - 2026-02-20 22:25:31 | Replaced Lovable deployment documentation with the current SmartATS architecture and product feature set.
 - 2026-02-20 23:22:57 | Implemented P1 logging improvements: structured schema normalization, centralized validation, and edge-function lifecycle telemetry.
@@ -11,19 +30,19 @@
 - 2026-02-21 00:05:00 | Added full `enrich-experiences-client` logging support (DB provisioning + generate/save workflow telemetry).
 - 2026-02-21 00:15:00 | Hardened enrichment failure handling: safe provider error mapping, no raw provider payload logging, and improved client-side invoke diagnostics.
 - 2026-02-21 00:40:00 | Implemented enrichment product upgrades: evidence checklist, tone controls, batch actions, progress states, and success metrics dashboard.
-- 2026-02-21 00:34:53 | Added P5 roadmap in `PRODUCT_IMPROVEMENTS.md`: enrichment record lifecycle (id/timestamps/update/delete) and full account data deletion analysis.
-- 2026-02-21 00:54:21 | Added P6 roadmap in `PRODUCT_IMPROVEMENTS.md`: modern SDLC automation (`ops`), CI quality gates, docs-as-release artifacts, and governance controls.
+- 2026-02-21 00:34:53 | Added P5 roadmap in `plans/product-improvements.md`: enrichment record lifecycle (id/timestamps/update/delete) and full account data deletion analysis.
+- 2026-02-21 00:54:21 | Added P6 roadmap in `plans/product-improvements.md`: modern SDLC automation (`scripts/ops`), CI quality gates, docs-as-release artifacts, and governance controls.
 - 2026-02-21 00:54:21 | Implemented P5 lifecycle controls: enriched experience id/timestamps in UI, edit/delete actions, and account-deletion function scope alignment for enrichment records.
-- 2026-02-21 02:18:11 | Implemented P6 SDLC baseline: `ops/` automation scripts, CI quality gates, docs-required checks, and diff-based secret scanning.
-- 2026-02-21 02:32:24 | Added P7 roadmap in `PRODUCT_IMPROVEMENTS.md` for release version synchronization control across app artifacts, runtime baselines, and database migration state.
-- 2026-02-21 02:36:51 | Added P8 roadmap in `PRODUCT_IMPROVEMENTS.md` for global v1 readiness across multi-user security hardening, localization, compliance, and regional deployment controls.
+- 2026-02-21 02:18:11 | Implemented P6 SDLC baseline: `scripts/ops/` automation scripts, CI quality gates, docs-required checks, and diff-based secret scanning.
+- 2026-02-21 02:32:24 | Added P7 roadmap in `plans/product-improvements.md` for release version synchronization control across app artifacts, runtime baselines, and database migration state.
+- 2026-02-21 02:36:51 | Added P8 roadmap in `plans/product-improvements.md` for global v1 readiness across multi-user security hardening, localization, compliance, and regional deployment controls.
 - 2026-02-21 02:42:45 | Executed Phase A lint cleanup: resolved `no-empty-object-type`, `no-case-declarations`, `ban-ts-comment`, and `no-require-imports` blockers.
 - 2026-02-21 02:47:02 | Started Phase B lint hardening on logger libraries: removed `any` usage in auth/document/job-description/dev/local loggers and reduced total lint issues from 107 to 69.
 - 2026-02-21 02:58:55 | Executed P0 configuration hardening: removed hardcoded Supabase/project identifiers from frontend client and centralized logger transport endpoint.
 - 2026-02-21 03:02:13 | Executed SDLC P1 provider-model parameterization: ATS and enrichment edge functions now read OpenAI endpoint/model/temperature (and ATS pricing) from environment variables.
 - 2026-02-21 03:06:56 | Executed SDLC P2 data-governance hardening: ATS function now disables prompt/raw LLM response persistence by default unless explicitly enabled via env flags.
 - 2026-02-21 03:09:09 | Executed SDLC P3 reliability parameterization: centralized logging limits, retry/backoff, and sampling/rate controls are now environment-driven in frontend and edge logger paths.
-- 2026-02-21 03:24:42 | Added P9 roadmap in `PRODUCT_IMPROVEMENTS.md` for AI runtime governance and unified LLM operations analytics (config editing + telemetry + KPI dashboards).
+- 2026-02-21 03:24:42 | Added P9 roadmap in `plans/product-improvements.md` for AI runtime governance and unified LLM operations analytics (config editing + telemetry + KPI dashboards).
 
 SmartATS is a web application for resume management, job description management, ATS scoring, and AI-assisted experience enrichment.
 
@@ -49,6 +68,7 @@ SmartATS is a web application for resume management, job description management,
 - Core AI flows:
   - `ats-analysis-direct` for resume-to-job ATS analysis
   - `enrich-experiences` for improving resume experience entries
+  - `linkedin-profile-ingest` for LinkedIn profile normalization preview (HITL pre-save stage)
 
 ### Runtime and Deployment
 
@@ -90,6 +110,12 @@ SmartATS is a web application for resume management, job description management,
 - Review and save enriched experience content
 - Track enriched outcomes for later review
 
+### Upskilling Roadmaps
+
+- View generated learning roadmaps by target role
+- Track sequenced milestones across course, project, and interview-prep steps
+- Toggle milestone completion and monitor percentage progress
+
 ### Dashboard and Analytics
 
 - Summary dashboard for resumes, jobs, and analyses
@@ -108,6 +134,7 @@ SmartATS is a web application for resume management, job description management,
 - `/jobs` Job Descriptions
 - `/analyses` ATS Analyses
 - `/experiences` Enriched Experiences
+- `/roadmaps` Upskilling Roadmaps
 - `/settings` Settings
 - `/admin` Admin Dashboard (role-gated)
 - `/auth` Authentication
@@ -167,13 +194,13 @@ npm run supabase:check
 ### Direct script examples
 
 ```bash
-bash ops/smartats.sh dev-start --build
-bash ops/smartats.sh prod-start --build
-bash ops/smartats.sh logs-dev-follow
-bash ops/smartats.sh logs-prod-follow
-bash ops/smartats.sh git-status
-bash ops/smartats.sh git-safe-push
-bash ops/smartats.sh supabase-check
+bash scripts/ops/smartats.sh dev-start --build
+bash scripts/ops/smartats.sh prod-start --build
+bash scripts/ops/smartats.sh logs-dev-follow
+bash scripts/ops/smartats.sh logs-prod-follow
+bash scripts/ops/smartats.sh git-status
+bash scripts/ops/smartats.sh git-safe-push
+bash scripts/ops/smartats.sh supabase-check
 ```
 
 ### CI quality gates
@@ -184,8 +211,8 @@ bash ops/smartats.sh supabase-check
 
 ### Verification logs
 
-- `verify` now writes a timestamped report in `ops/logs/`:
-  - `ops/logs/verify_YYYY-MM-DD_HH-MM-SS.log`
+- `verify` now writes a timestamped report in `scripts/ops/logs/`:
+  - `scripts/ops/logs/verify_YYYY-MM-DD_HH-MM-SS.log`
 
 ## Codex Session Continuity
 
@@ -209,7 +236,7 @@ Detailed workflow:
 
 - Reviewed code files include an `UPDATE LOG` header entry with timestamp format `YYYY-MM-DD HH24:MM:SS`.
 - `README.md` is updated when functionality/process changes are introduced.
-- `SATS_CHANGES.txt` records product-level changes, updated files, reasons, and timestamps.
+- `docs/changelog/SATS_CHANGES.txt` records product-level changes, updated files, reasons, and timestamps.
 - Centralized logging now validates request shape and payload size, and normalizes structured metadata fields:
   `event_name`, `component`, `operation`, `outcome`, `duration_ms`, `request_id`, `session_id`, `user_id`.
 - P2 correlation is now wired through ATS and enrichment flows with `request_id` propagated from frontend hooks to edge functions and log storage.
@@ -229,11 +256,12 @@ Detailed workflow:
 - P5 lifecycle controls now allow users to review record metadata (`id`, `created_at`, `updated_at`), edit enriched suggestions in-place, and soft-delete suggestions from the active list.
 - Account deletion/cancellation/reactivation database functions now include `enriched_experiences` in deletion scope handling.
 - P6 operations baseline now includes:
-  - `ops/smartats.sh` for start/stop/restart/logs/verify/git-safe-push flows.
-  - `ops/check-docs.sh` to enforce docs updates when code/infrastructure changes.
-  - `ops/check-format.sh` to enforce Prettier on changed files.
-  - `ops/check-secrets.sh` to detect likely secrets in newly added diff lines.
-  - `ops/check-supabase.sh` to validate Supabase CLI status, migration visibility, and linked dry-run status when token is available.
+  - `scripts/ops/smartats.sh` for start/stop/restart/logs/verify/git-safe-push flows.
+  - `scripts/ops/check-docs.sh` to enforce docs updates when code/infrastructure changes.
+  - `scripts/ops/check-format.sh` to enforce Prettier on changed files.
+  - `scripts/ops/check-secrets.sh` to detect likely secrets in newly added diff lines.
+  - `scripts/ops/check-supabase.sh` to validate Supabase CLI status, migration visibility, and linked dry-run status when token is available.
   - GitHub Action quality gates in `.github/workflows/quality-gates.yml`.
 - SDLC P4 security hardening now enforces CORS allowlists in edge functions via `ALLOWED_ORIGINS` and rejects non-allowed origins with explicit `403` responses.
 - P9 roadmap now defines AI runtime governance and analytics foundations: editable model/runtime parameters, immutable config audit trail, unified LLM event capture, and cost/performance/product KPI dashboards.
+- P15 Story 3 is now implemented in-app via `/roadmaps`, including sequenced milestone timeline UI, completion toggles, and progress bar tracking for persisted learning plans.

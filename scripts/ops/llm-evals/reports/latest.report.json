@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-02-22T08:46:41.534Z",
-  "input_path": "ops/llm-evals/reports/latest.responses.json",
+  "input_path": "scripts/ops/llm-evals/reports/latest.responses.json",
   "totals": {
     "records": 4,
     "ats_records": 2,

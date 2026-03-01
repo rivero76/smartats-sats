@@ -4,6 +4,7 @@ import {
   BriefcaseIcon,
   BarChart3,
   Sparkles,
+  GraduationCap,
   HelpCircle,
   Radar,
   Settings,
@@ -37,6 +38,7 @@ const navigationItems = [
   { title: 'ATS Analyses', url: '/analyses', icon: BarChart3 },
   { title: 'Opportunities', url: '/opportunities', icon: Radar },
   { title: 'Enriched Experiences', url: '/experiences', icon: Sparkles },
+  { title: 'Roadmaps', url: '/roadmaps', icon: GraduationCap },
   { title: 'Help Hub', url: '/help', icon: HelpCircle },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]

@@ -4,9 +4,9 @@ import path from 'node:path'
 
 function parseArgs(argv) {
   const args = {
-    input: 'ops/llm-evals/reports/latest.responses.json',
-    output: 'ops/llm-evals/reports/latest.report.json',
-    thresholds: 'ops/llm-evals/baselines/thresholds.json',
+    input: 'scripts/ops/llm-evals/reports/latest.responses.json',
+    output: 'scripts/ops/llm-evals/reports/latest.report.json',
+    thresholds: 'scripts/ops/llm-evals/baselines/thresholds.json',
     gate: false,
     initTemplate: false,
   }
@@ -123,8 +123,8 @@ function validateEnrichmentRecord(record) {
 }
 
 function buildTemplateResponse() {
-  const atsCases = safeReadJson('ops/llm-evals/datasets/ats_cases.json')
-  const enrichmentCases = safeReadJson('ops/llm-evals/datasets/enrichment_cases.json')
+  const atsCases = safeReadJson('scripts/ops/llm-evals/datasets/ats_cases.json')
+  const enrichmentCases = safeReadJson('scripts/ops/llm-evals/datasets/enrichment_cases.json')
 
   return {
     generated_at: new Date().toISOString(),
