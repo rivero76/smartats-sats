@@ -1,6 +1,6 @@
 # Product Roadmap and Change Tracking
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-01 (P16 added)
 **Vision File:** `docs/decisions/product-vision.md`
 **Execution Source:** `plans/product-improvements.md`
 
@@ -24,6 +24,7 @@
 | P13 LinkedIn Ingestion Loop Upgrade | In Progress | Highest | Stories 1-2 delivered (edge function + merge/dedupe utility); Story 3 HITL Review UI pending; full flow release-blocked on E2E validation. |
 | P14 Proactive Search Engine | In Progress | Highest | Core async pipeline and opportunities UI foundation delivered; end-to-end rollout hardening remains. |
 | P15 Upskilling Roadmap Engine | In Progress | High | Stories 1-3 are implemented (schema, generation, roadmap UI/progress); release validation remains before rollout. |
+| P16 Career Fit & Live Job Discovery | Approved | Highest | LLM abstraction (Story 0), Persona model (Story 1), Resume storage upgrade (Story 2), Reconciliation engine (Story 3), Live job discovery via JSearch/Adzuna (Story 4), Career fit AI engine (Story 5), `/career-fit` UI (Story 6), Skill gap → P15 roadmap bridge (Story 7). Full spec: `docs/specs/product/p16-career-fit-live-job-discovery.md`. |
 
 ## 2) Strategic Assessment (From Technical Audit)
 1. Current strength: advanced trust-first ATS matcher with evidence-grounded AI outputs.
@@ -45,6 +46,11 @@
 
 ### Later
 1. Continue P9, P8, and P12 platform programs after orchestration core is in motion.
+2. P16 backlog items: Playwright for SEEK/Gupy/Computrabajo, salary intelligence, application tracker, cover letter generation, persona PDF export.
+
+### P16 Delivery Sequence
+Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 → Story 7
+(Each story is a gate for the next — do not begin Story 4 before Story 3 is in E2E validation.)
 
 ## 4) Feature Lifecycle Register
 | Feature | Status (Idea/Planned/In Progress/Live) | Category (Core/AI/Data/Platform) | User Value | Primary Tech Owner | Dependencies | Target Release |
@@ -54,6 +60,14 @@
 | Skill-Gap Roadmap | In Progress | AI | Actionable upskilling plan from ATS gaps with persisted milestones and in-app progress tracking | TBD | Release validation for schema/function/UI flows | 4-6 weeks |
 | In-App Help Hub (`/help`) | Live | Core UX | Centralized discoverability of workflows, troubleshooting, and feature guidance | TBD | `helpContent` coverage + page-level docs hygiene | Current |
 | LLM Career Questionnaire | Planned | AI/Product | Personalize role pathing | TBD | Questionnaire schema + inference | TBD |
+| LLM Provider Abstraction Layer (P16 S0) | Approved | Platform | Enable provider switching via env var | TBD | `_shared/llmProvider.ts` + refactor 4 edge functions | P16 Story 0 |
+| Master Profile + Resume Persona Model (P16 S1) | Approved | Core + Data | Multi-persona CV management from one canonical profile | TBD | `sats_resume_personas` table + Settings UI | P16 Story 1 |
+| Resume Storage Security Upgrade (P16 S2) | Approved | Platform + Security | Signed URLs, SHA-256 dedup, version chain | TBD | `sats_resumes` migration + signed URL pattern | P16 Story 2 |
+| Profile Reconciliation Engine (P16 S3) | Approved | Core + AI | Detect and resolve cross-source profile conflicts | TBD | `reconcile-profile` edge fn + 3 new tables + HITL page | P16 Story 3 |
+| Live Job Discovery Engine (P16 S4) | Approved | Core + Data | JSearch + Adzuna integration with 4h cache | TBD | `fetch-live-jobs` edge fn + JSearch/Adzuna accounts | P16 Story 4 |
+| Career Fit AI Engine (P16 S5) | Approved | AI | Role suggestions with match strength and skill gaps | TBD | `suggest-career-fit` edge fn + schema-locked output | P16 Story 5 |
+| Career Fit UI — /career-fit (P16 S6) | Approved | Core UX | Live job discovery page with role cards and job panels | TBD | New page + sidebar nav entry | P16 Story 6 |
+| Skill Gap → Roadmap Bridge (P16 S7) | Approved | AI | Pre-populated roadmap from career fit gap to P15 engine | TBD | P15 E2E validation must be complete first | P16 Story 7 |
 | Enrichment Modal Scroll Reliability (`BUG-2026-02-24-ENRICH-SCROLL`) | Planned | Core UX | Ensure all generated suggestions/actions are reachable in modal review | TBD | `Dialog` height/overflow constraints + scroll affordance tuning | Next patch |
 | JD ETL Text + URL Ingestion | Live | Core + Data | Faster job input with URL fallback | TBD | URL ingest edge function + metadata fields | Current |
 | JD ETL Multi-Channel Ingestion (`P11.1-P11.6`) | In Progress | Data Platform | Higher ingestion scale and coverage | TBD | File pipelines + ingestion queue + QA workflow | TBD |
@@ -76,6 +90,7 @@
 ## 5) Change Log (Roadmap-Level)
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
+| 2026-03-01 | v1.0 | Feature Intake | Added P16 Career Fit & Live Job Discovery (Stories 0-7): LLM abstraction, persona model, resume security, reconciliation engine, live job APIs, career fit AI, /career-fit UI, roadmap bridge. Added to roadmap snapshot, Now/Next/Later, feature register, and decision log. ADR-0002 written. Architecture.md and product-vision.md updated. | PM refinement sessions confirmed scope, user intent, API strategy, schema design, and help content requirements | TPM/Architecture | TBD |
 | 2026-03-01 | v0.9 | Delivery Sync | Updated P13 status to In Progress (Stories 1-2 done, Story 3 pending); removed stale P15 "Later" entry (Stories 1-3 implemented, release-blocked); updated Now/Next/Later; corrected strategic assessment onboarding gap note; synced feature register | Align roadmap with implemented code and release blocker state | TPM/Architecture | TBD |
 | 2026-02-25 | v0.7 | Scope Clarification | Added formal `UI Placeholder Features` tracking section and feature register entry for visible-but-not-implemented controls across Dashboard/Settings/Admin | Prevent roadmap drift between visible UI affordances and actual delivery status | TPM/Architecture | TBD |
 | 2026-02-25 | v0.8 | Delivery Sync | Updated P15 status summary to reflect Story 3 UI completion (`/roadmaps` timeline + milestone toggle + progress bar) while keeping release validation as remaining gate | Keep roadmap state aligned with implemented code and release blocker policy | TPM/Architecture | TBD |
@@ -89,6 +104,10 @@
 ## 6) Decision Log (Architecture/Product)
 | Date | Decision | Options Considered | Chosen Option | Impact | Revisit Trigger |
 |---|---|---|---|---|---|
+| 2026-03-01 | LLM Provider Abstraction | Direct per-function OpenAI calls vs shared utility vs third-party gateway | Shared `_shared/llmProvider.ts` utility with `SATS_LLM_PROVIDER` env var | Single switch point for provider change; eliminates duplicated error/retry logic | Cost or quality drivers; regional compliance requirement |
+| 2026-03-01 | Resume multi-persona model | Multiple independent resumes vs Master Profile + Persona | Master Profile as canonical source + Personas as weighted views | Prevents conflicting ground truth; single update point; enables reconciliation | User feedback indicates persona model is confusing; simplify if adoption is low |
+| 2026-03-01 | Job discovery source | Official API vs Playwright scraping vs hybrid | Official API first (JSearch/Adzuna); Playwright only for markets with no API and legal review complete | Legal safety; lower maintenance; sufficient market coverage for BR/AU/NZ/US | If Adzuna BR coverage proves insufficient for Gupy-heavy BR market |
+| 2026-03-01 | Conflict resolution UX | Inline modal vs dedicated page | Dedicated page `/profile/reconcile` | Better usability for 5-15 concurrent conflicts; modal overflow risk | If typical conflict count is consistently ≤2, reconsider modal approach |
 | YYYY-MM-DD | Example: URL ingestion strategy | crawler vs single-page fetch | single-page fetch | lower legal/risk surface, lower coverage | need broader source coverage |
 
 ## 7) KPI Tracking

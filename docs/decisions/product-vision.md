@@ -1,6 +1,6 @@
 # Product Vision
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-01 (P16 added)
 **Source of Truth:** Current codebase implementation (`src/`, `supabase/`, `docs/specs/`)
 **Roadmap File:** `docs/decisions/product-roadmap.md`
 
@@ -30,9 +30,10 @@ Current positioning:
 1. Phase 1 (In Progress — P13): LinkedIn ingestion backend delivered (Stories 1-2: `linkedin-profile-ingest` edge function + `linkedinImportMerge` frontend utility); HITL Review UI (Story 3) is the remaining implementation gap; full flow is release-blocked on E2E validation.
 2. Phase 2 (In Progress — P14): asynchronous proactive search engine (background job fetcher, async ATS scorer, threshold-notification engine, Opportunities UI) implemented; release-blocked on E2E validation for all four stories.
 3. Phase 3 (In Progress — P15): `/roadmaps` timeline UI with milestone completion and progress tracking delivered (Stories 1-3); release-blocked on E2E validation.
-4. LLM career questionnaire and goal-based pathing.
-5. P11 multi-channel job description ETL rollout (CSV/XLS, PDF/DOC bulk, extension, email, feeds).
-6. P12 globalization, enterprise cloud architecture, and large-scale readiness.
+4. Phase 4 (Approved — P16): Career Fit & Live Job Discovery — LLM provider abstraction, Master Profile + Resume Persona model, Profile Reconciliation Engine, Live Job Discovery (JSearch/Adzuna), Career Fit AI suggestions, `/career-fit` UI, and Skill Gap → P15 Roadmap bridge. Full spec at `docs/specs/product/p16-career-fit-live-job-discovery.md`.
+5. LLM career questionnaire and goal-based pathing.
+6. P11 multi-channel job description ETL rollout (CSV/XLS, PDF/DOC bulk, extension, email, feeds).
+7. P12 globalization, enterprise cloud architecture, and large-scale readiness.
 
 ## 3A) UI Placeholder Features (Tracked)
 The following items are visible in product UI but intentionally not fully implemented yet:
@@ -98,6 +99,45 @@ Needed:
 1. E2E validation pass to close `docs/releases/UNTESTED_IMPLEMENTATIONS.md` blockers before rollout.
 2. Skill taxonomy normalization and proficiency levels (future enhancement).
 3. Time-phased plans (30/60/90 day) and recommendation feedback loop (future enhancement).
+
+### Gap E: LLM Provider Lock-in and Abstraction
+Current state:
+- All four edge functions call OpenAI directly via raw HTTP fetch with no abstraction layer.
+- Error handling, retry logic, and schema validation are duplicated across functions.
+
+Needed (P16 Story 0):
+1. `supabase/functions/_shared/llmProvider.ts` shared utility.
+2. `SATS_LLM_PROVIDER` environment variable to switch provider without code changes.
+3. Refactor existing four functions to use the shared utility.
+4. Document in ADR-0002 (`docs/decisions/adr-0002-llm-provider-abstraction.md`).
+
+### Gap F: Resume Ground Truth and Persona Management
+Current state:
+- `sats_resumes` stores file references. No concept of role-specific personas or canonical master profile layer.
+- Permanent public file URLs expose resume files without access control or expiry.
+
+Needed (P16 Stories 1–2):
+1. `sats_resume_personas` table for role-specific profile configurations.
+2. Resume storage upgrade: signed URLs (15-min expiry), SHA-256 dedup, MIME validation, version chain.
+
+### Gap G: Profile Data Reconciliation
+Current state:
+- No mechanism to detect or resolve conflicts between resume text, LinkedIn import data, and manually entered DB records.
+
+Needed (P16 Story 3):
+1. `reconcile-profile` edge function to compare sources and detect conflicts.
+2. `sats_reconciliation_runs`, `sats_profile_conflicts`, `sats_conflict_resolutions` tables.
+3. Dedicated `/profile/reconcile` HITL resolution page.
+
+### Gap H: Live Job Discovery
+Current state:
+- No integration with external job APIs. Users must manually find and paste job descriptions.
+
+Needed (P16 Stories 4–6):
+1. JSearch API integration (US/global), Adzuna API integration (BR/AU/NZ/UK).
+2. `fetch-live-jobs` edge function with 4-hour result cache.
+3. `suggest-career-fit` edge function for AI role suggestions.
+4. `/career-fit` page with role cards, job panels, and roadmap bridge.
 
 ### Gap D: LLM Questionnaire + Career Pathing
 Current state:
