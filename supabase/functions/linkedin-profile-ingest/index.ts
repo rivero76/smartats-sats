@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-02-25 17:20:00 | P13 Story 1: Added LinkedIn profile ingest edge function with mock provider payload and schema-locked LLM normalization.
+ * 2026-03-01 00:00:00 | P13 Story 1 (fix): Replaced mockLinkedinProviderPayload() with real HTTP call to Playwright scraper service. Added PLAYWRIGHT_SERVICE_URL + PLAYWRIGHT_API_KEY env vars. Added PlaywrightServiceError class. Removed mock function.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -53,12 +54,15 @@ const OPENAI_MAX_TOKENS_LINKEDIN_INGEST = Math.max(
   Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_LINKEDIN_INGEST', 2400))
 )
 
+// ── Interfaces ────────────────────────────────────────────────────────────────
+
 interface LinkedinIngestRequest {
   linkedin_url: string
   request_id?: string
 }
 
-interface MockLinkedinProfile {
+/** Raw profile shape returned by the Playwright scraper service */
+interface LinkedInRawProfile {
   profile: {
     full_name: string
     headline: string
@@ -98,15 +102,126 @@ interface NormalizedLinkedinData {
   }>
 }
 
+// ── Error classes ─────────────────────────────────────────────────────────────
+
 class LinkedinIngestConfigError extends Error {
   code: string
-
   constructor(message: string, code = 'CONFIG_ERROR') {
     super(message)
     this.name = 'LinkedinIngestConfigError'
     this.code = code
   }
 }
+
+class PlaywrightServiceError extends Error {
+  code: string
+  httpStatus: number
+  constructor(message: string, code = 'PLAYWRIGHT_ERROR', httpStatus = 500) {
+    super(message)
+    this.name = 'PlaywrightServiceError'
+    this.code = code
+    this.httpStatus = httpStatus
+  }
+}
+
+// ── Playwright service call ───────────────────────────────────────────────────
+
+/**
+ * Calls the external Playwright scraper service to fetch the real LinkedIn
+ * profile. The service handles login, session management, stealth, and
+ * data extraction. Returns a structured raw profile payload.
+ */
+async function fetchLinkedInProfile(
+  playwrightServiceUrl: string,
+  playwrightApiKey: string,
+  linkedinUrl: string
+): Promise<LinkedInRawProfile> {
+  const endpoint = `${playwrightServiceUrl.replace(/\/$/, '')}/scrape-profile`
+
+  let response: Response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${playwrightApiKey}`,
+      },
+      body: JSON.stringify({ url: linkedinUrl }),
+      // Playwright scraping can take up to 60s for a cold login
+      signal: AbortSignal.timeout(65_000),
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new PlaywrightServiceError(
+      `Playwright scraper service unreachable: ${message}`,
+      'PLAYWRIGHT_UNREACHABLE',
+      503
+    )
+  }
+
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    throw new PlaywrightServiceError(
+      `Playwright service returned non-JSON response (HTTP ${response.status})`,
+      'PLAYWRIGHT_BAD_RESPONSE',
+      502
+    )
+  }
+
+  const result = body as { success: boolean; profile?: unknown; error?: string; code?: string }
+
+  if (!response.ok || !result.success) {
+    const errMsg = result.error ?? `Scraper returned HTTP ${response.status}`
+    const errCode = result.code ?? 'PLAYWRIGHT_ERROR'
+
+    // Surface actionable codes clearly
+    if (errCode === 'VERIFICATION_REQUIRED') {
+      throw new PlaywrightServiceError(
+        'LinkedIn requires manual verification. ' +
+          'Log in once in a browser, export session cookies, and set LINKEDIN_COOKIES on the scraper service.',
+        'VERIFICATION_REQUIRED',
+        503
+      )
+    }
+    if (errCode === 'RATE_LIMITED') {
+      throw new PlaywrightServiceError('Scraper rate limit reached. Try again later.', 'RATE_LIMITED', 429)
+    }
+
+    throw new PlaywrightServiceError(errMsg, errCode, response.status >= 500 ? 502 : 400)
+  }
+
+  // Map the scraper's flat profile structure to the shape expected by the LLM normalizer
+  const scraped = result.profile as {
+    full_name: string
+    headline: string
+    location: string
+    summary: string
+    skills: string[]
+    experiences: Array<{
+      title: string
+      company: string
+      location?: string
+      start_date?: string
+      end_date?: string | null
+      description: string
+    }>
+  }
+
+  return {
+    profile: {
+      full_name: scraped.full_name ?? '',
+      headline: scraped.headline ?? '',
+      location: scraped.location ?? '',
+      summary: scraped.summary ?? '',
+    },
+    skills: Array.isArray(scraped.skills) ? scraped.skills : [],
+    experiences: Array.isArray(scraped.experiences) ? scraped.experiences : [],
+  }
+}
+
+// ── LLM normalization ─────────────────────────────────────────────────────────
 
 const LINKEDIN_NORMALIZATION_SCHEMA = {
   type: 'object',
@@ -164,10 +279,7 @@ const LINKEDIN_NORMALIZATION_SCHEMA = {
           job_title: { anyOf: [{ type: 'string' }, { type: 'null' }] },
           company_name: { anyOf: [{ type: 'string' }, { type: 'null' }] },
           description: { type: 'string' },
-          keywords: {
-            type: 'array',
-            items: { type: 'string' },
-          },
+          keywords: { type: 'array', items: { type: 'string' } },
           source: { type: 'string', enum: ['linkedin'] },
           import_date: { type: 'string' },
         },
@@ -176,60 +288,16 @@ const LINKEDIN_NORMALIZATION_SCHEMA = {
   },
 }
 
-function mockLinkedinProviderPayload(linkedinUrl: string): MockLinkedinProfile {
-  void linkedinUrl
-  return {
-    profile: {
-      full_name: 'Avery Johnson',
-      headline: 'Senior Product Engineer | React, TypeScript, Node.js',
-      location: 'Austin, TX',
-      summary:
-        'Product-minded full-stack engineer focused on user-centered web experiences and data-informed experimentation.',
-    },
-    skills: [
-      'React',
-      'React.js',
-      'TypeScript',
-      'Node.js',
-      'PostgreSQL',
-      'A/B Testing',
-      'Product Analytics',
-    ],
-    experiences: [
-      {
-        title: 'Senior Product Engineer',
-        company: 'Northstar Labs',
-        location: 'Austin, TX',
-        start_date: '2022-03-01',
-        end_date: null,
-        description:
-          'Led development of growth experiments, improved conversion funnel performance, and collaborated with design + PM teams.',
-        skills_used: ['React', 'TypeScript', 'A/B Testing', 'Product Analytics'],
-      },
-      {
-        title: 'Software Engineer',
-        company: 'Beacon Systems',
-        location: 'Remote',
-        start_date: '2019-01-01',
-        end_date: '2022-02-28',
-        description:
-          'Built internal tools and API integrations, improved observability, and optimized backend query performance.',
-        skills_used: ['Node.js', 'PostgreSQL', 'TypeScript'],
-      },
-    ],
-  }
-}
-
 function buildNormalizationPrompt(input: {
   linkedinUrl: string
   importDateIso: string
-  rawPayload: MockLinkedinProfile
+  rawPayload: LinkedInRawProfile
 }): string {
   return `
 You are a strict data normalization engine for SmartATS.
 
 Goal:
-Normalize LinkedIn-like profile data into preview payloads compatible with downstream insertion into:
+Normalize LinkedIn profile data into preview payloads compatible with downstream insertion into:
 - sats_user_skills
 - sats_skill_experiences
 
@@ -382,6 +450,8 @@ async function runNormalizationWithSchema(
   throw new Error(lastError)
 }
 
+// ── Request handler ───────────────────────────────────────────────────────────
+
 serve(async (req) => {
   const origin = req.headers.get('origin')
   const corsHeaders = buildCorsHeaders(origin)
@@ -410,6 +480,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+    const playwrightServiceUrl = Deno.env.get('PLAYWRIGHT_SERVICE_URL')
+    const playwrightApiKey = Deno.env.get('PLAYWRIGHT_API_KEY')
 
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new LinkedinIngestConfigError(
@@ -417,11 +489,16 @@ serve(async (req) => {
         'MISSING_SUPABASE_ENV'
       )
     }
-
     if (!openAIApiKey) {
       throw new LinkedinIngestConfigError(
         'Missing required secret OPENAI_API_KEY for linkedin-profile-ingest',
         'MISSING_OPENAI_API_KEY'
+      )
+    }
+    if (!playwrightServiceUrl || !playwrightApiKey) {
+      throw new LinkedinIngestConfigError(
+        'Missing required PLAYWRIGHT_SERVICE_URL or PLAYWRIGHT_API_KEY — deploy the Playwright scraper service first',
+        'MISSING_PLAYWRIGHT_ENV'
       )
     }
 
@@ -450,24 +527,22 @@ serve(async (req) => {
       })
     }
 
+    // Validate it's a real linkedin.com/in/ URL
     try {
       const parsed = new URL(linkedinUrl)
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
-        throw new Error('invalid protocol')
-      }
-    } catch (_error) {
-      return new Response(JSON.stringify({ success: false, error: 'linkedin_url must be a valid http(s) URL' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol')
+      if (!parsed.hostname.endsWith('linkedin.com')) throw new Error('not a linkedin.com URL')
+      if (!parsed.pathname.startsWith('/in/')) throw new Error('must be a /in/ profile URL')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'invalid URL'
+      return new Response(
+        JSON.stringify({ success: false, error: `linkedin_url is invalid: ${message}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
+      global: { headers: { Authorization: authHeader } },
     })
 
     const {
@@ -483,13 +558,15 @@ serve(async (req) => {
     }
 
     const importDateIso = new Date().toISOString()
-    const rawProviderPayload = mockLinkedinProviderPayload(linkedinUrl)
-    const prompt = buildNormalizationPrompt({
-      linkedinUrl,
-      importDateIso,
-      rawPayload: rawProviderPayload,
-    })
 
+    // ── Real LinkedIn scrape (replaces mock) ──────────────────────────────────
+    const rawProviderPayload = await fetchLinkedInProfile(
+      playwrightServiceUrl,
+      playwrightApiKey,
+      linkedinUrl
+    )
+
+    const prompt = buildNormalizationPrompt({ linkedinUrl, importDateIso, rawPayload: rawProviderPayload })
     const normalizationResult = await runNormalizationWithSchema(openAIApiKey, prompt)
 
     return new Response(
@@ -517,10 +594,18 @@ serve(async (req) => {
     const code =
       error instanceof LinkedinIngestConfigError
         ? error.code
-        : error instanceof Error
-          ? error.name
-          : 'UNKNOWN'
-    const statusCode = error instanceof LinkedinIngestConfigError ? 503 : 500
+        : error instanceof PlaywrightServiceError
+          ? error.code
+          : error instanceof Error
+            ? error.name
+            : 'UNKNOWN'
+
+    const statusCode =
+      error instanceof LinkedinIngestConfigError
+        ? 503
+        : error instanceof PlaywrightServiceError
+          ? error.httpStatus
+          : 500
 
     return new Response(
       JSON.stringify({
