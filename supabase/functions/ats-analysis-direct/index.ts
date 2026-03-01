@@ -7,58 +7,16 @@
  * 2026-02-21 03:13:40 | SDLC P2 data-governance hardening: prompt/raw LLM persistence disabled by default with explicit env flags.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-02-22 10:00:00 | P10 execution start: added schema-locked ATS response contract, deterministic rubric prompt, and retry-on-invalid-output validation.
+ * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, error-mapping, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts'
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
+import { getEnvNumber, getEnvBoolean } from '../_shared/env.ts'
+import { callLLM } from '../_shared/llmProvider.ts'
 
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
-
-function getEnvNumber(name: string, fallback: number): number {
-  const raw = Deno.env.get(name)
-  if (!raw) return fallback
-  const parsed = Number.parseFloat(raw)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-function getEnvBoolean(name: string, fallback: boolean): boolean {
-  const raw = Deno.env.get(name)
-  if (!raw) return fallback
-  const normalized = raw.trim().toLowerCase()
-  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true
-  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false
-  return fallback
-}
-
-const OPENAI_API_BASE_URL = (
-  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
-).replace(/\/$/, '')
-const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.1)
@@ -119,32 +77,6 @@ const ATS_JSON_SCHEMA = {
       },
     },
   },
-}
-
-const MODEL_PRICING_USD: Record<string, { input: number; output: number }> = {
-  // Cost per 1M tokens (USD) based on OpenAI pricing
-  'gpt-4o-mini': { input: 0.15, output: 0.6 },
-}
-
-MODEL_PRICING_USD[OPENAI_MODEL_ATS] = {
-  input: OPENAI_PRICE_INPUT_PER_MILLION,
-  output: OPENAI_PRICE_OUTPUT_PER_MILLION,
-}
-
-function calculateLLMCost(
-  tokenUsage: { prompt_tokens?: number; completion_tokens?: number } | null | undefined,
-  model: string
-): number | null {
-  if (!tokenUsage || !model || !MODEL_PRICING_USD[model]) return null
-
-  const pricing = MODEL_PRICING_USD[model]
-  const promptTokens = tokenUsage.prompt_tokens || 0
-  const completionTokens = tokenUsage.completion_tokens || 0
-
-  const inputCost = (promptTokens / 1_000_000) * pricing.input
-  const outputCost = (completionTokens / 1_000_000) * pricing.output
-
-  return Number((inputCost + outputCost).toFixed(6))
 }
 
 interface ATSAnalysisRequest {
@@ -255,8 +187,8 @@ serve(async (req) => {
     )
   }
 
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openAIApiKey) {
+  // Early validation — callLLM reads this from env, but we fail fast before queuing
+  if (!Deno.env.get('OPENAI_API_KEY')) {
     console.error('OpenAI API key not configured')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -303,7 +235,6 @@ serve(async (req) => {
       resume_id,
       jd_id,
       supabase,
-      openAIApiKey,
       supabaseUrl,
       supabaseServiceKey,
       request_id
@@ -325,7 +256,6 @@ async function processAnalysis(
   resume_id: string,
   jd_id: string,
   supabase: ReturnType<typeof createClient>,
-  openAIApiKey: string,
   supabaseUrl: string,
   supabaseServiceKey: string,
   requestId?: string
@@ -397,17 +327,43 @@ async function processAnalysis(
 
     console.log('[processAnalysis] Calling OpenAI API with prompt length:', prompt.length)
 
-    // Call OpenAI API with schema-locked output
-    const startTime = Date.now()
-    const llmResult = await runATSCompletionWithSchema(openAIApiKey, systemPrompt, prompt)
-    const latencyMs = Date.now() - startTime
-    const tokenUsage = llmResult.tokenUsage
-    const costEstimateUsd = calculateLLMCost(tokenUsage, llmResult.modelUsed)
+    // Call LLM via shared provider abstraction
+    const modelCandidates = [OPENAI_MODEL_ATS]
+    if (OPENAI_MODEL_ATS_FALLBACK && OPENAI_MODEL_ATS_FALLBACK !== OPENAI_MODEL_ATS) {
+      modelCandidates.push(OPENAI_MODEL_ATS_FALLBACK)
+    }
+
+    const llmResult = await callLLM({
+      systemPrompt,
+      userPrompt: prompt,
+      modelCandidates,
+      jsonSchema: ATS_JSON_SCHEMA,
+      schemaName: 'ats_analysis_response',
+      temperature: OPENAI_TEMPERATURE_ATS,
+      maxTokens: OPENAI_MAX_TOKENS_ATS,
+      retryAttempts: OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS,
+      taskLabel: 'ats-scoring',
+      pricingOverride: {
+        input: OPENAI_PRICE_INPUT_PER_MILLION,
+        output: OPENAI_PRICE_OUTPUT_PER_MILLION,
+      },
+    })
+
     const rawContent = llmResult.rawContent
+    const tokenUsage = {
+      prompt_tokens: llmResult.promptTokens,
+      completion_tokens: llmResult.completionTokens,
+      total_tokens: llmResult.promptTokens + llmResult.completionTokens,
+    }
+    const costEstimateUsd = llmResult.costEstimateUsd
 
     console.log('[processAnalysis] Raw OpenAI response:', rawContent)
     console.log('[processAnalysis] Token usage:', tokenUsage)
-    const analysisResult = llmResult.analysisResult
+
+    const analysisResult = parseATSResponseOrNull(rawContent)
+    if (!analysisResult) {
+      throw new Error('ATS response validation failed: model output did not match schema contract')
+    }
 
     const llmStorageFlags = {
       store_llm_prompts: STORE_LLM_PROMPTS,
@@ -423,7 +379,7 @@ async function processAnalysis(
       suggestions: analysisResult.recommendations.join('\n'),
       analysis_data: {
         processing_completed_at: new Date().toISOString(),
-        processing_time_ms: latencyMs,
+        processing_time_ms: llmResult.durationMs,
         token_usage: tokenUsage,
         model_used: llmResult.modelUsed,
         cost_estimate_usd: costEstimateUsd,
@@ -474,8 +430,8 @@ async function processAnalysis(
         resume_id,
         jd_id,
         ats_score: updateData.ats_score,
-        processing_time_ms: latencyMs,
-        duration_ms: latencyMs,
+        processing_time_ms: llmResult.durationMs,
+        duration_ms: llmResult.durationMs,
         model_used: llmResult.modelUsed,
         cost_estimate_usd: costEstimateUsd,
       },
@@ -663,113 +619,6 @@ function buildSectionAwareContext(
   const merged = [...highPriority, ...mediumPriority, ...lowPriority].join('\n')
   if (merged.length <= options.maxChars) return merged
   return `${merged.slice(0, options.maxChars)}...[compressed]`
-}
-
-async function runATSCompletionWithSchema(
-  openAIApiKey: string,
-  systemPrompt: string,
-  prompt: string
-): Promise<{
-  tokenUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null
-  rawContent: string
-  analysisResult: ATSAnalysisResult
-  retryAttemptsUsed: number
-  modelUsed: string
-}> {
-  let lastParseError: string | null = null
-  const modelCandidates = [OPENAI_MODEL_ATS]
-  if (OPENAI_MODEL_ATS_FALLBACK && OPENAI_MODEL_ATS_FALLBACK !== OPENAI_MODEL_ATS) {
-    modelCandidates.push(OPENAI_MODEL_ATS_FALLBACK)
-  }
-
-  for (const modelName of modelCandidates) {
-    for (let attempt = 0; attempt <= OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS; attempt++) {
-      const retryHint =
-        attempt === 0
-          ? ''
-          : '\n\nIMPORTANT: Your previous response was invalid. Return strict JSON that exactly matches schema keys and value types.'
-      const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: modelName,
-          temperature: OPENAI_TEMPERATURE_ATS,
-          max_tokens: OPENAI_MAX_TOKENS_ATS,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `${prompt}${retryHint}` },
-          ],
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'ats_analysis_response',
-              strict: true,
-              schema: ATS_JSON_SCHEMA,
-            },
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('OpenAI API error:', errorText)
-
-        if (response.status === 429 && errorText.includes('rate_limit_exceeded')) {
-          throw new Error('Request too large. Please try with a shorter resume or job description.')
-        }
-
-        if (response.status >= 500 || response.status === 429) {
-          lastParseError = `Provider error on ${modelName}: ${response.status}`
-          continue
-        }
-
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
-      }
-
-      const data = await response.json()
-      const tokenUsage = data.usage || {}
-      const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
-      const parsed = parseATSResponseOrNull(rawContent)
-      if (parsed) {
-        return {
-          tokenUsage,
-          rawContent,
-          analysisResult: parsed,
-          retryAttemptsUsed: attempt,
-          modelUsed: modelName,
-        }
-      }
-
-      lastParseError = `Model response did not satisfy ATS schema contract on ${modelName}.`
-    }
-  }
-
-  throw new Error(lastParseError || 'ATS response validation failed')
-}
-
-function parseATSResponse(rawResponse: string): ATSAnalysisResult {
-  const parsed = parseATSResponseOrNull(rawResponse)
-  if (parsed) return parsed
-
-  console.error('Failed to parse ATS response')
-  console.error('Raw response was:', rawResponse)
-  return {
-    match_score: 0.0,
-    keywords_found: [],
-    keywords_missing: [],
-    resume_warnings: ['Failed to parse analysis response'],
-    recommendations: ['Please retry the analysis'],
-    score_breakdown: {
-      skills_alignment: 0,
-      experience_relevance: 0,
-      domain_fit: 0,
-      format_quality: 0,
-    },
-    evidence: [],
-  }
 }
 
 function parseATSResponseOrNull(rawResponse: string): ATSAnalysisResult | null {

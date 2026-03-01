@@ -1,49 +1,15 @@
 /**
  * UPDATE LOG
  * 2026-02-25 01:10:00 | P15 Story 2: Added generate-upskill-roadmap edge function with schema-locked LLM output and DB persistence.
+ * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, mapProviderError, isSchemaUnsupportedError, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
+import { getEnvNumber } from '../_shared/env.ts'
+import { callLLM } from '../_shared/llmProvider.ts'
 
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
-
-function getEnvNumber(name: string, fallback: number): number {
-  const raw = Deno.env.get(name)
-  if (!raw) return fallback
-  const parsed = Number.parseFloat(raw)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-const OPENAI_API_BASE_URL = (
-  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
-).replace(/\/$/, '')
-const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
 const OPENAI_MODEL_UPSKILL_ROADMAP = Deno.env.get('OPENAI_MODEL_UPSKILL_ROADMAP') || 'gpt-4.1-mini'
 const OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK =
   Deno.env.get('OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK') || 'gpt-4o-mini'
@@ -144,61 +110,6 @@ async function logEvent(
   } catch (_error) {
     // Never block roadmap generation on telemetry failures.
   }
-}
-
-function mapProviderError(
-  status: number,
-  providerBody?: string
-): { safeMessage: string; errorType: string } {
-  if (status === 401 || status === 403) {
-    return {
-      safeMessage: 'AI provider key misconfigured. Please contact support.',
-      errorType: 'provider_auth_error',
-    }
-  }
-
-  if (status === 429) {
-    return {
-      safeMessage: 'AI provider rate limit reached. Please retry shortly.',
-      errorType: 'provider_rate_limited',
-    }
-  }
-
-  if (status >= 500) {
-    return {
-      safeMessage: 'AI provider temporarily unavailable. Please retry shortly.',
-      errorType: 'provider_unavailable',
-    }
-  }
-
-  if (status === 400) {
-    const normalizedBody = (providerBody || '').toLowerCase()
-    if (
-      normalizedBody.includes('response_format') ||
-      normalizedBody.includes('json_schema') ||
-      normalizedBody.includes('schema')
-    ) {
-      return {
-        safeMessage: 'AI model does not support required structured output settings.',
-        errorType: 'provider_model_capability_error',
-      }
-    }
-  }
-
-  return {
-    safeMessage: `AI provider request failed (${status}).`,
-    errorType: 'provider_request_error',
-  }
-}
-
-function isSchemaUnsupportedError(providerBody: string): boolean {
-  const normalizedBody = providerBody.toLowerCase()
-  return (
-    (normalizedBody.includes('response_format') || normalizedBody.includes('json_schema')) &&
-    (normalizedBody.includes('unsupported') ||
-      normalizedBody.includes('not support') ||
-      normalizedBody.includes('invalid'))
-  )
 }
 
 function normalizeMissingSkills(skills: unknown): string[] {
@@ -317,142 +228,6 @@ function ensureProjectMilestone(
   ]
 }
 
-async function runRoadmapCompletionWithSchema(
-  openAIApiKey: string,
-  prompt: string,
-  requestId?: string
-): Promise<{
-  milestones: GeneratedMilestone[]
-  tokenUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null
-  retryAttemptsUsed: number
-  modelUsed: string
-}> {
-  let lastError: string | null = null
-
-  const modelCandidates = [OPENAI_MODEL_UPSKILL_ROADMAP]
-  if (
-    OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK &&
-    OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK !== OPENAI_MODEL_UPSKILL_ROADMAP
-  ) {
-    modelCandidates.push(OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK)
-  }
-
-  for (const modelName of modelCandidates) {
-    for (let attempt = 0; attempt <= OPENAI_SCHEMA_RETRY_ATTEMPTS_UPSKILL_ROADMAP; attempt++) {
-      const retryHint =
-        attempt === 0
-          ? ''
-          : '\n\nIMPORTANT: previous response was invalid. Return strict JSON only with exact keys and valid enum values.'
-
-      const userContent = `${prompt}${retryHint}`
-      const buildBody = (useSchemaResponse: boolean) => ({
-        model: modelName,
-        temperature: OPENAI_TEMPERATURE_UPSKILL_ROADMAP,
-        max_tokens: OPENAI_MAX_TOKENS_UPSKILL_ROADMAP,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert learning roadmap planner. Always return strict JSON matching the requested schema.',
-          },
-          {
-            role: 'user',
-            content: userContent,
-          },
-        ],
-        ...(useSchemaResponse
-          ? {
-              response_format: {
-                type: 'json_schema',
-                json_schema: {
-                  name: 'upskill_roadmap_response',
-                  strict: true,
-                  schema: ROADMAP_JSON_SCHEMA,
-                },
-              },
-            }
-          : {}),
-      })
-
-      let response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildBody(true)),
-      })
-
-      if (!response.ok) {
-        let providerBody = await response.text()
-
-        if (response.status === 400 && isSchemaUnsupportedError(providerBody)) {
-          await logEvent(
-            'INFO',
-            'Schema output unsupported; retrying without schema mode',
-            { model: modelName, attempt },
-            requestId
-          )
-
-          response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(buildBody(false)),
-          })
-
-          if (!response.ok) {
-            providerBody = await response.text()
-          } else {
-            providerBody = ''
-          }
-        }
-
-        if (!response.ok) {
-          const { safeMessage, errorType } = mapProviderError(response.status, providerBody)
-
-          if (response.status >= 500 || response.status === 429) {
-            lastError = `Provider error on ${modelName}: ${response.status}`
-            continue
-          }
-
-          await logEvent(
-            'ERROR',
-            'OpenAI request failed',
-            {
-              status: response.status,
-              safe_message: safeMessage,
-              error_type: errorType,
-            },
-            requestId
-          )
-
-          throw new Error(safeMessage)
-        }
-      }
-
-      const data = await response.json()
-      const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
-      const milestones = parseRoadmapResponse(rawContent)
-
-      if (milestones.length > 0) {
-        return {
-          milestones,
-          tokenUsage: data.usage,
-          retryAttemptsUsed: attempt,
-          modelUsed: modelName,
-        }
-      }
-
-      lastError = `Roadmap output did not satisfy schema requirements on ${modelName}`
-    }
-  }
-
-  throw new Error(lastError || 'Failed to produce schema-valid upskilling roadmap')
-}
-
 serve(async (req) => {
   const origin = req.headers.get('origin')
   const corsHeaders = buildCorsHeaders(origin)
@@ -485,8 +260,7 @@ serve(async (req) => {
       )
     }
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openAIApiKey) {
+    if (!Deno.env.get('OPENAI_API_KEY')) {
       throw new RoadmapConfigError(
         'Missing required secret OPENAI_API_KEY for generate-upskill-roadmap',
         'MISSING_OPENAI_API_KEY'
@@ -586,13 +360,35 @@ serve(async (req) => {
       requestId
     )
 
-    const prompt = buildRoadmapPrompt({
-      targetRole,
-      missingSkills,
+    const prompt = buildRoadmapPrompt({ targetRole, missingSkills })
+
+    const modelCandidates = [OPENAI_MODEL_UPSKILL_ROADMAP]
+    if (
+      OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK &&
+      OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK !== OPENAI_MODEL_UPSKILL_ROADMAP
+    ) {
+      modelCandidates.push(OPENAI_MODEL_UPSKILL_ROADMAP_FALLBACK)
+    }
+
+    const llmResult = await callLLM({
+      systemPrompt:
+        'You are an expert learning roadmap planner. Always return strict JSON matching the requested schema.',
+      userPrompt: prompt,
+      modelCandidates,
+      jsonSchema: ROADMAP_JSON_SCHEMA,
+      schemaName: 'upskill_roadmap_response',
+      temperature: OPENAI_TEMPERATURE_UPSKILL_ROADMAP,
+      maxTokens: OPENAI_MAX_TOKENS_UPSKILL_ROADMAP,
+      retryAttempts: OPENAI_SCHEMA_RETRY_ATTEMPTS_UPSKILL_ROADMAP,
+      taskLabel: 'upskill-roadmap',
     })
 
-    const llmResult = await runRoadmapCompletionWithSchema(openAIApiKey, prompt, requestId)
-    const milestones = ensureProjectMilestone(llmResult.milestones, targetRole, missingSkills)
+    const parsedMilestones = parseRoadmapResponse(llmResult.rawContent)
+    if (parsedMilestones.length === 0) {
+      throw new Error('Failed to produce schema-valid upskilling roadmap')
+    }
+
+    const milestones = ensureProjectMilestone(parsedMilestones, targetRole, missingSkills)
 
     const { data: roadmapRow, error: roadmapError } = await userSupabase
       .from('sats_learning_roadmaps')
@@ -647,7 +443,10 @@ serve(async (req) => {
         milestones_count: rows.length,
         metadata: {
           model: llmResult.modelUsed,
-          token_usage: llmResult.tokenUsage,
+          token_usage: {
+            prompt_tokens: llmResult.promptTokens,
+            completion_tokens: llmResult.completionTokens,
+          },
         },
       }),
       {

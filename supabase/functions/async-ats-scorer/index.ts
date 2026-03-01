@@ -1,37 +1,29 @@
 /**
  * UPDATE LOG
  * 2026-02-24 19:40:00 | P14 Story 2: Added async scorer worker for staged jobs with skills-first baseline and ATS schema-compatible scoring output.
+ * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, and OpenAI fetch loop; replaced with _shared/ imports and callLLM(). Added cost tracking.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
+import { getEnvNumber } from '../_shared/env.ts'
+import { callLLM } from '../_shared/llmProvider.ts'
 
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-const OPENAI_API_BASE_URL = (
-  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
-).replace(/\/$/, '')
-const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
-const OPENAI_TEMPERATURE_ATS = Number.parseFloat(Deno.env.get('OPENAI_TEMPERATURE_ATS') || '0.1')
+const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.1)
 const OPENAI_MAX_TOKENS_ATS = Math.max(
   500,
-  Math.floor(Number.parseFloat(Deno.env.get('OPENAI_MAX_TOKENS_ATS') || '1800'))
+  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800))
 )
 const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
   0,
-  Math.min(2, Math.floor(Number.parseFloat(Deno.env.get('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS') || '1')))
+  Math.min(2, Math.floor(getEnvNumber('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS', 1)))
 )
 const SCORER_BATCH_JOBS = Math.max(
   1,
-  Math.min(50, Math.floor(Number.parseFloat(Deno.env.get('ASYNC_ATS_SCORER_BATCH_JOBS') || '8')))
+  Math.min(50, Math.floor(getEnvNumber('ASYNC_ATS_SCORER_BATCH_JOBS', 8)))
 )
 
 const ATS_JSON_SCHEMA = {
@@ -128,25 +120,6 @@ function parseThreshold(value: unknown, fallback: number): number {
     if (Number.isFinite(parsed)) return clampThreshold(parsed)
   }
   return clampThreshold(fallback)
-}
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
 }
 
 async function logEvent(
@@ -248,79 +221,56 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
+function parseATSResult(rawContent: string): ATSAnalysisResult {
+  const parsed = JSON.parse(rawContent)
+  return {
+    match_score: clamp01(Number(parsed?.match_score ?? 0)),
+    keywords_found: safeArray<string>(parsed?.keywords_found),
+    keywords_missing: safeArray<string>(parsed?.keywords_missing),
+    resume_warnings: safeArray<string>(parsed?.resume_warnings),
+    recommendations: safeArray<string>(parsed?.recommendations),
+    score_breakdown: {
+      skills_alignment: clamp01(Number(parsed?.score_breakdown?.skills_alignment ?? 0)),
+      experience_relevance: clamp01(Number(parsed?.score_breakdown?.experience_relevance ?? 0)),
+      domain_fit: clamp01(Number(parsed?.score_breakdown?.domain_fit ?? 0)),
+      format_quality: clamp01(Number(parsed?.score_breakdown?.format_quality ?? 0)),
+    },
+    evidence: safeArray<{
+      skill: string
+      jd_quote: string
+      resume_quote: string
+      reasoning: string
+    }>(parsed?.evidence),
+  }
+}
+
 async function runATSCompletionWithSchema(
-  apiKey: string,
   systemPrompt: string,
   userPrompt: string
-): Promise<ATSAnalysisResult> {
-  const models = [OPENAI_MODEL_ATS, OPENAI_MODEL_ATS_FALLBACK]
-  let lastErr: Error | null = null
-
-  for (const model of models) {
-    for (let attempt = 0; attempt <= OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS; attempt += 1) {
-      try {
-        const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            temperature: OPENAI_TEMPERATURE_ATS,
-            max_tokens: OPENAI_MAX_TOKENS_ATS,
-            response_format: {
-              type: 'json_schema',
-              json_schema: {
-                name: 'ats_analysis',
-                schema: ATS_JSON_SCHEMA,
-                strict: true,
-              },
-            },
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`OpenAI request failed (${response.status})`)
-        }
-
-        const payload = await response.json()
-        const content = payload?.choices?.[0]?.message?.content
-        if (!content || typeof content !== 'string') {
-          throw new Error('Missing model response content')
-        }
-
-        const parsed = JSON.parse(content)
-        return {
-          match_score: clamp01(Number(parsed?.match_score ?? 0)),
-          keywords_found: safeArray<string>(parsed?.keywords_found),
-          keywords_missing: safeArray<string>(parsed?.keywords_missing),
-          resume_warnings: safeArray<string>(parsed?.resume_warnings),
-          recommendations: safeArray<string>(parsed?.recommendations),
-          score_breakdown: {
-            skills_alignment: clamp01(Number(parsed?.score_breakdown?.skills_alignment ?? 0)),
-            experience_relevance: clamp01(Number(parsed?.score_breakdown?.experience_relevance ?? 0)),
-            domain_fit: clamp01(Number(parsed?.score_breakdown?.domain_fit ?? 0)),
-            format_quality: clamp01(Number(parsed?.score_breakdown?.format_quality ?? 0)),
-          },
-          evidence: safeArray<{
-            skill: string
-            jd_quote: string
-            resume_quote: string
-            reasoning: string
-          }>(parsed?.evidence),
-        }
-      } catch (error) {
-        lastErr = error instanceof Error ? error : new Error(String(error))
-      }
-    }
+): Promise<{ analysisResult: ATSAnalysisResult; modelUsed: string; costEstimateUsd: number | null }> {
+  const models = [OPENAI_MODEL_ATS]
+  if (OPENAI_MODEL_ATS_FALLBACK && OPENAI_MODEL_ATS_FALLBACK !== OPENAI_MODEL_ATS) {
+    models.push(OPENAI_MODEL_ATS_FALLBACK)
   }
 
-  throw lastErr || new Error('ATS completion failed')
+  const llmResult = await callLLM({
+    systemPrompt,
+    userPrompt,
+    modelCandidates: models,
+    jsonSchema: ATS_JSON_SCHEMA,
+    schemaName: 'ats_analysis',
+    temperature: OPENAI_TEMPERATURE_ATS,
+    maxTokens: OPENAI_MAX_TOKENS_ATS,
+    retryAttempts: OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS,
+    taskLabel: 'ats-scoring-batch',
+  })
+
+  const analysisResult = parseATSResult(llmResult.rawContent)
+  return {
+    analysisResult,
+    modelUsed: llmResult.modelUsed,
+    costEstimateUsd: llmResult.costEstimateUsd,
+  }
 }
 
 async function getLatestResumesByUser(
@@ -469,9 +419,8 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const openAiKey = Deno.env.get('OPENAI_API_KEY')
 
-  if (!supabaseUrl || !serviceKey || !openAiKey) {
+  if (!supabaseUrl || !serviceKey || !Deno.env.get('OPENAI_API_KEY')) {
     return new Response(JSON.stringify({ success: false, error: 'Missing required env configuration' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -600,7 +549,7 @@ serve(async (req) => {
           const systemPrompt =
             'You are a deterministic ATS evaluator. Return JSON matching schema exactly. Never invent candidate evidence.'
           const userPrompt = buildPrompt(jobName, job.description_raw, baseline.baselineText)
-          const result = await runATSCompletionWithSchema(openAiKey, systemPrompt, userPrompt)
+          const { analysisResult: result, modelUsed, costEstimateUsd } = await runATSCompletionWithSchema(systemPrompt, userPrompt)
 
           const { error: updateError } = await supabase
             .from('sats_analyses')
@@ -620,6 +569,8 @@ serve(async (req) => {
                 score_breakdown: result.score_breakdown,
                 evidence_count: result.evidence.length,
                 resume_warnings: result.resume_warnings,
+                model_used: modelUsed,
+                cost_estimate_usd: costEstimateUsd,
               },
             })
             .eq('id', analysisSeed.id)

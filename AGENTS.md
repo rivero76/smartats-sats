@@ -11,8 +11,9 @@ This file defines how Codex should work in this repository.
 
 1. Product and execution plans: `plans/`
 2. Architecture and decisions: `docs/architecture.md`, `docs/decisions/`
-3. Runbooks and operational procedures: `docs/runbooks/`
-4. Human onboarding and commands: `README.md`
+3. Coding conventions: `docs/conventions/coding-conventions.md`
+4. Runbooks and operational procedures: `docs/runbooks/`
+5. Human onboarding and commands: `README.md`
 
 ## Codex Responsibilities (Primary)
 

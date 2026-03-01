@@ -1,7 +1,8 @@
 # ADR-0002: LLM Provider Abstraction Layer
 
-**Status:** Approved
+**Status:** Implemented
 **Date:** 2026-03-01
+**Implemented:** 2026-03-01
 **Author:** Architecture Review (Claude Code)
 **Linked Feature:** P16 Career Fit & Live Job Discovery (Story 0)
 

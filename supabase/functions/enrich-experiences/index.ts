@@ -5,48 +5,15 @@
  * 2026-02-21 03:07:10 | P1 config hardening: parameterized AI provider endpoint, model, and temperature via environment variables.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-02-22 10:00:00 | P10 execution start: added schema-locked enrichment contract, grounded prompt constraints, and retry-on-invalid-output validation.
+ * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, mapProviderError, isSchemaUnsupportedError, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
+import { getEnvNumber } from '../_shared/env.ts'
+import { callLLM } from '../_shared/llmProvider.ts'
 
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
-
-function getEnvNumber(name: string, fallback: number): number {
-  const raw = Deno.env.get(name)
-  if (!raw) return fallback
-  const parsed = Number.parseFloat(raw)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-const OPENAI_API_BASE_URL = (
-  Deno.env.get('OPENAI_API_BASE_URL') || 'https://api.openai.com/v1'
-).replace(/\/$/, '')
-const OPENAI_CHAT_COMPLETIONS_URL = `${OPENAI_API_BASE_URL}/chat/completions`
 const OPENAI_MODEL_ENRICH = Deno.env.get('OPENAI_MODEL_ENRICH') || 'gpt-4.1-mini'
 const OPENAI_MODEL_ENRICH_FALLBACK = Deno.env.get('OPENAI_MODEL_ENRICH_FALLBACK') || 'gpt-4o-mini'
 const OPENAI_TEMPERATURE_ENRICH = getEnvNumber('OPENAI_TEMPERATURE_ENRICH', 0.25)
@@ -123,72 +90,6 @@ class EnrichmentConfigError extends Error {
   }
 }
 
-function mapProviderError(
-  status: number,
-  providerBody?: string
-): { safeMessage: string; errorType: string } {
-  if (status === 401 || status === 403) {
-    return {
-      safeMessage: 'AI provider key misconfigured. Please contact support.',
-      errorType: 'provider_auth_error',
-    }
-  }
-
-  if (status === 429) {
-    return {
-      safeMessage: 'AI provider rate limit reached. Please retry shortly.',
-      errorType: 'provider_rate_limited',
-    }
-  }
-
-  if (status >= 500) {
-    return {
-      safeMessage: 'AI provider temporarily unavailable. Please retry shortly.',
-      errorType: 'provider_unavailable',
-    }
-  }
-
-  if (status === 400) {
-    const normalizedBody = (providerBody || '').toLowerCase()
-    if (
-      normalizedBody.includes('response_format') ||
-      normalizedBody.includes('json_schema') ||
-      normalizedBody.includes('schema')
-    ) {
-      return {
-        safeMessage: 'AI model does not support required structured output settings.',
-        errorType: 'provider_model_capability_error',
-      }
-    }
-    if (
-      normalizedBody.includes('model') &&
-      (normalizedBody.includes('not found') ||
-        normalizedBody.includes('does not exist') ||
-        normalizedBody.includes('invalid'))
-    ) {
-      return {
-        safeMessage: 'AI model configuration is invalid. Check OPENAI_MODEL_ENRICH settings.',
-        errorType: 'provider_model_config_error',
-      }
-    }
-  }
-
-  return {
-    safeMessage: `AI provider request failed (${status}).`,
-    errorType: 'provider_request_error',
-  }
-}
-
-function isSchemaUnsupportedError(providerBody: string): boolean {
-  const normalizedBody = providerBody.toLowerCase()
-  return (
-    (normalizedBody.includes('response_format') || normalizedBody.includes('json_schema')) &&
-    (normalizedBody.includes('unsupported') ||
-      normalizedBody.includes('not support') ||
-      normalizedBody.includes('invalid'))
-  )
-}
-
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const functionsBaseUrl =
@@ -255,8 +156,7 @@ serve(async (req) => {
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openAIApiKey) {
+    if (!Deno.env.get('OPENAI_API_KEY')) {
       throw new EnrichmentConfigError(
         'Missing required secret OPENAI_API_KEY for enrich-experiences',
         'MISSING_OPENAI_API_KEY'
@@ -326,8 +226,28 @@ serve(async (req) => {
 
     const systemPrompt =
       'You are an expert resume enrichment assistant. Return JSON that exactly matches schema. Never fabricate evidence: every suggestion must cite a supporting phrase from the resume.'
-    const llmResult = await runEnrichmentCompletionWithSchema(openAIApiKey, systemPrompt, prompt)
-    const suggestions = llmResult.suggestions
+
+    const modelCandidates = [OPENAI_MODEL_ENRICH]
+    if (OPENAI_MODEL_ENRICH_FALLBACK && OPENAI_MODEL_ENRICH_FALLBACK !== OPENAI_MODEL_ENRICH) {
+      modelCandidates.push(OPENAI_MODEL_ENRICH_FALLBACK)
+    }
+
+    const llmResult = await callLLM({
+      systemPrompt,
+      userPrompt: prompt,
+      modelCandidates,
+      jsonSchema: ENRICHMENT_JSON_SCHEMA,
+      schemaName: 'enrichment_response',
+      temperature: OPENAI_TEMPERATURE_ENRICH,
+      maxTokens: OPENAI_MAX_TOKENS_ENRICH,
+      retryAttempts: OPENAI_SCHEMA_RETRY_ATTEMPTS_ENRICH,
+      taskLabel: 'enrichment',
+    })
+
+    const suggestions = parseEnrichmentResponse(llmResult.rawContent)
+    if (suggestions.length === 0) {
+      throw new Error('Failed to produce schema-valid enrichment suggestions')
+    }
 
     await logEvent(
       'INFO',
@@ -347,7 +267,10 @@ serve(async (req) => {
         suggestions,
         metadata: {
           model: llmResult.modelUsed,
-          token_usage: llmResult.tokenUsage,
+          token_usage: {
+            prompt_tokens: llmResult.promptTokens,
+            completion_tokens: llmResult.completionTokens,
+          },
         },
       }),
       {
@@ -575,126 +498,6 @@ function buildSectionAwareContext(
   const merged = [...highPriority, ...mediumPriority, ...lowPriority].join('\n')
   if (merged.length <= options.maxChars) return merged
   return `${merged.slice(0, options.maxChars)}...[compressed]`
-}
-
-async function runEnrichmentCompletionWithSchema(
-  openAIApiKey: string,
-  systemPrompt: string,
-  prompt: string
-): Promise<{
-  suggestions: EnrichmentSuggestion[]
-  tokenUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null
-  retryAttemptsUsed: number
-  modelUsed: string
-}> {
-  let lastError: string | null = null
-  const modelCandidates = [OPENAI_MODEL_ENRICH]
-  if (OPENAI_MODEL_ENRICH_FALLBACK && OPENAI_MODEL_ENRICH_FALLBACK !== OPENAI_MODEL_ENRICH) {
-    modelCandidates.push(OPENAI_MODEL_ENRICH_FALLBACK)
-  }
-
-  for (const modelName of modelCandidates) {
-    for (let attempt = 0; attempt <= OPENAI_SCHEMA_RETRY_ATTEMPTS_ENRICH; attempt++) {
-      const retryHint =
-        attempt === 0
-          ? ''
-          : '\n\nIMPORTANT: previous response was invalid. Return strict JSON only with exact keys and valid enum values.'
-      const userContent = `${prompt}${retryHint}`
-      const buildBody = (useSchemaResponse: boolean) => ({
-        model: modelName,
-        temperature: OPENAI_TEMPERATURE_ENRICH,
-        max_tokens: OPENAI_MAX_TOKENS_ENRICH,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: userContent,
-          },
-        ],
-        ...(useSchemaResponse
-          ? {
-              response_format: {
-                type: 'json_schema',
-                json_schema: {
-                  name: 'enrichment_response',
-                  strict: true,
-                  schema: ENRICHMENT_JSON_SCHEMA,
-                },
-              },
-            }
-          : {}),
-      })
-
-      let response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildBody(true)),
-      })
-
-      if (!response.ok) {
-        let providerBody = await response.text()
-
-        if (response.status === 400 && isSchemaUnsupportedError(providerBody)) {
-          await logEvent('INFO', 'Schema output unsupported; retrying without schema mode', {
-            model: modelName,
-            attempt,
-          })
-          response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(buildBody(false)),
-          })
-          if (!response.ok) {
-            providerBody = await response.text()
-          } else {
-            providerBody = ''
-          }
-        }
-
-        if (!response.ok) {
-          const { safeMessage, errorType } = mapProviderError(response.status, providerBody)
-          console.error('OpenAI API error status:', response.status)
-
-          if (response.status >= 500 || response.status === 429) {
-            lastError = `Provider error on ${modelName}: ${response.status}`
-            continue
-          }
-
-          await logEvent('ERROR', 'OpenAI request failed', {
-            status: response.status,
-            safe_message: safeMessage,
-            error_type: errorType,
-          })
-          throw new Error(safeMessage)
-        }
-      }
-
-      const data = await response.json()
-      const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
-      const suggestions = parseEnrichmentResponse(rawContent)
-      if (suggestions.length > 0) {
-        return {
-          suggestions,
-          tokenUsage: data.usage,
-          retryAttemptsUsed: attempt,
-          modelUsed: modelName,
-        }
-      }
-
-      lastError = `Enrichment output did not satisfy schema/evidence requirements on ${modelName}`
-    }
-  }
-
-  throw new Error(lastError || 'Failed to produce schema-valid enrichment suggestions')
 }
 
 function parseEnrichmentResponse(raw: string): EnrichmentSuggestion[] {
