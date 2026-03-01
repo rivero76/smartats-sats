@@ -1,6 +1,6 @@
 # Product Vision
 
-**Last Updated:** 2026-02-25
+**Last Updated:** 2026-03-01
 **Source of Truth:** Current codebase implementation (`src/`, `supabase/`, `docs/specs/`)
 **Roadmap File:** `docs/decisions/product-roadmap.md`
 
@@ -24,12 +24,12 @@ Current positioning:
 6. Dashboard + ATS analytics views.
 7. Centralized observability/logging with correlation IDs, retention automation, admin controls.
 8. In-app Help Hub (`/help`) with searchable feature guides sourced from `helpContent`.
-9. Upskilling roadmap backend foundation: persisted roadmap/milestone schema + `generate-upskill-roadmap` edge function.
+9. Upskilling roadmap: persisted `sats_learning_roadmaps`/`sats_roadmap_milestones` schema + `generate-upskill-roadmap` edge function + `/roadmaps` timeline UI with milestone completion toggles and progress bar (release-blocked on E2E validation).
 
 ## 3) Future Features (Not Yet Fully Implemented)
-1. Phase 1 (Next 1-2 weeks): upgrade LinkedIn ingestion from URL storage to structured profile parsing into `sats_user_skills` and `sats_skill_experiences`.
-2. Phase 2 (Next 3-4 weeks): build an asynchronous proactive search engine that finds jobs externally and alerts users on matches above 60%.
-3. Phase 3 (In progress, next 4-6 weeks): complete roadmap UX/progress tracking on top of the deployed roadmap generation backend.
+1. Phase 1 (In Progress — P13): LinkedIn ingestion backend delivered (Stories 1-2: `linkedin-profile-ingest` edge function + `linkedinImportMerge` frontend utility); HITL Review UI (Story 3) is the remaining implementation gap; full flow is release-blocked on E2E validation.
+2. Phase 2 (In Progress — P14): asynchronous proactive search engine (background job fetcher, async ATS scorer, threshold-notification engine, Opportunities UI) implemented; release-blocked on E2E validation for all four stories.
+3. Phase 3 (In Progress — P15): `/roadmaps` timeline UI with milestone completion and progress tracking delivered (Stories 1-3); release-blocked on E2E validation.
 4. LLM career questionnaire and goal-based pathing.
 5. P11 multi-channel job description ETL rollout (CSV/XLS, PDF/DOC bulk, extension, email, feeds).
 6. P12 globalization, enterprise cloud architecture, and large-scale readiness.
@@ -59,9 +59,9 @@ The following items are visible in product UI but intentionally not fully implem
 | Proactive job search/scrape for >60% match | Auto-Appliers focus volume; others generally not threshold-driven this way | Not Supported (threshold only for reporting UI) | `src/pages/ATSAnalyses.tsx` (stats bucket under 60), no autonomous job crawler/search pipeline |
 | Automatic job application submission | Auto-Appliers core strength | Not Supported | No apply pipeline found in `src/` or `supabase/functions/` |
 | Job ingestion from URL | Some competitors support browser workflows | Partial (single URL fetch only, no crawler recursion) | `supabase/functions/job-description-url-ingest/index.ts`, `src/components/JobDescriptionModal.tsx` |
-| LinkedIn data ingestion | Some tools support profile imports/extensions | Partial (LinkedIn URL field + extraction heuristics from pasted text) | `src/pages/Settings.tsx`, `src/hooks/useProfile.ts`, `src/utils/contentExtraction.ts` |
+| LinkedIn data ingestion | Some tools support profile imports/extensions | In Progress (P13 Stories 1-2 done: `linkedin-profile-ingest` edge function + `linkedinImportMerge` frontend utility; HITL Review UI pending) | `supabase/functions/linkedin-profile-ingest/index.ts`, `src/utils/linkedinImportMerge.ts`, `src/hooks/useLinkedinImportPreparation.ts` |
 | Skill-gap analysis | ATS Matchers basic keyword gap | Partial (missing skills surfaced, no sequenced roadmap) | `sats_analyses.missing_skills` via `src/hooks/useATSAnalyses.ts` and ATS edge function |
-| Upskilling roadmap engine | Career Pathing tools stronger here | In Progress (backend live, UI pending) | `supabase/functions/generate-upskill-roadmap/index.ts`, `sats_learning_roadmaps`, `sats_roadmap_milestones` |
+| Upskilling roadmap engine | Career Pathing tools stronger here | In Progress (schema + edge function + `/roadmaps` UI delivered; release-blocked on E2E validation) | `supabase/functions/generate-upskill-roadmap/index.ts`, `sats_learning_roadmaps`, `sats_roadmap_milestones`, `src/pages/UpskillingRoadmaps.tsx` |
 | AI experience rewriting/enrichment | Mixed across competitor categories | Supported | `supabase/functions/enrich-experiences/index.ts`, `src/hooks/useEnrichedExperiences.ts`, `src/components/EnrichExperienceModal.tsx` |
 | Admin observability + governance | Usually internal-only in competitors | Supported | `supabase/functions/centralized-logging/index.ts`, `src/pages/AdminDashboard.tsx`, `src/components/admin/ObservabilityPanel.tsx` |
 
@@ -80,24 +80,24 @@ Needed:
 
 ### Gap B: LinkedIn + Resume Unified Candidate Graph
 Current state:
-- LinkedIn URL is stored on profile.
-- Text extraction has LinkedIn-oriented parsing heuristics, but no OAuth/profile sync pipeline.
+- LinkedIn URL stored on profile.
+- P13 Stories 1-2 delivered: `linkedin-profile-ingest` edge function (preview-only, schema-locked normalization) and `linkedinImportMerge` frontend utility (canonical + fuzzy skill dedupe, experience fingerprint dedupe, provenance tagging).
+- Remaining gap: HITL Review UI (Story 3 — `ProfileImportReviewModal.tsx` and Settings import button) not yet implemented.
 
 Needed:
-1. LinkedIn import mechanism (or extension-assisted structured import).
-2. Identity resolution and merge rules into resume + skills entities.
-3. Profile freshness/versioning with consent tracking.
+1. P13 Story 3: HITL Review UI to allow user approval before DB writes.
+2. Profile freshness/versioning with consent tracking (future).
+3. E2E validation across Stories 1-3 before release.
 
 ### Gap C: Skill-Gap to Upskilling Roadmap
 Current state:
-- Missing skills are generated per ATS analysis.
-- Enrichment suggestions improve bullet quality but do not generate a sequenced learning plan.
+- P15 Stories 1-3 delivered: `sats_learning_roadmaps`/`sats_roadmap_milestones` schema, `generate-upskill-roadmap` edge function (schema-locked LLM output, mandatory portfolio milestone), and `/roadmaps` timeline UI with completion toggles and progress bar.
+- Full flow is release-blocked on E2E validation (migration application, tenant-isolation checks, function invocation, UI persistence).
 
 Needed:
-1. Skill taxonomy normalization and proficiency levels.
-2. Gap prioritization by market demand and role target.
-3. Time-phased roadmap generation (30/60/90 day plans, checkpoints, outcomes).
-4. Progress tracking model and recommendation feedback loop.
+1. E2E validation pass to close `docs/releases/UNTESTED_IMPLEMENTATIONS.md` blockers before rollout.
+2. Skill taxonomy normalization and proficiency levels (future enhancement).
+3. Time-phased plans (30/60/90 day) and recommendation feedback loop (future enhancement).
 
 ### Gap D: LLM Questionnaire + Career Pathing
 Current state:

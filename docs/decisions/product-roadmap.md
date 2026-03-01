@@ -1,6 +1,6 @@
 # Product Roadmap and Change Tracking
 
-**Last Updated:** 2026-02-25
+**Last Updated:** 2026-03-01
 **Vision File:** `docs/decisions/product-vision.md`
 **Execution Source:** `plans/product-improvements.md`
 
@@ -21,37 +21,36 @@
 | P10 Prompt Reliability + Model Quality | Completed | Done | Schema-locked outputs, fallback/retry controls, eval gate tooling delivered. |
 | P11 JD ETL + Market Intelligence | In Progress | Highest | Text/URL foundation is in place; broader ingestion + analytics pipeline remains. |
 | P12 Multi-language + Cloud + Enterprise Scale | Planned | High | Cloud migration/scaling and enterprise architecture readiness. |
-| P13 LinkedIn Ingestion Loop Upgrade | Planned | Highest | Move from LinkedIn URL storage to parsed profile ingestion into skills/experience tables. |
+| P13 LinkedIn Ingestion Loop Upgrade | In Progress | Highest | Stories 1-2 delivered (edge function + merge/dedupe utility); Story 3 HITL Review UI pending; full flow release-blocked on E2E validation. |
 | P14 Proactive Search Engine | In Progress | Highest | Core async pipeline and opportunities UI foundation delivered; end-to-end rollout hardening remains. |
 | P15 Upskilling Roadmap Engine | In Progress | High | Stories 1-3 are implemented (schema, generation, roadmap UI/progress); release validation remains before rollout. |
 
 ## 2) Strategic Assessment (From Technical Audit)
 1. Current strength: advanced trust-first ATS matcher with evidence-grounded AI outputs.
 2. Current gap: still mostly "bring your own job" workflow; 60% threshold is not yet an automated trigger.
-3. Current onboarding gap: LinkedIn flow stores URL but does not yet ingest structured profile data.
+3. Current onboarding gap: LinkedIn ingestion backend (Stories 1-2) is implemented; HITL Review UI (Story 3) is the remaining delivery gap before the full flow is release-ready.
 4. Strategic direction: preserve trust layer and add proactive orchestration in the next sprint sequence.
 
 ## 3) Now, Next, Later
 
 ### Now
-1. P15 release hardening: complete authenticated E2E validation for `generate-upskill-roadmap` and milestone persistence paths.
-2. P13 delivery (1-2 weeks): LinkedIn structured ingestion into `sats_user_skills` and `sats_skill_experiences`.
-3. P14 rollout completion: close remaining proactive pipeline release blockers in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
+1. P13 Story 3: implement HITL Review UI (`ProfileImportReviewModal.tsx` + Settings import button) to complete the LinkedIn ingestion flow.
+2. P15 release hardening: close E2E validation blockers for `generate-upskill-roadmap`, milestone persistence, and `/roadmaps` UI in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
+3. P14 rollout completion: close remaining proactive pipeline release blockers (cron execution, scoring pipeline, threshold-notification, Opportunities UI).
 
 ### Next
-1. P14 rollout completion: finalize source policy, dedupe, and threshold-notification reliability checks.
-2. P8.1 security execution: complete post-migration cross-tenant negative tests and periodic RLS drift checks.
-3. Expand Help Center content coverage to all active user flows and map it into release DoD checks.
+1. P8.1 security execution: complete post-migration cross-tenant negative tests and periodic RLS drift checks.
+2. Expand Help Center content coverage to all active user flows and map it into release DoD checks.
+3. Close lingering UX blockers: enrichment modal scroll bug (`BUG-2026-02-24-ENRICH-SCROLL`) and ATS auto-refresh.
 
 ### Later
-1. P15 delivery (4-6 weeks): generate actionable upskilling plans from gap outputs.
-2. Continue P9, P8, and P12 platform programs after orchestration core is in motion.
+1. Continue P9, P8, and P12 platform programs after orchestration core is in motion.
 
 ## 4) Feature Lifecycle Register
 | Feature | Status (Idea/Planned/In Progress/Live) | Category (Core/AI/Data/Platform) | User Value | Primary Tech Owner | Dependencies | Target Release |
 |---|---|---|---|---|---|---|
 | Proactive >60% Job Discovery | Planned | Core + AI + Data | Show only high-fit opportunities | TBD | Async job collector + ATS scoring queue + notifications | 3-4 weeks |
-| LinkedIn Structured Ingestion | Planned | Core + Data | Faster onboarding, richer profile baseline | TBD | Profile parser + merge engine + consent controls | 1-2 weeks |
+| LinkedIn Structured Ingestion | In Progress | Core + Data | Faster onboarding, richer profile baseline | TBD | Stories 1-2 done (edge function + merge utility); Story 3 HITL UI pending; release-blocked on E2E validation | Story 3 next |
 | Skill-Gap Roadmap | In Progress | AI | Actionable upskilling plan from ATS gaps with persisted milestones and in-app progress tracking | TBD | Release validation for schema/function/UI flows | 4-6 weeks |
 | In-App Help Hub (`/help`) | Live | Core UX | Centralized discoverability of workflows, troubleshooting, and feature guidance | TBD | `helpContent` coverage + page-level docs hygiene | Current |
 | LLM Career Questionnaire | Planned | AI/Product | Personalize role pathing | TBD | Questionnaire schema + inference | TBD |
@@ -77,6 +76,7 @@
 ## 5) Change Log (Roadmap-Level)
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
+| 2026-03-01 | v0.9 | Delivery Sync | Updated P13 status to In Progress (Stories 1-2 done, Story 3 pending); removed stale P15 "Later" entry (Stories 1-3 implemented, release-blocked); updated Now/Next/Later; corrected strategic assessment onboarding gap note; synced feature register | Align roadmap with implemented code and release blocker state | TPM/Architecture | TBD |
 | 2026-02-25 | v0.7 | Scope Clarification | Added formal `UI Placeholder Features` tracking section and feature register entry for visible-but-not-implemented controls across Dashboard/Settings/Admin | Prevent roadmap drift between visible UI affordances and actual delivery status | TPM/Architecture | TBD |
 | 2026-02-25 | v0.8 | Delivery Sync | Updated P15 status summary to reflect Story 3 UI completion (`/roadmaps` timeline + milestone toggle + progress bar) while keeping release validation as remaining gate | Keep roadmap state aligned with implemented code and release blocker policy | TPM/Architecture | TBD |
 | 2026-02-24 | v0.5 | Security Priority | Added P8.1 RLS tenant-isolation hardening as next execution priority, linked to migration bundle rollout and verification gates | Close horizontal privilege-escalation risk before broader enterprise rollout | TPM/Architecture | TBD |
