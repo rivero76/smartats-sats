@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-25 17:35:00 | P13 Story 2: Added LinkedIn import dedupe/merge utility with fuzzy skill matching and provenance metadata tagging.
  * 2026-03-01 17:08:32 | Fix experience fingerprint asymmetry: removed companyName from proposed-experience fingerprint so both sides use the same fields (canonical skill + job title + description). sats_skill_experiences has no company_name text column so it cannot be included symmetrically.
+ * 2026-03-01 00:00:00 | P13 Story 3: Exported canonicalizeSkillName for use in ProfileImportReviewModal save flow.
  */
 
 export interface LinkedinPreviewSkill {
@@ -126,7 +127,7 @@ function normalizeText(value: string): string {
     .replace(/\s+/g, ' ')
 }
 
-function canonicalizeSkillName(value: string): string {
+export function canonicalizeSkillName(value: string): string {
   const cleaned = normalizeText(value).replace(/\s/g, '')
   return SKILL_SYNONYMS[cleaned] || cleaned
 }

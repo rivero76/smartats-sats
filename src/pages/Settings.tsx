@@ -1,3 +1,4 @@
+// Updated: 2026-03-01 00:00:00 - P13 Story 3: Wired LinkedIn import handler, ProfileImportReviewModal, and Import Profile button into Settings page.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,10 +31,15 @@ import { z } from 'zod'
 import { useProfile, type ProfileFormData } from '@/hooks/useProfile'
 import { useAccountDeletion } from '@/hooks/useAccountDeletion'
 import { DeleteAccountModal } from '@/components/DeleteAccountModal'
+import { ProfileImportReviewModal } from '@/components/ProfileImportReviewModal'
 import { useEffect, useState } from 'react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
 import { getHelpContent } from '@/data/helpContent'
+import { usePrepareLinkedinImport } from '@/hooks/useLinkedinImportPreparation'
+import { LinkedinImportMergeResult } from '@/utils/linkedinImportMerge'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -63,6 +69,12 @@ const Settings = () => {
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('profileSettings')
 
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [isInvoking, setIsInvoking] = useState(false)
+  const [mergeResult, setMergeResult] = useState<LinkedinImportMergeResult | null>(null)
+  const [importDate, setImportDate] = useState('')
+  const prepareImport = usePrepareLinkedinImport()
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -89,6 +101,38 @@ const Settings = () => {
   const onSubmit = async (data: ProfileFormData) => {
     console.log('Settings: Form submitted with data:', data)
     await saveProfile(data)
+  }
+
+  const { toast } = useToast()
+
+  const handleImportProfile = async () => {
+    const linkedinUrl = form.getValues('linkedin_url')
+    if (!linkedinUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'LinkedIn URL required',
+        description: 'Enter a LinkedIn URL before importing.',
+      })
+      return
+    }
+    setIsInvoking(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('linkedin-profile-ingest', {
+        body: { linkedin_url: linkedinUrl },
+      })
+      if (error) throw new Error(error.message)
+      if (!data?.success) throw new Error(data?.error || 'Ingestion failed')
+      const now = new Date().toISOString()
+      const result = await prepareImport.mutateAsync({ preview: data, importDate: now })
+      setMergeResult(result)
+      setImportDate(now)
+      setShowImportModal(true)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Please try again.'
+      toast({ variant: 'destructive', title: 'Import failed', description: msg })
+    } finally {
+      setIsInvoking(false)
+    }
   }
 
   return (
@@ -221,9 +265,24 @@ const Settings = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>LinkedIn URL (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            isInvoking || prepareImport.isPending || !form.watch('linkedin_url')
+                          }
+                          onClick={handleImportProfile}
+                        >
+                          {(isInvoking || prepareImport.isPending) && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Import Profile
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -458,6 +517,22 @@ const Settings = () => {
           // User will be signed out automatically by the edge function
         }}
       />
+
+      {mergeResult && (
+        <ProfileImportReviewModal
+          isOpen={showImportModal}
+          onClose={() => {
+            setShowImportModal(false)
+            setMergeResult(null)
+          }}
+          onSuccess={() => {
+            setShowImportModal(false)
+            setMergeResult(null)
+          }}
+          mergeResult={mergeResult}
+          importDate={importDate}
+        />
+      )}
 
       {/* Help Modal */}
       {helpContent && (
