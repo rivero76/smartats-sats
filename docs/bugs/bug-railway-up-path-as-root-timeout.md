@@ -1,7 +1,9 @@
 # BUG: `railway up --path-as-root` times out due to node_modules upload
 
 **Date:** 2026-03-02
+**Last updated:** 2026-03-03
 **Branch:** p14
+**Commit:** 196615d (pushed to origin/p14)
 **Severity:** High (blocks all Railway redeployment of the LinkedIn scraper)
 **Component:** `scripts/playwright-linkedin/` — Railway deploy pipeline
 **Reporter:** Claude Code (automated diagnosis during P14 plan execution)
@@ -147,16 +149,18 @@ Previous failure: `page.evaluate: Execution context was destroyed` — this is f
 
 ---
 
-## Files Changed in This Session (safe to keep)
+## Files Changed and Committed (commit 196615d, pushed to origin/p14)
 
-| File | Change | Status |
-|------|--------|--------|
-| `scripts/playwright-linkedin/src/scraper.ts` | Replaced `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` | Committed to branch `p14`, NOT yet deployed |
+| File | Change | Deploy status |
+|------|--------|---------------|
+| `scripts/playwright-linkedin/src/scraper.ts` | Replaced `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` × 8; added `waitForLoadState('networkidle')` after both `goto()` calls; wrapped `scrollPage()` call sites in `.catch()` | Pushed — NOT yet live on Railway |
+| `scripts/playwright-linkedin/tsconfig.json` | Added `DOM` to `lib` so browser globals in `page.evaluate()` type-check | Pushed — NOT yet live on Railway |
+| `docs/bugs/bug-railway-up-path-as-root-timeout.md` | This file — created to document the deploy failure | N/A |
 
 ---
 
 ## Files Still Needed
 
-| File | Action |
-|------|--------|
-| `scripts/playwright-linkedin/.railwayignore` | **Create** with `node_modules/`, `dist/`, `*.log`, `.env` |
+| File | Action | Reason |
+|------|--------|--------|
+| `scripts/playwright-linkedin/.railwayignore` | **Create** with `node_modules/`, `dist/`, `*.log`, `.env` | Required for Railway CLI to exclude `node_modules/` when using `--path-as-root` on a subdirectory |
