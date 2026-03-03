@@ -1,4 +1,6 @@
 // Created: 2026-03-01 00:00:00 - Playwright LinkedIn profile scraper with stealth, session management, and robust extraction.
+// Updated: 2026-03-02 00:00:00 - Wait for networkidle before scroll/extract to survive LinkedIn client-side redirects; wrap scrollPage in try/catch.
+// Updated: 2026-03-02 00:00:00 - Replace scrollPage page.evaluate loop with keyboard PageDown to avoid execution context destruction on SPA navigations.
 
 import { chromium, Browser, BrowserContext, Page } from 'playwright'
 import { loadCookies, saveCookies, StoredCookie } from './session'
@@ -36,21 +38,10 @@ function randomDelay(minMs: number, maxMs: number): Promise<void> {
 }
 
 async function scrollPage(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    await new Promise<void>((resolve) => {
-      let total = 0
-      const distance = 400
-      const delay = 150
-      const timer = setInterval(() => {
-        window.scrollBy(0, distance)
-        total += distance
-        if (total >= document.body.scrollHeight) {
-          clearInterval(timer)
-          resolve()
-        }
-      }, delay)
-    })
-  })
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press('PageDown')
+    await page.waitForTimeout(200)
+  }
   await randomDelay(800, 1200)
 }
 
@@ -304,6 +295,8 @@ export class LinkedInScraper {
     const page = await this.context.newPage()
     try {
       await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+      // Wait for LinkedIn's client-side JS to finish any post-load redirects
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
       await randomDelay(800, 1500)
 
       // Detect session expiry / not logged in
@@ -312,6 +305,7 @@ export class LinkedInScraper {
         await this.ensureLoggedIn(page)
         // Re-navigate to the profile after login
         await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
         await randomDelay(800, 1500)
       }
 
@@ -320,16 +314,17 @@ export class LinkedInScraper {
         throw new Error('SESSION_EXPIRED: Login succeeded but profile redirect failed')
       }
 
-      await scrollPage(page)
+      // scrollPage uses page.evaluate — wrap so a stray navigation doesn't abort the whole scrape
+      await scrollPage(page).catch(() => {/* ignore if page navigates during scroll */})
 
       // Try to expand "Show all skills" to get the full skills list
       try {
         const showAllSkills = page.locator('a[href*="/details/skills"]').first()
         if (await showAllSkills.isVisible({ timeout: 2000 })) {
           await showAllSkills.click()
-          await page.waitForLoadState('domcontentloaded')
+          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {/* ignore */})
           await randomDelay(800, 1200)
-          await scrollPage(page)
+          await scrollPage(page).catch(() => {/* ignore */})
         }
       } catch {
         // Section may not exist — proceed with what's visible
