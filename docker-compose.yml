@@ -1,5 +1,6 @@
 # UPDATE LOG
 # 2026-02-20 22:19:11 | Reviewed last-2-hours updates and documented the healthcheck target change to 127.0.0.1:3000.
+# 2026-03-17 12:00:00 | P0-2: removed hardcoded VITE_SUPABASE_URL/ANON_KEY; replaced with env_file: .env
 
 version: '3.9'
 
@@ -9,9 +10,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - VITE_SUPABASE_URL=https://nkgscksbgmzhizohobhg.supabase.co
-        - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rZ3Nja3NiZ216aGl6b2hvYmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0Nzk4NDcsImV4cCI6MjA3MzA1NTg0N30.KQl_psbpASttYH5FbqwUe1_xSF60_PPUPhidmF_pQD0
-        - VITE_LOGGING_ENABLED=true
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_LOGGING_ENABLED=${VITE_LOGGING_ENABLED:-true}
+    env_file: .env
     container_name: smartats-app
     ports:
       - "3000:3000"
@@ -31,10 +33,7 @@ services:
     container_name: smartats-dev
     ports:
       - "8080:5173"
-    environment:
-      - VITE_SUPABASE_URL=https://nkgscksbgmzhizohobhg.supabase.co
-      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rZ3Nja3NiZ216aGl6b2hvYmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0Nzk4NDcsImV4cCI6MjA3MzA1NTg0N30.KQl_psbpASttYH5FbqwUe1_xSF60_PPUPhidmF_pQD0
-      - VITE_LOGGING_ENABLED=true
+    env_file: .env
     volumes:
       - .:/app
       - /app/node_modules

@@ -1,9 +1,12 @@
-// Updated: 2026-03-01 00:00:00 - P13 Story 3: Wired LinkedIn import handler, ProfileImportReviewModal, and Import Profile button into Settings page.
-// Updated: 2026-03-01 00:00:00 - Replaced opacity-60 placeholder sections with LockedFeatureCard for clearer UX.
+// UPDATE LOG
+// 2026-03-17 12:00:00 | P16 Story 1: added PersonaManager (My Resume Profiles) section
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
@@ -21,26 +24,20 @@ import {
   Shield,
   Database,
   Key,
-  Lock,
   Loader2,
   AlertTriangle,
 } from 'lucide-react'
-import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useProfile, type ProfileFormData } from '@/hooks/useProfile'
 import { useAccountDeletion } from '@/hooks/useAccountDeletion'
 import { DeleteAccountModal } from '@/components/DeleteAccountModal'
-import { ProfileImportReviewModal } from '@/components/ProfileImportReviewModal'
+import { PersonaManager } from '@/components/PersonaManager'
 import { useEffect, useState } from 'react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
 import { getHelpContent } from '@/data/helpContent'
-import { usePrepareLinkedinImport } from '@/hooks/useLinkedinImportPreparation'
-import { LinkedinImportMergeResult } from '@/utils/linkedinImportMerge'
-import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/hooks/use-toast'
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -70,12 +67,6 @@ const Settings = () => {
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('profileSettings')
 
-  const [showImportModal, setShowImportModal] = useState(false)
-  const [isInvoking, setIsInvoking] = useState(false)
-  const [mergeResult, setMergeResult] = useState<LinkedinImportMergeResult | null>(null)
-  const [importDate, setImportDate] = useState('')
-  const prepareImport = usePrepareLinkedinImport()
-
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -102,38 +93,6 @@ const Settings = () => {
   const onSubmit = async (data: ProfileFormData) => {
     console.log('Settings: Form submitted with data:', data)
     await saveProfile(data)
-  }
-
-  const { toast } = useToast()
-
-  const handleImportProfile = async () => {
-    const linkedinUrl = form.getValues('linkedin_url')
-    if (!linkedinUrl) {
-      toast({
-        variant: 'destructive',
-        title: 'LinkedIn URL required',
-        description: 'Enter a LinkedIn URL before importing.',
-      })
-      return
-    }
-    setIsInvoking(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('linkedin-profile-ingest', {
-        body: { linkedin_url: linkedinUrl },
-      })
-      if (error) throw new Error(error.message)
-      if (!data?.success) throw new Error(data?.error || 'Ingestion failed')
-      const now = new Date().toISOString()
-      const result = await prepareImport.mutateAsync({ preview: data, importDate: now })
-      setMergeResult(result)
-      setImportDate(now)
-      setShowImportModal(true)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Please try again.'
-      toast({ variant: 'destructive', title: 'Import failed', description: msg })
-    } finally {
-      setIsInvoking(false)
-    }
   }
 
   return (
@@ -266,24 +225,9 @@ const Settings = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>LinkedIn URL (Optional)</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={
-                            isInvoking || prepareImport.isPending || !form.watch('linkedin_url')
-                          }
-                          onClick={handleImportProfile}
-                        >
-                          {(isInvoking || prepareImport.isPending) && (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          )}
-                          Import Profile
-                        </Button>
-                      </div>
+                      <FormControl>
+                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -313,12 +257,65 @@ const Settings = () => {
         </CardContent>
       </Card>
 
+      {/* Resume Profiles */}
+      <section>
+        <PersonaManager />
+      </section>
+
       {/* Notification Settings */}
-      <LockedFeatureCard
-        icon={Bell}
-        title="Notification Preferences"
-        description="Configure email alerts for analysis completion, new features, and weekly activity summaries."
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Bell className="h-5 w-5" />
+            <span>
+              Notification Preferences{' '}
+              <span className="text-sm text-muted-foreground">(Coming Soon)</span>
+            </span>
+          </CardTitle>
+          <CardDescription>Choose what notifications you'd like to receive.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 opacity-60">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">Analysis Complete</Label>
+              <p className="text-sm text-muted-foreground">
+                Get notified when your ATS analysis is ready
+              </p>
+            </div>
+            <Switch disabled />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">New Features</Label>
+              <p className="text-sm text-muted-foreground">
+                Stay updated on new Smart ATS features and improvements
+              </p>
+            </div>
+            <Switch disabled />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">Weekly Summary</Label>
+              <p className="text-sm text-muted-foreground">
+                Receive weekly summaries of your ATS activities
+              </p>
+            </div>
+            <Switch disabled />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">Marketing Communications</Label>
+              <p className="text-sm text-muted-foreground">
+                Receive tips and insights about resume optimization
+              </p>
+            </div>
+            <Switch disabled />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Security Settings */}
       <Card>
@@ -330,21 +327,47 @@ const Settings = () => {
           <CardDescription>Manage your account security and data privacy settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LockedFeatureCard
-            icon={Lock}
-            title="Change Password"
-            description="Update your account password with a new one."
-            variant="row"
-          />
+          <div className="space-y-4 opacity-60">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                placeholder="Enter current password"
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input id="newPassword" type="password" placeholder="Enter new password" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm new password"
+                disabled
+              />
+            </div>
+            <Button disabled>
+              Update Password <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
+          </div>
 
-          <Separator className="my-2" />
+          <Separator className="my-6" />
 
-          <LockedFeatureCard
-            icon={Shield}
-            title="Two-Factor Authentication"
-            description="Add an extra layer of security by requiring a second verification step at sign-in."
-            variant="row"
-          />
+          <div className="flex items-center justify-between opacity-60">
+            <div className="space-y-0.5">
+              <Label className="text-base">Two-Factor Authentication</Label>
+              <p className="text-sm text-muted-foreground">
+                Add an extra layer of security to your account
+              </p>
+            </div>
+            <Button variant="outline" disabled>
+              Enable 2FA <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -358,12 +381,17 @@ const Settings = () => {
           <CardDescription>Export your data or manage your account data.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LockedFeatureCard
-            icon={Database}
-            title="Export Data"
-            description="Download all your resumes, analyses, and job descriptions as a portable archive."
-            variant="row"
-          />
+          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+            <div>
+              <h4 className="font-medium">Export Data</h4>
+              <p className="text-sm text-muted-foreground">
+                Download all your resumes, analyses, and job descriptions
+              </p>
+            </div>
+            <Button variant="outline" disabled>
+              Export <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
+          </div>
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
               <h4 className="font-medium">Delete Account</h4>
@@ -413,11 +441,23 @@ const Settings = () => {
       </Card>
 
       {/* API Settings (Future) */}
-      <LockedFeatureCard
-        icon={Key}
-        title="API Access"
-        description="Generate API keys to programmatically analyze resumes and job descriptions from your own applications."
-      />
+      <Card className="opacity-75">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Key className="h-5 w-5" />
+            <span>API Access (Coming Soon)</span>
+          </CardTitle>
+          <CardDescription>
+            Generate API keys for integrating Smart ATS with your applications.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            API access will allow you to programmatically analyze resumes and job descriptions.
+          </p>
+          <Button disabled>Generate API Key</Button>
+        </CardContent>
+      </Card>
 
       <DeleteAccountModal
         isOpen={showDeleteModal}
@@ -427,22 +467,6 @@ const Settings = () => {
           // User will be signed out automatically by the edge function
         }}
       />
-
-      {mergeResult && (
-        <ProfileImportReviewModal
-          isOpen={showImportModal}
-          onClose={() => {
-            setShowImportModal(false)
-            setMergeResult(null)
-          }}
-          onSuccess={() => {
-            setShowImportModal(false)
-            setMergeResult(null)
-          }}
-          mergeResult={mergeResult}
-          importDate={importDate}
-        />
-      )}
 
       {/* Help Modal */}
       {helpContent && (

@@ -1,11 +1,10 @@
 # CLAUDE.md
 
-This file defines how Claude Code should work in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Scope
+## Role
 
-- Applies to the entire repository.
-- Claude Code is a reasoning/review-first agent.
+Claude Code is a **reasoning/review-first agent**. Codex (`AGENTS.md`) handles implementation. Claude Code owns architecture review, ADRs, risk/quality analysis, and documentation quality.
 
 ## Primary Responsibilities
 
@@ -29,22 +28,159 @@ When requesting implementation from Codex, provide:
 3. Validation commands required.
 4. Risks and non-goals.
 
-## Key Project Commands
+## Key Commands
 
 ```bash
-npm run dev
-npm run build
-npm run test
-npm run lint
-npm run verify
-npm run verify:full
+# Development
+npm run dev              # Vite dev server on http://localhost:8080
+npm run build            # Production build
+npm run lint             # ESLint
+npm run test             # Vitest (all tests)
+npm run test -- --run tests/unit/utils/someFile.test.ts  # Single test file
+npm run verify           # lint + type-check + test
+npm run verify:full      # verify + build
+
+# Docker
+docker compose up smartats-dev     # Hot-reload dev container
+docker compose up smartats-app     # Production container
+
+# Supabase edge functions (local)
+supabase functions serve <function-name>  # Serve a single function locally
+supabase db push                          # Apply migrations
+
+# After every migration — regenerate TypeScript types
+bash scripts/ops/gen-types.sh            # Writes src/integrations/supabase/types.ts
+
+# Log inspection (runtime / operational)
+bash scripts/ops/fetch-logs.sh           # Interactive: prompts for 1–10 min window, queries all sources
+bash scripts/ops/fetch-logs.sh --source docker --minutes 5   # Docker only, 5 min
+bash scripts/ops/fetch-logs.sh --source app --minutes 2      # log_entries table (needs SUPABASE_SERVICE_KEY)
+bash scripts/ops/fetch-logs.sh --source platform --minutes 3 # Supabase platform API (needs SUPABASE_ACCESS_TOKEN)
+bash scripts/ops/clean-logs.sh           # Remove logs/tmp/ files older than 1 day
+bash scripts/ops/clean-logs.sh --days 3 --dry-run            # Preview before deleting
 ```
+
+## Architecture
+
+### Stack
+
+- **Frontend:** React 18 + TypeScript + Vite, React Router v6, TanStack Query, shadcn/ui + Tailwind
+- **Backend:** Supabase (Postgres + RLS, Edge Functions in Deno, Storage, Auth)
+- **AI:** OpenAI via `callLLM()` abstraction in `supabase/functions/_shared/llmProvider.ts`
+- **Deploy:** Docker multi-stage build (nginx); Playwright LinkedIn scraper on Railway
+
+### Frontend Patterns
+
+- Path alias `@/` maps to `./src/`
+- Auth state lives in `src/contexts/AuthContext.tsx` — wraps Supabase Auth, adds `SATSUser` role check
+- Server state is managed via TanStack Query hooks in `src/hooks/` (one hook per domain: resumes, jobs, analyses, etc.)
+- Document text extraction (PDF/DOCX/HTML) happens client-side in `src/services/documentProcessor.ts`
+- Structured logging via `src/lib/centralizedLogger.ts` — sends events to the `centralized-logging` edge function
+
+### Backend Patterns (Edge Functions)
+
+All edge functions share three utilities in `supabase/functions/_shared/`:
+
+| File | Purpose |
+|---|---|
+| `llmProvider.ts` | Single `callLLM(LLMRequest)` entry point; provider selected by `SATS_LLM_PROVIDER` env var (default: `openai`) |
+| `cors.ts` | `isOriginAllowed(origin)` + `buildCorsHeaders(origin)` against `ALLOWED_ORIGINS` env var |
+| `env.ts` | `getEnvNumber(name, fallback)` and `getEnvBoolean(name, fallback)` |
+
+**Every new edge function must use these shared utilities.** Direct OpenAI SDK calls or inline CORS logic are not permitted.
+
+#### Edge function error handling rules
+
+- **Fail fast on config errors** — validate env vars at function top; return `503` (not `500`) for misconfiguration.
+- **Never forward raw provider payloads** — use `mapProviderError()` to produce safe messages.
+- **Telemetry must not block** — wrap all `logEvent()` / centralized-logging calls in `try/catch`.
+
+#### `callLLM()` interface (key fields)
+
+```ts
+LLMRequest { systemPrompt, userPrompt, modelCandidates[], jsonSchema?, temperature, maxTokens, retryAttempts, taskLabel, pricingOverride? }
+LLMResponse { rawContent, modelUsed, provider, promptTokens, completionTokens, costEstimateUsd, durationMs, retryAttemptsUsed }
+```
+
+Models in active use: `gpt-4.1` (ATS scoring), `gpt-4.1-mini` (enrichment, roadmaps). Fallback: `gpt-4o-mini`.
+
+### Database
+
+- `src/integrations/supabase/types.ts` is auto-generated — **do not edit manually**.
+- All tables use RLS. New tables require migration files under `supabase/migrations/`.
+- **New table naming:** `sats_<noun_plural>` (lowercase, snake_case). Legacy exceptions that predate this convention and must **not** be renamed: `SATS_resumes`, `document_extractions`, `error_logs`, `profiles`.
+- **Migration naming:** `YYYYMMDDHHMMSS_<short_description>.sql` (14-digit UTC timestamp, no separators).
+- Key tables: `sats_resumes`, `sats_job_descriptions`, `sats_analyses`, `sats_enriched_experiences`, `sats_learning_roadmaps`, `sats_roadmap_milestones`, `sats_user_notifications`, `log_events`, `log_settings`.
+
+## Coding Conventions (Enforced)
+
+Full reference: `docs/conventions/coding-conventions.md`.
+
+### File UPDATE LOG (mandatory)
+
+Every created or modified TS/JS/SQL/HTML file must have an UPDATE LOG block at the top. Append — never replace.
+
+```typescript
+/**
+ * UPDATE LOG
+ * YYYY-MM-DD HH:MM:SS | <description> (reference plan ID where applicable)
+ */
+```
+
+SQL uses `-- UPDATE LOG` / `-- YYYY-MM-DD HH:MM:SS | ...`. HTML uses `<!-- UPDATE LOG -->`.
+
+### TypeScript / frontend naming
+
+| Construct | Convention |
+|---|---|
+| React components | `PascalCase.tsx` |
+| Hooks | `camelCase`, `use` prefix |
+| File names in `src/` | `kebab-case` |
+| Interfaces / types | `PascalCase` |
+
+### Environment variables
+
+| Scope | Pattern |
+|---|---|
+| Global SATS config | `SATS_<NOUN>` |
+| Task-specific model | `OPENAI_MODEL_<TASK>` |
+| Feature flags | `SATS_<FEATURE>_ENABLED` |
+| Storage flags | `STORE_LLM_<NOUN>` |
+
+### Changelog updates
+
+After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/changelog/SATS_CHANGES.txt`.
+
+## Source of Truth
+
+| Concern | Location |
+|---|---|
+| Architecture baseline | `docs/architecture.md` |
+| Technical decisions (ADRs) | `docs/decisions/` |
+| Coding conventions | `docs/conventions/coding-conventions.md` |
+| Product roadmap | `docs/decisions/product-roadmap.md` |
+| Product specs (per phase) | `docs/specs/` |
+| Active feature plans | `plans/` |
+| Completed/archived plans | `plans/archive/` |
+| Operational runbooks | `docs/runbooks/` |
+| Bug reports and incidents | `docs/bugs/` |
+| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` |
+| Security audit reports | `docs/security/` |
+| Compliance policies | `docs/compliance/` |
+| Release readiness | `docs/releases/UNTESTED_IMPLEMENTATIONS.md` |
+| Changelog | `docs/changelog/SATS_CHANGES.txt` |
 
 ## Repository Structure (Canonical)
 
-- `src/`: application code
+- `src/`: frontend application code
+- `supabase/functions/`: Deno edge functions + shared utilities
+- `supabase/migrations/`: database migrations
 - `tests/`: top-level test suites
 - `scripts/`: automation and operational scripts
-- `plans/`: active feature and implementation plans
+  - `scripts/playwright-linkedin/`: LinkedIn scraper (standalone Node.js service, deployed on Railway)
+  - `scripts/ops/`: operational scripts (smoke tests, type generation, etc.)
+- `plans/`: active feature and implementation plans — mark completed plans with `<!-- Status: COMPLETED -->` and move to `plans/archive/`
+- `plans/archive/`: completed plans
 - `docs/`: architecture, decisions, runbooks, releases, compliance
-- `supabase/`: migrations and edge functions
+  - `docs/improvements/`: technical improvement backlog
+  - `docs/bugs/`: bug reports and incident documentation

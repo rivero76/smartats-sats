@@ -34,6 +34,8 @@ coverage/
 *.ts.[0-9][0-9]
 
 # Sensitive / local data
+.env
+logs/tmp/
 Documents/
 db_restore/
 MEMORY.md

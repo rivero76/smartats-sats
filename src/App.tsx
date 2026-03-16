@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-17 12:00:00 | P1-2: wrap main route outlet in ErrorBoundary to prevent blank-screen crashes
+ */
 import React from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -26,6 +30,7 @@ import NotFound from './pages/NotFound'
 // Added imports
 import DevErrorOverlay from '@/components/DevErrorOverlay'
 import { DevLogger } from '@/lib/devLogger'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const SHOULD_SHOW_DEV_OVERLAY =
   import.meta.env.DEV && import.meta.env.VITE_LOGGING_ENABLED !== 'false'
@@ -58,6 +63,7 @@ const App = () => {
                             <div className="flex-1" />
                           </header>
                           <main className="flex-1 p-6 bg-muted/30">
+                            <ErrorBoundary>
                             <Routes>
                               <Route path="/" element={<Dashboard />} />
                               <Route path="/resumes" element={<MyResumes />} />
@@ -78,6 +84,7 @@ const App = () => {
                               />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
+                            </ErrorBoundary>
                           </main>
                         </div>
                       </div>
