@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed enrichment modal updates and added timestamped file header tracking.
  * 2026-02-21 00:40:00 | Implemented product/usability enhancements: evidence checklist, tone controls, batch actions, progress state, and metrics instrumentation.
+ * 2026-03-17 00:00:00 | Fix BUG-2026-02-24-ENRICH-SCROLL: removed nested ScrollArea h-[44vh] from suggestion list; outer modal flex-1 overflow-y-auto now handles all scrolling so action buttons are always reachable.
  */
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -24,7 +25,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useToast } from '@/hooks/use-toast'
@@ -546,8 +546,7 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                 </div>
               </div>
 
-              <ScrollArea type="always" className="h-[44vh] min-h-[260px] pr-4">
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {suggestions.map((suggestion) => {
                   const key = getSuggestionKey(suggestion)
                   const reviewState = reviewStates[key]
@@ -752,8 +751,7 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                     </Card>
                   )
                   })}
-                </div>
-              </ScrollArea>
+              </div>
             </div>
           )}
 

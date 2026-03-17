@@ -1,3 +1,8 @@
+/**
+ * UPDATE LOG
+ * 2026-03-17 16:00:00 | Added time window filter (5m/15m/1h/6h/24h/All) and defaulted
+ *   to ERROR level + 1h window so the viewer opens ready for incident investigation.
+ */
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -11,10 +16,31 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Download, RefreshCw, Filter, Calendar } from 'lucide-react'
+import { Search, Download, RefreshCw, Clock } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
-import { format } from 'date-fns'
+import { format, subMinutes, subHours } from 'date-fns'
+
+const TIME_WINDOWS = [
+  { label: 'Last 5 min', value: '5m' },
+  { label: 'Last 15 min', value: '15m' },
+  { label: 'Last 1 hour', value: '1h' },
+  { label: 'Last 6 hours', value: '6h' },
+  { label: 'Last 24 hours', value: '24h' },
+  { label: 'All time', value: 'all' },
+]
+
+function getWindowStart(window: string): string | null {
+  const now = new Date()
+  switch (window) {
+    case '5m':  return subMinutes(now, 5).toISOString()
+    case '15m': return subMinutes(now, 15).toISOString()
+    case '1h':  return subHours(now, 1).toISOString()
+    case '6h':  return subHours(now, 6).toISOString()
+    case '24h': return subHours(now, 24).toISOString()
+    default:    return null
+  }
+}
 
 interface LogEntry {
   id: string
@@ -30,7 +56,8 @@ interface LogEntry {
 
 export const LogViewer = () => {
   const [filterScript, setFilterScript] = useState<string>('all')
-  const [filterLevel, setFilterLevel] = useState<string>('all')
+  const [filterLevel, setFilterLevel] = useState<string>('ERROR')
+  const [timeWindow, setTimeWindow] = useState<string>('1h')
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [limit, setLimit] = useState<number>(100)
 
@@ -40,13 +67,18 @@ export const LogViewer = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['log-entries', filterScript, filterLevel, searchTerm, limit],
+    queryKey: ['log-entries', filterScript, filterLevel, timeWindow, searchTerm, limit],
     queryFn: async () => {
       let query = supabase
         .from('log_entries')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(limit)
+
+      const windowStart = getWindowStart(timeWindow)
+      if (windowStart) {
+        query = query.gte('timestamp', windowStart)
+      }
 
       if (filterScript !== 'all') {
         query = query.eq('script_name', filterScript)
@@ -149,6 +181,21 @@ export const LogViewer = () => {
                   className="pl-10"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Time Window</label>
+              <Select value={timeWindow} onValueChange={setTimeWindow}>
+                <SelectTrigger className="w-36">
+                  <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_WINDOWS.map((w) => (
+                    <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

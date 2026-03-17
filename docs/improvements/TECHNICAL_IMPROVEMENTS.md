@@ -3,6 +3,7 @@
 <!-- Created: 2026-03-16 — sourced from Claude Code architecture review -->
 <!-- Updated: 2026-03-17 — added P1-6 (CI pipeline) and P1-7 (Supabase type regeneration) -->
 <!-- Updated: 2026-03-17 — P0-1, P0-2, P0-3 completed; P1-1, P1-2, P1-4, P1-6, P1-7 completed -->
+<!-- Updated: 2026-03-17 (session 2) — BUG-2026-03-17-LOCATION-RLS fixed; log fetch script hardened; LogViewer time-window filter added; P17 BYOK added as future backlog item -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -313,6 +314,57 @@ Functions to cover: `ats-analysis-direct`, `enrich-experiences`, `generate-upski
 
 ---
 
+## Fixed Issues (Session 2 — 2026-03-17)
+
+### BUG-2026-03-17-LOCATION-RLS · `sats_locations` and `sats_companies` RLS INSERT failure
+
+**Area:** Bug Fix / Database
+**Status:** **Done 2026-03-17** — migration `20260317150000_fix_locations_companies_select_policy.sql` applied
+
+PostgREST's `.insert().select().single()` pattern performs a SELECT re-check on the newly inserted row after the INSERT. The SELECT policies on both `sats_locations` and `sats_companies` required the row to already be linked to a `sats_job_descriptions` row owned by the user — impossible for a freshly inserted location/company. PostgREST surfaced this as "new row violates row-level security policy", which appeared to be an INSERT failure even though the INSERT WITH CHECK was correct.
+
+**Root cause:** Over-restrictive SELECT policy (restrictive read applied to shared reference data). `sats_locations` stores city/state/country — geographic reference data with no sensitivity. `sats_companies` stores company names — also shared reference data.
+
+**Fix:** Replaced both SELECT policies with `USING (true)` scoped to `authenticated` role. INSERT policies (which correctly require a non-empty field + authenticated user) are unchanged.
+
+---
+
+### P1-8 · Harden `fetch-logs.sh` for macOS BSD shell compatibility
+
+**Area:** Operational Scripts / Developer Experience
+**Status:** **Done 2026-03-17**
+
+Three macOS-incompatible patterns fixed in `scripts/ops/fetch-logs.sh`:
+1. `head -n -1` (GNU only) → replaced with `sed '$d'` (POSIX, strips last line)
+2. `echo -e` colour output → replaced with `printf` (macOS `/bin/sh` ignores `-e`)
+3. `.env` loader didn't strip surrounding quotes from values (e.g. `VAR="value"`) → added quote and inline-comment stripping using parameter expansion
+
+---
+
+### P1-9 · Add time-window filter to Admin LogViewer
+
+**Area:** Observability / Developer Experience
+**Status:** **Done 2026-03-17** — `src/components/admin/LogViewer.tsx`
+
+The `LogViewer` component (Admin → Logging Control → Log Viewer) previously only filtered by count limit, with no recency constraint. Added a **Time Window** dropdown (Last 5 min / 15 min / 1h / 6h / 24h / All time) using `date-fns` `subMinutes`/`subHours`. Default is ERROR level + Last 1 hour — viewer opens ready for incident investigation without manual filter selection.
+
+---
+
+## Future Backlog (P17 — from product roadmap)
+
+### P17-BYOK · Per-user model preference + Bring Your Own Key + AI opt-out
+
+**Area:** Product Platform / AI Infrastructure
+**Priority:** High (added to roadmap 2026-03-17)
+**Effort:** 3 stories (see `docs/decisions/product-roadmap.md` § P17)
+
+Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
+- **S1** — `profiles.preferred_llm_provider` + `preferred_model` columns; Settings dropdown; edge functions read at call time (1 migration + minor `callLLM()` context change)
+- **S2** — BYOK: encrypted key per user via Supabase Vault; `callLLM()` routes through user's key when present; replaces the dead "API key generation" Settings placeholder
+- **S3** — `profiles.ai_processing_enabled` flag; all edge functions gate on it; Settings AI opt-out toggle for GDPR / data-sovereignty compliance
+
+---
+
 ## Summary Table
 
 | ID | Area | Priority | Effort | Status |
@@ -327,9 +379,13 @@ Functions to cover: `ats-analysis-direct`, `enrich-experiences`, `generate-upski
 | P1-5 | Circuit breaker / fetch audit for job APIs | P1 | 2–3 hr | Open |
 | P1-6 | Add a CI pipeline | P1 | 1–2 hr | **Done 2026-03-17** (test step added) |
 | P1-7 | Document and automate Supabase type regeneration | P1 | 30 min | **Done 2026-03-17** |
+| P1-8 | Harden `fetch-logs.sh` for macOS BSD compatibility | P1 | 30 min | **Done 2026-03-17** |
+| P1-9 | Add time-window filter to Admin LogViewer | P1 | 1 hr | **Done 2026-03-17** |
+| BUG-2026-03-17-LOCATION-RLS | Fix `sats_locations`/`sats_companies` SELECT policy | Bug/P0 | 30 min | **Done 2026-03-17** |
 | P2-1 | Enable `strict: true` in `tsconfig.app.json` | P2 | 4–8 hr | Open |
 | P2-2 | Co-locate domain loggers with their domains | P2 | 1 hr | Open |
 | P2-3 | Clarify LinkedIn scraper service boundary | P2 | 30 min–2 hr | Open |
 | P2-4 | Add Supabase seed file | P2 | 1–2 hr | Open |
 | P2-5 | Add smoke test script for edge functions | P2 | 1–2 hr | Open |
 | P2-6 | Archive completed plans | P2 | 15 min | Open |
+| P17-BYOK | Per-user model preference + BYOK + AI opt-out | High | 3 stories | Planned (P17) |

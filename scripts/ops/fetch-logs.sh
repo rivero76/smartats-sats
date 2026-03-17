@@ -2,6 +2,7 @@
 # UPDATE LOG
 # 2026-03-17 12:00:00 | Created: interactive log fetch from Supabase (log_entries table + platform API) and Docker containers
 # 2026-03-17 13:00:00 | Fixed: replaced echo -e with printf (sh compatibility); improved missing-credentials message
+# 2026-03-17 14:00:00 | Fixed: replaced head -n -1 with sed '$d' (macOS BSD head does not support negative counts)
 #
 # Usage (must run with bash, not sh):
 #   bash scripts/ops/fetch-logs.sh [--source app|platform|docker|all] [--minutes N]
@@ -75,7 +76,14 @@ if [[ -f ".env" ]]; then
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
     [[ -z "${line//[[:space:]]/}" ]] && continue
     [[ "$line" == *"="* ]] || continue
-    export "$line" 2>/dev/null || true
+    # Strip inline comments and surrounding quotes from the value
+    key="${line%%=*}"
+    val="${line#*=}"
+    val="${val%%#*}"               # remove inline comments
+    val="${val#\"}" val="${val%\"}" # strip double quotes
+    val="${val#\'}" val="${val%\'}" # strip single quotes
+    val="${val%"${val##*[![:space:]]}"}" # trim trailing whitespace
+    export "${key}=${val}" 2>/dev/null || true
   done < .env
 fi
 
@@ -121,7 +129,7 @@ fetch_app_logs() {
     -H "Content-Type: application/json" \
     -H "Prefer: return=representation")
   http_code=$(printf '%s' "$response" | tail -1)
-  body=$(printf '%s' "$response" | head -n -1)
+  body=$(printf '%s' "$response" | sed '$d')
 
   if [[ "$http_code" == "200" ]]; then
     printf '%s' "$body" | python3 -m json.tool 2>/dev/null > "$outfile" || printf '%s' "$body" > "$outfile"
@@ -178,7 +186,7 @@ fetch_platform_logs() {
     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
     -H "Content-Type: application/json")
   http_code=$(printf '%s' "$response" | tail -1)
-  body=$(printf '%s' "$response" | head -n -1)
+  body=$(printf '%s' "$response" | sed '$d')
 
   if [[ "$http_code" == "200" ]]; then
     printf '%s' "$body" | python3 -m json.tool 2>/dev/null > "$outfile" || printf '%s' "$body" > "$outfile"

@@ -1,6 +1,6 @@
 # Product Roadmap and Change Tracking
 
-**Last Updated:** 2026-03-01 (P16 added; DX-1 Claude Code tooling added)
+**Last Updated:** 2026-03-17 (P17 BYOK + User-Controlled AI added; promoted to High priority)
 **Vision File:** `docs/decisions/product-vision.md`
 **Execution Source:** `plans/product-improvements.md`
 
@@ -25,6 +25,7 @@
 | P14 Proactive Search Engine | In Progress | Highest | Core async pipeline and opportunities UI foundation delivered; end-to-end rollout hardening remains. |
 | P15 Upskilling Roadmap Engine | In Progress | High | Stories 1-3 are implemented (schema, generation, roadmap UI/progress); release validation remains before rollout. |
 | P16 Career Fit & Live Job Discovery | Approved | Highest | LLM abstraction (Story 0), Persona model (Story 1), Resume storage upgrade (Story 2), Reconciliation engine (Story 3), Live job discovery via JSearch/Adzuna (Story 4), Career fit AI engine (Story 5), `/career-fit` UI (Story 6), Skill gap → P15 roadmap bridge (Story 7). Full spec: `docs/specs/product/p16-career-fit-live-job-discovery.md`. |
+| **P17 User-Controlled AI** — BYOK + Model Selection | Planned | **High** | Let users bring their own LLM API keys (OpenAI, Anthropic, custom endpoint), select preferred model per account, and opt out of AI processing entirely. Unlocks enterprise sales, privacy-conscious users, and zero-AI-COGS tiers. Builds on `_shared/llmProvider.ts` abstraction already in place. Stories: S1 per-user model preference, S2 BYOK encrypted key storage + routing, S3 AI opt-out toggle (GDPR). |
 | DX-1 Claude Code Developer Tooling | Planned | Low | Supabase MCP (highest ROI — live schema/RLS access), GitHub MCP (CI/PR status in-context), and four Claude Code skills: `/new-edge-function`, `/release-check`, `/new-migration`, `/verify`. Reduces scaffolding friction and shortens post-push feedback loop. Not a product feature; developer experience only. |
 
 ## 2) Strategic Assessment (From Technical Audit)
@@ -32,6 +33,7 @@
 2. Current gap: still mostly "bring your own job" workflow; 60% threshold is not yet an automated trigger.
 3. Current onboarding gap: LinkedIn ingestion backend (Stories 1-2) is implemented; HITL Review UI (Story 3) is the remaining delivery gap before the full flow is release-ready.
 4. Strategic direction: preserve trust layer and add proactive orchestration in the next sprint sequence.
+5. **Emerging competitive gap (2026):** AI SaaS without BYOK or model selection is increasingly a friction point for enterprise buyers, privacy-sensitive users, and markets with data-residency requirements. BYOK is now a baseline expectation, not a differentiator. P17 closes this gap and directly unlocks new market segments without requiring a pricing redesign.
 
 ## 3) Now, Next, Later
 
@@ -47,8 +49,9 @@
 
 ### Later
 1. Continue P9, P8, and P12 platform programs after orchestration core is in motion.
-2. P16 backlog items: Playwright for SEEK/Gupy/Computrabajo, salary intelligence, application tracker, cover letter generation, persona PDF export.
-3. DX-1: Claude Code tooling — Supabase MCP first, then GitHub MCP, then skills (`/new-edge-function`, `/release-check`, `/new-migration`, `/verify`).
+2. **P17 User-Controlled AI:** Begin S1 (per-user model preference in `profiles`) in parallel with P16 S2/S3 — low schema footprint, high marketing value. S2 (BYOK) and S3 (AI opt-out) follow after P16 S4 is live.
+3. P16 backlog items: Playwright for SEEK/Gupy/Computrabajo, salary intelligence, application tracker, cover letter generation, persona PDF export.
+4. DX-1: Claude Code tooling — Supabase MCP first, then GitHub MCP, then skills (`/new-edge-function`, `/release-check`, `/new-migration`, `/verify`).
 
 ### P16 Delivery Sequence
 Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 → Story 7
@@ -63,6 +66,9 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 | In-App Help Hub (`/help`) | Live | Core UX | Centralized discoverability of workflows, troubleshooting, and feature guidance | TBD | `helpContent` coverage + page-level docs hygiene | Current |
 | LLM Career Questionnaire | Planned | AI/Product | Personalize role pathing | TBD | Questionnaire schema + inference | TBD |
 | LLM Provider Abstraction Layer (P16 S0) | Approved | Platform | Enable provider switching via env var | TBD | `_shared/llmProvider.ts` + refactor 4 edge functions | P16 Story 0 |
+| **P17 S1** — Per-User Model Preference | Planned | AI + Platform | User selects preferred LLM provider and model in Settings; stored in `profiles`; edge functions read it at call time | TBD | `profiles` migration + Settings UI dropdown + `callLLM()` user-context lookup | P17 Story 1 |
+| **P17 S2** — BYOK (Bring Your Own Key) | Planned | AI + Platform + Marketing | User stores their own OpenAI/Anthropic/custom API key in Settings (encrypted at rest via Supabase Vault); edge functions route their requests through it; eliminates AI COGS for that user tier | TBD | Supabase Vault integration + key routing in `callLLM()` + Settings BYOK card | P17 Story 2 |
+| **P17 S3** — AI Opt-Out + Privacy Toggle | Planned | Platform + Compliance | User disables all LLM processing for their account from Settings; AI features degrade gracefully to manual-only mode; required for GDPR strictness and enterprise data-sovereignty buyers | TBD | `profiles.ai_processing_enabled` flag + guard in all edge functions + Settings toggle | P17 Story 3 |
 | Master Profile + Resume Persona Model (P16 S1) | Approved | Core + Data | Multi-persona CV management from one canonical profile | TBD | `sats_resume_personas` table + Settings UI | P16 Story 1 |
 | Resume Storage Security Upgrade (P16 S2) | Approved | Platform + Security | Signed URLs, SHA-256 dedup, version chain | TBD | `sats_resumes` migration + signed URL pattern | P16 Story 2 |
 | Profile Reconciliation Engine (P16 S3) | Approved | Core + AI | Detect and resolve cross-source profile conflicts | TBD | `reconcile-profile` edge fn + 3 new tables + HITL page | P16 Story 3 |
@@ -89,7 +95,7 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 - Notification Preferences.
 - Password update and 2FA controls.
 - Data export control.
-- API key generation.
+- API key generation. ← **Formally scoped as P17 S2 (BYOK).** Dead control to be replaced with BYOK card (provider selector + encrypted key input + connection test).
 3. Admin Dashboard placeholders (overview tab):
 - Mock system stats/activity/health widgets.
 - User/Database/Analytics action cards.
@@ -98,6 +104,7 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 ## 5) Change Log (Roadmap-Level)
 | Date | Version | Change Type | Summary | Why | Owner | Linked PR/Issue |
 |---|---|---|---|---|---|---|
+| 2026-03-17 | v1.2 | Feature Intake | Added P17 User-Controlled AI (3 stories): S1 per-user model preference, S2 BYOK encrypted key storage, S3 AI opt-out/GDPR toggle. Added to roadmap snapshot (High priority), strategic assessment, Later queue, feature register, Section 4A placeholder scoping, and decision log. Existing "API key generation" Settings placeholder formally scoped to P17 S2. | BYOK and model selection are now baseline market expectations for AI SaaS; unlocks enterprise, privacy-sensitive, and zero-COGS tiers without pricing redesign; `_shared/llmProvider.ts` abstraction (P16 S0) already provides the routing hook | Architecture | N/A |
 | 2026-03-01 | v1.1 | DX Intake | Added DX-1 Claude Code Developer Tooling backlog: Supabase MCP (highest ROI), GitHub MCP, and four skills (`/new-edge-function`, `/release-check`, `/new-migration`, `/verify`). Added to roadmap snapshot, Later queue, and feature register. Recommended by Claude Code architecture review based on observed workflow friction. | Reduce scaffolding and post-push feedback loop friction | Architecture | N/A |
 | 2026-03-01 | v1.0 | Feature Intake | Added P16 Career Fit & Live Job Discovery (Stories 0-7): LLM abstraction, persona model, resume security, reconciliation engine, live job APIs, career fit AI, /career-fit UI, roadmap bridge. Added to roadmap snapshot, Now/Next/Later, feature register, and decision log. ADR-0002 written. Architecture.md and product-vision.md updated. | PM refinement sessions confirmed scope, user intent, API strategy, schema design, and help content requirements | TPM/Architecture | TBD |
 | 2026-03-01 | v0.9 | Delivery Sync | Updated P13 status to In Progress (Stories 1-2 done, Story 3 pending); removed stale P15 "Later" entry (Stories 1-3 implemented, release-blocked); updated Now/Next/Later; corrected strategic assessment onboarding gap note; synced feature register | Align roadmap with implemented code and release blocker state | TPM/Architecture | TBD |
@@ -113,6 +120,7 @@ Story 0 → Story 1 → Story 2 → Story 3 → Story 4 → Story 5 → Story 6 
 ## 6) Decision Log (Architecture/Product)
 | Date | Decision | Options Considered | Chosen Option | Impact | Revisit Trigger |
 |---|---|---|---|---|---|
+| 2026-03-17 | BYOK + User-Controlled AI (P17) | No user control vs per-user model preference only vs full BYOK vs managed tiers | Full 3-story scope: model preference (S1) + BYOK with Supabase Vault (S2) + AI opt-out (S3); all route through existing `callLLM()` abstraction | Zero new AI COGS for BYOK users; enterprise data-sovereignty compliance (S3); marketing differentiator for privacy-first and cost-conscious segments; S1 adds minimal schema footprint | If Supabase Vault pricing changes materially; if third-party gateway (LiteLLM/PortKey) proves simpler for multi-provider routing |
 | 2026-03-01 | LLM Provider Abstraction | Direct per-function OpenAI calls vs shared utility vs third-party gateway | Shared `_shared/llmProvider.ts` utility with `SATS_LLM_PROVIDER` env var | Single switch point for provider change; eliminates duplicated error/retry logic | Cost or quality drivers; regional compliance requirement |
 | 2026-03-01 | Resume multi-persona model | Multiple independent resumes vs Master Profile + Persona | Master Profile as canonical source + Personas as weighted views | Prevents conflicting ground truth; single update point; enables reconciliation | User feedback indicates persona model is confusing; simplify if adoption is low |
 | 2026-03-01 | Job discovery source | Official API vs Playwright scraping vs hybrid | Official API first (JSearch/Adzuna); Playwright only for markets with no API and legal review complete | Legal safety; lower maintenance; sufficient market coverage for BR/AU/NZ/US | If Adzuna BR coverage proves insufficient for Gupy-heavy BR market |

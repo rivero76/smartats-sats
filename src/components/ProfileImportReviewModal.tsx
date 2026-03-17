@@ -1,4 +1,5 @@
 // Updated: 2026-03-01 00:00:00 - P13 Story 3: Created HITL review modal for LinkedIn import with skill/experience selection and sequential DB save flow.
+// Updated: 2026-03-17 00:00:00 - Fix scroll clipping: moved pr-3 from ScrollArea wrapper to inner content div so scrollbar does not overlap content.
 
 import { useState } from 'react'
 import {
@@ -222,8 +223,8 @@ export function ProfileImportReviewModal({
               experience{checkedExpCount !== 1 ? 's' : ''} selected to import.
             </p>
 
-            <ScrollArea className="max-h-[60vh] pr-3">
-              <div className="space-y-6">
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-6 pr-3">
                 {/* Skills Section */}
                 {(mergeResult.skills_to_insert.length > 0 ||
                   mergeResult.skills_to_merge.length > 0 ||
