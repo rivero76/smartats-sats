@@ -5,3 +5,4 @@ Store technical designs and implementation details by domain:
 - `database/`
 - `frontend/`
 - `cloud/`
+- `llm-model-governance.md` — LLM model register, change protocol, and pre/post validation test suite for any model upgrade

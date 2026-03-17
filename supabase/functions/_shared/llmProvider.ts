@@ -3,6 +3,9 @@
  * 2026-03-01 00:00:00 | P16 Story 0: Core LLM provider abstraction — consolidates OpenAI retry logic,
  *   error mapping, schema fallback, and cost estimation from ats-analysis-direct, async-ats-scorer,
  *   enrich-experiences, and generate-upskill-roadmap into a single shared module.
+ * 2026-03-17 00:15:00 | LLM model governance: added optional `seed` field to LLMRequest for deterministic
+ *   output; added o4-mini and o3 pricing to MODEL_PRICING_USD; buildBody() now uses max_completion_tokens
+ *   for reasoning models (o-series) to satisfy OpenAI API requirements.
  */
 
 // ---------------------------------------------------------------------------
@@ -30,6 +33,11 @@ export interface LLMRequest {
   retryAttempts: number
   /** Short label used in console logs for observability, e.g. 'ats-scoring'. */
   taskLabel: string
+  /**
+   * Optional seed for deterministic output. When set, identical inputs produce
+   * identical outputs (OpenAI best-effort guarantee). Recommended for scoring tasks.
+   */
+  seed?: number
   /**
    * Optional pricing override for cost estimation (USD per 1M tokens).
    * When not set, the adapter uses MODEL_PRICING_USD built-in table.
@@ -62,6 +70,10 @@ const MODEL_PRICING_USD: Record<string, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.15, output: 0.60 },
   'gpt-4.1': { input: 2.00, output: 8.00 },
   'gpt-4.1-mini': { input: 0.40, output: 1.60 },
+  // Reasoning models (o-series) — see docs/specs/technical/llm-model-governance.md
+  'o4-mini': { input: 1.10, output: 4.40 },
+  'o3': { input: 10.00, output: 40.00 },
+  'o3-mini': { input: 1.10, output: 4.40 },
 }
 
 // ---------------------------------------------------------------------------
@@ -117,10 +129,16 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
 
       const userContent = `${request.userPrompt}${retryHint}`
 
+      // Reasoning models (o-series) use max_completion_tokens; others use max_tokens.
+      const isReasoningModel = /^o\d/.test(modelName)
+
       const buildBody = (useSchemaResponse: boolean) => ({
         model: modelName,
         temperature: request.temperature,
-        max_tokens: request.maxTokens,
+        ...(isReasoningModel
+          ? { max_completion_tokens: request.maxTokens }
+          : { max_tokens: request.maxTokens }),
+        ...(request.seed != null ? { seed: request.seed } : {}),
         messages: [
           { role: 'system', content: request.systemPrompt },
           { role: 'user', content: userContent },
