@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractJobDescriptionInfo } from '@/utils/contentExtraction'
+import { extractJobDescriptionInfo } from '@/utils/content-extraction'
 
 describe('contentExtraction - provider headers', () => {
   it('extracts linkedin LAB3 header correctly', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSkillResolutionPlan, mergeLinkedinImportData } from '@/utils/linkedinImportMerge'
+import { buildSkillResolutionPlan, mergeLinkedinImportData } from '@/utils/linkedin-import-merge'
 
 describe('mergeLinkedinImportData', () => {
   it('flags highly similar skills for merge and preserves provenance on insert rows', () => {

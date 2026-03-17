@@ -105,7 +105,7 @@ STORE_LLM_PROMPTS=false
 STORE_LLM_RAW_RESPONSE=false
 
 # CORS (edge functions)
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+SATS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 
 # External job APIs (P14/P16)
 RAPID_API_KEY=<rapidapi-key>          # JSearch (US/global jobs)

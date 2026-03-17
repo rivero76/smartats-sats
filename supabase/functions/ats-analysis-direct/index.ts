@@ -19,6 +19,7 @@
  * 2026-03-17 00:20:00 | Rollback: code default reverted to gpt-4.1 — o4-mini rejected by API (model not
  *   found / invalid ID). gpt-4.1 confirmed working. temperature:0 and seed:42 retained. Pricing defaults
  *   reverted to gpt-4.1 rates. o4-mini re-enablement requires confirming valid API model ID first.
+ * 2026-03-18 00:00:00 | CR1-7: Add explanatory comment for temperature=0 + seed=42 determinism.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -30,6 +31,8 @@ import { callLLM } from '../_shared/llmProvider.ts'
 
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
+// temperature=0 + seed=42: ensures deterministic output for regression testing and user trust.
+// The same resume+JD pair must always yield the same score regardless of when it runs.
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0)
 const OPENAI_ATS_SEED = Math.floor(getEnvNumber('OPENAI_ATS_SEED', 42))
 const OPENAI_MAX_TOKENS_ATS = Math.max(

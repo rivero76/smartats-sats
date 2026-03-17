@@ -1,3 +1,8 @@
+/**
+ * UPDATE LOG
+ * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion help topics.
+ */
+
 export interface HelpStep {
   step: number
   title: string
@@ -694,9 +699,325 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['ATS Analysis', 'Resume Management', 'Upskilling Roadmaps'],
   },
+
+  linkedinProfileImport: {
+    id: 'linkedinProfileImport',
+    title: 'LinkedIn Profile Import',
+    description:
+      'Learn how to import your LinkedIn profile to automatically populate your skills and work experience.',
+    overview:
+      'LinkedIn Profile Import lets you bring your LinkedIn professional data into Smart ATS without manual data entry. The system fetches your public profile, parses it into structured skills and experience, and presents a review modal where you approve or reject each suggested addition before anything is saved.',
+    keyFeatures: [
+      'Automatic profile fetch from a LinkedIn URL',
+      'Structured parsing of skills and work experience',
+      'Human-in-the-loop review — nothing is saved without your approval',
+      'Fuzzy deduplication against existing resume data',
+      'Provenance tagging so imported items are traceable',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Go to Profile Settings',
+        description: 'Navigate to Profile Settings and find the LinkedIn section.',
+        tip: 'Your LinkedIn profile must be set to Public for the import to succeed.',
+      },
+      {
+        step: 2,
+        title: 'Enter Your LinkedIn Profile URL',
+        description:
+          'Paste your full LinkedIn profile URL (e.g. https://www.linkedin.com/in/yourname) into the field and click Import.',
+        tip: 'Use the URL from your browser address bar when viewing your own profile page.',
+      },
+      {
+        step: 3,
+        title: 'Wait for the Fetch to Complete',
+        description:
+          'The system retrieves and parses your profile. This typically takes 10–30 seconds depending on profile size.',
+        tip: 'Do not close the tab while the import is running.',
+      },
+      {
+        step: 4,
+        title: 'Review the Import Suggestions',
+        description:
+          'A review modal appears with all detected skills and experience items. Each item is shown with its source so you know exactly where it came from.',
+        tip: 'Review every item carefully. Items already present in your existing resumes are automatically filtered out.',
+      },
+      {
+        step: 5,
+        title: 'Approve or Reject Each Item',
+        description:
+          'Accept items that accurately represent your background. Reject anything that is incorrect, outdated, or already covered in your resume.',
+        tip: 'Only accepted items are saved. You can run the import again later if you skip items by mistake.',
+      },
+    ],
+    bestPractices: [
+      'Keep your LinkedIn profile up to date before importing — the import reflects your profile at fetch time',
+      'Review all items before approving — do not bulk-accept without reading',
+      'Use LinkedIn import as a starting point, then refine using Experience Enrichment',
+      'Re-import periodically after significant career updates',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Import fails or returns no results',
+        solution:
+          'Check that your LinkedIn profile is set to Public. Private profiles cannot be fetched. If the profile is public and the error persists, try again in a few minutes.',
+      },
+      {
+        problem: 'Imported skills already exist in my resume',
+        solution:
+          'The system deduplicates against your existing data, but some near-duplicates may still appear. Reject any item that is already covered in your resume.',
+      },
+      {
+        problem: 'The review modal shows no items',
+        solution:
+          'Your LinkedIn profile may not have structured skill or experience data, or all detected items were already in your resume. Try adding more detail to your LinkedIn profile.',
+      },
+    ],
+    relatedTopics: ['Resume Management', 'Experience Enrichment', 'Profile & Settings Management'],
+  },
+
+  resumePersonas: {
+    id: 'resumePersonas',
+    title: 'Resume Personas',
+    description:
+      'Learn how to create and manage multiple resume personas for different role types to get more accurate ATS scores.',
+    overview:
+      'Resume Personas let you maintain separate resume profiles for different career directions — for example, one persona for Engineering Manager roles and another for Senior Engineer roles. Each ATS analysis runs against the active persona, preventing your leadership-focused resume from skewing scores when applying to individual contributor positions.',
+    keyFeatures: [
+      'Create multiple named personas with different role focuses',
+      'Assign a different resume to each persona',
+      'Activate a persona before running an ATS analysis',
+      'Personas are independent — no cross-contamination between role types',
+      'Edit or delete personas as your career goals change',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Go to Profile Settings → Personas',
+        description: 'Navigate to Profile Settings and open the Personas tab.',
+        tip: 'You need at least one uploaded resume before creating a persona.',
+      },
+      {
+        step: 2,
+        title: 'Create a New Persona',
+        description:
+          "Click 'Add Persona', give it a descriptive name (e.g. 'Engineering Manager', 'Product Manager — Fintech'), and select the resume to associate with it.",
+        tip: 'Name personas after the role type, not the specific job — you will reuse them across many applications.',
+      },
+      {
+        step: 3,
+        title: 'Activate a Persona',
+        description:
+          "Set a persona as Active before running an ATS analysis. The active persona's resume is used as the input for scoring.",
+        tip: 'Always check which persona is active before starting a new analysis, especially if you switch roles frequently.',
+      },
+      {
+        step: 4,
+        title: 'Run ATS Analysis with the Active Persona',
+        description:
+          'Go to ATS Analyses and start a new analysis. The system automatically uses the active persona resume for scoring.',
+        tip: 'If the score seems off, verify you have the right persona active for the job type you are targeting.',
+      },
+      {
+        step: 5,
+        title: 'Manage Personas Over Time',
+        description:
+          'Update a persona when you upload a new resume version, rename it as your focus evolves, or delete it when no longer needed.',
+        tip: 'Archive old personas by renaming them (e.g. "EM — 2025") instead of deleting to preserve history.',
+      },
+    ],
+    bestPractices: [
+      'Create one persona per distinct role type — do not create one per job application',
+      'Keep persona resumes up to date when you upload new resume versions',
+      'Always verify the active persona before starting an analysis session',
+      'Use descriptive persona names that clearly reflect the role focus',
+    ],
+    troubleshooting: [
+      {
+        problem: 'ATS score seems wrong for the job type',
+        solution:
+          'Check that the correct persona is active. Go to Profile Settings → Personas and confirm the active persona matches your target role.',
+      },
+      {
+        problem: 'Cannot create a persona',
+        solution:
+          'You must have at least one uploaded resume to create a persona. Upload a resume first from the Resume Management page.',
+      },
+      {
+        problem: 'Persona resume is outdated',
+        solution:
+          'Upload your latest resume on the Resume Management page, then go to Profile Settings → Personas and update the persona to point to the new version.',
+      },
+    ],
+    relatedTopics: ['Resume Management', 'ATS Analysis', 'LinkedIn Profile Import'],
+  },
+
+  adminLogging: {
+    id: 'adminLogging',
+    title: 'Admin Logging & Observability',
+    description:
+      'Learn how to use the Admin Logging Panel to view application logs, control logging behaviour, and manage log retention.',
+    overview:
+      'The Admin Logging Panel gives authorized users full visibility into application activity. You can filter logs by severity level and time window, toggle logging on or off for specific scripts, and manage retention policies to control storage growth. This panel is for system administrators — it is not visible to regular users.',
+    keyFeatures: [
+      'Log Viewer with level filter (ERROR, WARN, INFO, DEBUG, TRACE)',
+      'Time window filter (last 5 min, 15 min, 1h, 6h, 24h, all time)',
+      'Per-script logging toggle',
+      'Log retention policy management',
+      'Log cleanup automation',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Open the Admin Panel',
+        description: 'Navigate to Admin → Logging Control. This section is only visible to admin-role accounts.',
+        tip: 'If you cannot see the Admin menu item, your account does not have admin privileges.',
+      },
+      {
+        step: 2,
+        title: 'Filter Logs by Level and Time',
+        description:
+          'In the Log Viewer, select a log level (ERROR is the default) and a time window. Click Refresh to load matching entries.',
+        tip: 'Start with ERROR + Last 1 hour for incident triage. Switch to INFO or DEBUG only when investigating specific flows.',
+      },
+      {
+        step: 3,
+        title: 'Search Log Content',
+        description: 'Use the search field to filter log entries by keyword, component name, or request ID.',
+        tip: 'Search by request_id to trace a single user action end-to-end across frontend and edge function logs.',
+      },
+      {
+        step: 4,
+        title: 'Toggle Logging Per Script',
+        description:
+          'In the Logging Control Panel, find the script you want to adjust and toggle its logging state on or off.',
+        tip: 'Disable DEBUG and TRACE logging on high-volume scripts in production to reduce storage costs.',
+      },
+      {
+        step: 5,
+        title: 'Review Retention Policies',
+        description:
+          'Check the retention settings to understand how long different log levels are kept before automatic cleanup.',
+        tip: 'ERROR logs are retained longer than DEBUG/TRACE logs by default. Adjust only if storage constraints require it.',
+      },
+    ],
+    bestPractices: [
+      'Use ERROR + Last 1 hour as the default view when opening the panel during an incident',
+      'Disable DEBUG/TRACE logging in production unless actively debugging a specific issue',
+      'Search by request_id to correlate frontend events with edge function responses',
+      'Review retention policies monthly to balance observability with storage costs',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Admin menu is not visible',
+        solution: 'The Logging Panel requires an admin-role account. Contact your system administrator to request elevated access.',
+      },
+      {
+        problem: 'Log Viewer shows no entries',
+        solution:
+          'Widen the time window or lower the log level filter. Also verify that logging is enabled for the scripts you are investigating.',
+      },
+      {
+        problem: 'Log entries are not updating in real time',
+        solution: 'The Log Viewer does not auto-refresh. Click the Refresh button to load the latest entries.',
+      },
+      {
+        problem: 'Cannot toggle a script logging state',
+        solution: 'Refresh the page and try again. If the toggle does not persist, check the browser console for errors.',
+      },
+    ],
+    relatedTopics: ['Dashboard Overview', 'Profile & Settings Management'],
+  },
+
+  accountDeletion: {
+    id: 'accountDeletion',
+    title: 'Account Deletion & Data Removal',
+    description:
+      'Understand how to request permanent deletion of your Smart ATS account and all associated data.',
+    overview:
+      'You can request complete deletion of your Smart ATS account at any time. When you submit a deletion request, your account enters a 30-day grace period during which you can cancel if you change your mind. After the grace period, all data — resumes, job descriptions, analyses, enriched experiences, and associated files — is permanently and irreversibly purged.',
+    keyFeatures: [
+      '30-day cancellation window before permanent deletion',
+      'Full data purge: resumes, analyses, enriched experiences, storage files',
+      'Cancel deletion request from Profile Settings within the grace period',
+      'Deletion status visible in your account settings',
+      'Compliant with right-to-erasure data privacy requirements',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Export Your Data First',
+        description:
+          'Before requesting deletion, download or copy any analyses, roadmaps, or enriched experience bullets you want to keep. Data cannot be recovered after the grace period ends.',
+        tip: 'Export your ATS analyses and copy any accepted experience bullets to a local document before proceeding.',
+      },
+      {
+        step: 2,
+        title: 'Go to Profile Settings → Account',
+        description: "Navigate to Profile Settings and scroll to the Account section. Click 'Delete Account'.",
+        tip: 'The delete option is at the bottom of the Account section.',
+      },
+      {
+        step: 3,
+        title: 'Confirm with Your Password',
+        description:
+          'Re-enter your password to confirm you are the account owner. This is required before the deletion request is accepted.',
+        tip: 'If you use a social login (Google, GitHub), you may be redirected to re-authenticate.',
+      },
+      {
+        step: 4,
+        title: 'Deletion Request Is Queued',
+        description:
+          'Your account enters a 30-day deletion window. You can still log in and use the product during this period.',
+        tip: 'A banner will appear at the top of each page reminding you that deletion is pending.',
+      },
+      {
+        step: 5,
+        title: 'Cancel If You Change Your Mind',
+        description:
+          "Return to Profile Settings → Account within 30 days and click 'Cancel Deletion Request' to stop the process.",
+        tip: 'Cancellation takes effect immediately — your account is fully restored as soon as you cancel.',
+      },
+      {
+        step: 6,
+        title: 'Permanent Deletion After Grace Period',
+        description:
+          'If you do not cancel within 30 days, all your data is permanently deleted and your account is closed. This action cannot be undone.',
+        tip: 'You will receive an email confirmation when deletion is complete.',
+      },
+    ],
+    bestPractices: [
+      'Export any valuable analysis results, roadmaps, or experience bullets before requesting deletion',
+      'Use the 30-day window to make sure you have saved everything you need',
+      'If you are pausing your job search rather than leaving permanently, consider simply logging out instead',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Cannot find the Delete Account option',
+        solution: 'Go to Profile Settings → Account tab and scroll to the bottom. The delete option is in the Danger Zone section.',
+      },
+      {
+        problem: 'Deletion request is not showing as pending',
+        solution: 'Refresh the page. If the request is not reflected in your account settings within a few minutes, contact support.',
+      },
+      {
+        problem: 'Want to cancel but the cancellation button is missing',
+        solution:
+          'The cancellation option is only available within the 30-day window. If the window has passed, the deletion is final.',
+      },
+      {
+        problem: 'Data still visible after the grace period',
+        solution:
+          'Deletion is processed asynchronously and may take a few hours after the grace period ends. If data is still visible after 24 hours, contact support.',
+      },
+    ],
+    relatedTopics: ['Profile & Settings Management', 'Dashboard Overview'],
+  },
 }
 
-// Updated: 2026-03-01 00:00:00 - Added help content for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
+// UPDATE LOG
+// 2026-03-01 00:00:00 | Added help content for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
+// 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

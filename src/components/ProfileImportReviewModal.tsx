@@ -1,5 +1,9 @@
-// Updated: 2026-03-01 00:00:00 - P13 Story 3: Created HITL review modal for LinkedIn import with skill/experience selection and sequential DB save flow.
-// Updated: 2026-03-17 00:00:00 - Fix scroll clipping: moved pr-3 from ScrollArea wrapper to inner content div so scrollbar does not overlap content.
+/**
+ * UPDATE LOG
+ * 2026-03-01 00:00:00 | P13 Story 3: Created HITL review modal for LinkedIn import with skill/experience selection and sequential DB save flow.
+ * 2026-03-17 00:00:00 | Fix scroll clipping: moved pr-3 from ScrollArea wrapper to inner content div so scrollbar does not overlap content.
+ * 2026-03-18 00:00:00 | CR2-3: Updated import path from linkedinImportMerge to linkedin-import-merge.
+ */
 
 import { useState } from 'react'
 import {
@@ -24,7 +28,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   LinkedinImportMergeResult,
   canonicalizeSkillName,
-} from '@/utils/linkedinImportMerge'
+} from '@/utils/linkedin-import-merge'
 
 interface ProfileImportReviewModalProps {
   isOpen: boolean

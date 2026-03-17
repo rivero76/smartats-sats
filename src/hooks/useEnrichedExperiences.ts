@@ -4,6 +4,7 @@
  * 2026-02-21 00:05:00 | Added full enrich-experiences-client coverage for save workflow logging.
  * 2026-02-21 00:15:00 | Hardened invoke failure telemetry with error name/context/status and request_id propagation.
  * 2026-02-21 00:54:21 | P5: Added enriched experience update/delete lifecycle support and active-record filtering.
+ * 2026-03-18 00:00:00 | CR4-9: Add explanatory comment for edge function error body parsing in useGenerateEnrichmentSuggestions.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -295,6 +296,11 @@ export const useGenerateEnrichmentSuggestions = () => {
 
       if (error) {
         console.error('Enrichment function error:', error)
+        // Supabase functions.invoke() wraps edge function HTTP errors in a JS Error where
+        // error.context is the raw Response object. We parse it to extract the edge function's
+        // own error message/code so the user sees "Playwright service unreachable" rather than
+        // the generic Supabase SDK wrapper message. We clone() before reading to avoid
+        // consuming the body twice if other error handlers also try to read it.
         const errorName = typeof error.name === 'string' ? error.name : 'UnknownError'
         const maybeResponse = error.context instanceof Response ? error.context : undefined
         const statusCode = maybeResponse?.status

@@ -2,35 +2,11 @@
  * UPDATE LOG
  * 2026-02-20 23:22:57 | P1: Integrated centralized structured logging for account deletion cancellation events.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
+ * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   const origin = req.headers.get('origin')

@@ -1,6 +1,6 @@
 # SmartATS Architecture
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-18
 
 ## Overview
 
@@ -32,9 +32,12 @@ SmartATS is a React + TypeScript application with Supabase (Postgres + Auth + Ed
 1. **Resume/JD ingestion** → extraction/normalization → persistence in `sats_*` tables.
 2. **ATS analysis requests** → edge function scoring → `sats_analyses` + related artifacts.
 3. **Enrichment and roadmap generation** → schema-locked LLM output → persisted user-owned records.
-4. **LinkedIn import** → `linkedin-profile-ingest` edge function → `linkedinImportMerge` frontend utility → HITL review modal → `sats_user_skills` + `sats_skill_experiences`.
+4. **LinkedIn import** → `linkedin-profile-ingest` edge function → `linkedin-import-merge` frontend utility → HITL review modal → `sats_user_skills` + `sats_skill_experiences`.
 5. **Profile reconciliation** (P16) → `reconcile-profile` edge function → `sats_profile_conflicts` → HITL resolution page → master profile updated.
 6. **Career fit and live job discovery** (P16) → `suggest-career-fit` → `fetch-live-jobs` (JSearch/Adzuna) → `sats_job_discovery_cache` + `sats_career_fit_suggestions` → `/career-fit` UI.
+7. **Proactive matching** (P14) → `fetch-market-jobs` (cron) → `sats_staged_jobs` → `async-ats-scorer` (cron) → `sats_analyses` + `sats_user_notifications` (if score ≥ threshold).
+8. **Resume Personas** (P16 Story 1) → user selects active persona in `/settings` → `PersonaManager` writes to `sats_resume_personas` → active persona is passed to ATS analysis as role context.
+9. **CV Optimisation Score** (P18) → ATS analysis completes (Call 1, pure baseline) → `getAcceptedEnrichments()` fetches accepted enrichments → Call 2 (`buildOptimisationPrompt`) projects improved score → both scores returned in analysis response.
 
 ---
 
@@ -53,21 +56,44 @@ All calls use structured JSON output (`response_format.json_schema` with `strict
 
 ### Provider Abstraction (P16 Story 0)
 
-A shared utility at `supabase/functions/_shared/llmProvider.ts` is being introduced to remove direct OpenAI coupling from all edge functions. Switching provider will require only a change to the `SATS_LLM_PROVIDER` environment variable. No edge function code changes will be needed.
+A shared utility at `supabase/functions/_shared/llmProvider.ts` removes direct OpenAI coupling from all edge functions. Switching provider requires only a change to the `SATS_LLM_PROVIDER` environment variable. No edge function code changes are needed.
 
 Supported providers (current and planned): `openai`, `anthropic`, `gemini`, `groq`, `mistral`.
 
 See `docs/decisions/adr-0002-llm-provider-abstraction.md` for full rationale and migration plan.
 
+### CV Optimisation Score — Two-Call Isolation (P18)
+
+ATS analysis with CV Optimisation uses two sequential, isolated `callLLM()` calls:
+
+1. **Call 1 — Base ATS Score**: Pure scoring prompt. No enrichment context. `temperature: 0`, `seed: 42` for deterministic output. Produces the raw ATS score and gap analysis.
+2. **Call 2 — CV Optimisation Projection**: Receives Call 1 output + accepted enrichments. Projects what the score *could be* if improvements are applied.
+
+The two calls are never merged. Call 1 output is read-only input to Call 2. See `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` for full rationale.
+
+### Async vs Direct ATS Scoring (P14/P8)
+
+Two code paths for ATS scoring exist and are intentionally separate:
+
+| Path | File | Trigger | Use |
+|---|---|---|---|
+| Direct | `ats-analysis-direct` | User action | On-demand, user-facing, includes CV Optimisation |
+| Async | `async-ats-scorer` | Cron job | Background proactive scoring against market jobs |
+
+See `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` for full rationale.
+
 ### Output Contract
 
-All LLM calls enforce schema-locked JSON output. Three schemas are in use:
-- `ATS_JSON_SCHEMA` — ATS scoring with evidence and skill match
-- `ENRICHMENT_JSON_SCHEMA` — Experience enrichment with evidence constraints
-- `ROADMAP_JSON_SCHEMA` — Upskilling milestones with ordered sequence
+All LLM calls enforce schema-locked JSON output (`response_format.json_schema`, `strict: true`). Schemas in use:
 
-New schemas added in P16:
-- `CAREER_FIT_JSON_SCHEMA` — Role suggestions with match strength and skill gaps
+| Schema | Owner function | Purpose |
+|---|---|---|
+| `ATS_JSON_SCHEMA` | `ats-analysis-direct`, `async-ats-scorer` | ATS scoring with evidence and skill match |
+| `CV_OPTIMISATION_JSON_SCHEMA` | `ats-analysis-direct` (Call 2 only) | CV improvement projection score (P18) |
+| `ENRICHMENT_JSON_SCHEMA` | `enrich-experiences` | Experience enrichment with evidence constraints |
+| `ROADMAP_JSON_SCHEMA` | `generate-upskill-roadmap` | Upskilling milestones with ordered sequence |
+| `CAREER_FIT_JSON_SCHEMA` | `suggest-career-fit` | Role suggestions with match strength and skill gaps (P16) |
+| `LINKEDIN_NORMALIZATION_SCHEMA` | `linkedin-profile-ingest` | Skills and experiences normalized from raw scraper payload (P13) |
 
 ---
 
@@ -145,6 +171,10 @@ New schemas added in P16:
 - `docs/decisions/`: ADRs and product/architecture decisions
 - `docs/decisions/adr-0001-agent-collaboration-model.md`: agent ownership model
 - `docs/decisions/adr-0002-llm-provider-abstraction.md`: LLM provider abstraction decision
+- `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md`: P18 two-call isolation pattern
+- `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md`: async vs direct ATS scoring paths
+- `docs/decisions/adr-0005-skill-dedup-fuzzy-matching.md`: skill deduplication strategy (Dice coefficient)
+- `docs/decisions/adr-0006-rls-first-tenant-isolation.md`: RLS-first multi-tenant isolation model
 - `docs/runbooks/`: operational procedures
 - `docs/specs/product/`: product feature specifications
 - `docs/specs/technical/`: technical implementation specifications

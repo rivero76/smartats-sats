@@ -14,16 +14,24 @@ This directory stores execution plans and feature phase documents used by both c
 - **Completed plans** are moved to `plans/archive/` after their last story merges to main. Add a `<!-- Status: COMPLETED ... -->` block before moving.
 - This keeps the root of `plans/` scannable — only in-progress work appears here.
 
-## Current Files
+## Active Plans
 
 | File | Status |
 |---|---|
-| `p10-p11-agent-prompts.md` | Reference / historical |
+| `p14.md` | IN PROGRESS — branch: p14 |
+
+## Archive (`plans/archive/`)
+
+| File | Status |
+|---|---|
 | `p13.md` | COMPLETED — merged to main (~2026-02-28) |
-| `p14.md` | IN PROGRESS — branch: p14, blocked on Railway deploy |
 | `p15.md` | COMPLETED — merged to main (~2026-02-28) |
-| `product-improvements.md` | Living document |
+| `p10-p11-agent-prompts.md` | Historical reference (agent prompt templates) |
+| `product-improvements-history.md` | Archived god-doc (2026-03-18) — content decomposed into `docs/decisions/product-roadmap.md`, `docs/bugs/BACKLOG.md`, `docs/specs/` |
 
-## Archive
+## Related Docs
 
-Completed plans: `plans/archive/` (directory to be created when first plan is archived)
+- **Canonical roadmap (phase list + status):** `docs/decisions/product-roadmap.md`
+- **Technical improvement backlog:** `docs/improvements/TECHNICAL_IMPROVEMENTS.md`
+- **Bug backlog:** `docs/bugs/BACKLOG.md`
+- **Incident post-mortems:** `docs/incidents/`

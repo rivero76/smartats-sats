@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-02-25 17:50:00 | P13 Story 2: Added LinkedIn import preparation hook to fetch baseline records and run merge/dedupe logic.
+ * 2026-03-18 00:00:00 | CR4-9: Add explanatory comments for FK-named join syntax and import path after file rename.
  */
 import { useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -13,7 +14,7 @@ import {
   LinkedinPreviewSkill,
   LinkedinPreviewSkillExperience,
   mergeLinkedinImportData,
-} from '@/utils/linkedinImportMerge'
+} from '@/utils/linkedin-import-merge'
 
 interface LinkedinNormalizedPreview {
   normalized_skills: LinkedinPreviewSkill[]
@@ -36,6 +37,9 @@ export const usePrepareLinkedinImport = () => {
     }: PrepareLinkedinImportPayload): Promise<LinkedinImportMergeResult> => {
       if (!user) throw new Error('Not authenticated')
 
+      // PostgREST join syntax: `skill:sats_skills!sats_user_skills_skill_id_fkey(name)` uses the
+      // explicit FK constraint name to resolve the join. This is required because sats_user_skills
+      // has multiple FKs to sats_skills and PostgREST cannot infer which one to use without the hint.
       const { data: existingUserSkillsData, error: existingUserSkillsError } = await supabase
         .from('sats_user_skills')
         .select(

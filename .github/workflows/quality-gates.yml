@@ -31,6 +31,9 @@ jobs:
         run: npm run build
 
       - name: Test
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder_anon_key_for_unit_tests
         run: npm run test -- --run
 
       - name: Format check (changed files)
@@ -41,6 +44,10 @@ jobs:
 
       - name: Lint (non-blocking baseline debt)
         run: npm run lint
+        continue-on-error: true
+
+      - name: UPDATE LOG header check (non-blocking — clear debt before making blocking)
+        run: bash scripts/ops/check-update-log.sh
         continue-on-error: true
 
       - name: Docs gate

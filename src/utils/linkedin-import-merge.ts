@@ -3,6 +3,8 @@
  * 2026-02-25 17:35:00 | P13 Story 2: Added LinkedIn import dedupe/merge utility with fuzzy skill matching and provenance metadata tagging.
  * 2026-03-01 17:08:32 | Fix experience fingerprint asymmetry: removed companyName from proposed-experience fingerprint so both sides use the same fields (canonical skill + job title + description). sats_skill_experiences has no company_name text column so it cannot be included symmetrically.
  * 2026-03-01 00:00:00 | P13 Story 3: Exported canonicalizeSkillName for use in ProfileImportReviewModal save flow.
+ * 2026-03-18 00:00:00 | CR1-4: Extract Dice-coefficient similarity cutoff 0.86 to SKILL_FUZZY_MATCH_THRESHOLD named constant.
+ * 2026-03-18 00:01:00 | CR2-3: Renamed from linkedinImportMerge.ts to linkedin-import-merge.ts (kebab-case convention).
  */
 
 export interface LinkedinPreviewSkill {
@@ -108,6 +110,11 @@ interface MergeParams {
   existingExperiences: ExistingSkillExperience[]
   importDate?: string
 }
+
+// Dice-coefficient similarity cutoff for treating two skills as duplicates.
+// Scores >= 0.86 are treated as the same skill to avoid near-duplicate entries (e.g. 'JavaScript' vs 'Javascript').
+// Below this threshold the incoming skill is inserted as a distinct entry rather than merged.
+const SKILL_FUZZY_MATCH_THRESHOLD = 0.86
 
 const SKILL_SYNONYMS: Record<string, string> = {
   reactjs: 'react',
@@ -218,7 +225,7 @@ export function mergeLinkedinImportData(params: MergeParams): LinkedinImportMerg
     seenCanonicalSkills.add(canonical)
 
     const bestMatch = findBestSkillMatch(canonical, existingSkills)
-    if (bestMatch && bestMatch.score >= 0.86) {
+    if (bestMatch && bestMatch.score >= SKILL_FUZZY_MATCH_THRESHOLD) {
       skillsToMerge.push({
         kind: 'merge',
         proposed_skill_name: proposedSkill.skill_name,

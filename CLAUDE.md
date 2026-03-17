@@ -51,6 +51,9 @@ supabase db push                          # Apply migrations
 # After every migration — regenerate TypeScript types
 bash scripts/ops/gen-types.sh            # Writes src/integrations/supabase/types.ts
 
+# One-time setup after cloning — install git pre-commit hooks
+bash scripts/ops/install-hooks.sh        # Installs UPDATE LOG header enforcement hook
+
 # Log inspection (runtime / operational)
 bash scripts/ops/fetch-logs.sh           # Interactive: prompts for 1–10 min window, queries all sources
 bash scripts/ops/fetch-logs.sh --source docker --minutes 5   # Docker only, 5 min
@@ -84,7 +87,7 @@ All edge functions share three utilities in `supabase/functions/_shared/`:
 | File | Purpose |
 |---|---|
 | `llmProvider.ts` | Single `callLLM(LLMRequest)` entry point; provider selected by `SATS_LLM_PROVIDER` env var (default: `openai`) |
-| `cors.ts` | `isOriginAllowed(origin)` + `buildCorsHeaders(origin)` against `ALLOWED_ORIGINS` env var |
+| `cors.ts` | `isOriginAllowed(origin)` + `buildCorsHeaders(origin)` against `SATS_ALLOWED_ORIGINS` env var (falls back to `ALLOWED_ORIGINS` for backwards compat) |
 | `env.ts` | `getEnvNumber(name, fallback)` and `getEnvBoolean(name, fallback)` |
 
 **Every new edge function must use these shared utilities.** Direct OpenAI SDK calls or inline CORS logic are not permitted.
@@ -163,8 +166,11 @@ After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/chang
 | Active feature plans | `plans/` |
 | Completed/archived plans | `plans/archive/` |
 | Operational runbooks | `docs/runbooks/` |
-| Bug reports and incidents | `docs/bugs/` |
+| Active code defects (bugs) | `docs/bugs/` |
+| Operational/deploy incidents | `docs/incidents/` |
 | Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` |
+| Periodic code review findings | `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md` |
+| Reusable audit prompts | `docs/audits/` |
 | Security audit reports | `docs/security/` |
 | Compliance policies | `docs/compliance/` |
 | Release readiness | `docs/releases/UNTESTED_IMPLEMENTATIONS.md` |
@@ -182,5 +188,7 @@ After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/chang
 - `plans/`: active feature and implementation plans — mark completed plans with `<!-- Status: COMPLETED -->` and move to `plans/archive/`
 - `plans/archive/`: completed plans
 - `docs/`: architecture, decisions, runbooks, releases, compliance
-  - `docs/improvements/`: technical improvement backlog
-  - `docs/bugs/`: bug reports and incident documentation
+  - `docs/improvements/`: technical improvement backlog + periodic code review findings
+  - `docs/bugs/`: active code defects
+  - `docs/incidents/`: operational and deployment incident post-mortems
+  - `docs/audits/`: reusable review/audit prompts and structure analyses

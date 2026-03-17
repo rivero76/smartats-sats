@@ -1,30 +1,9 @@
+/**
+ * UPDATE LOG
+ * 2026-03-18 00:00:00 | CR4-2 + CR1-2: Add missing UPDATE LOG header; replace inline CORS block with shared _shared/cors.ts import.
+ */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
 
 function decodeHtmlEntities(text: string): string {
   return text

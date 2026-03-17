@@ -1,3 +1,8 @@
+/**
+ * UPDATE LOG
+ * 2026-03-18 00:00:00 | CR1-6: Add explanatory comment for job extraction confidence weights (0.4/0.35/0.25).
+ * 2026-03-18 00:01:00 | CR2-2: Renamed from contentExtraction.ts to content-extraction.ts (kebab-case convention).
+ */
 // Pattern-based content extraction utilities (no AI)
 import { logContentExtraction, createContentExtractionLogger } from '@/lib/jobDescriptionLogger'
 
@@ -490,6 +495,8 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
     location: result.location ? 0.88 : 0.2,
     overall: 0,
   }
+  // Weighted confidence formula: title (40%) carries most signal as it is the primary identifiable field,
+  // company (35%) is next most reliable, location (25%) is frequently absent or ambiguous.
   confidence.overall =
     confidence.title * 0.4 + confidence.company * 0.35 + confidence.location * 0.25
 

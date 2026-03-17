@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS analysis hook updates and added timestamped file header tracking.
  * 2026-03-17 12:00:00 | Fix misleading comment on useCreateATSAnalysis export — delegates to edge function, not direct OpenAI.
+ * 2026-03-18 00:00:00 | CR4-9: Add explanatory comments for real-time + polling dual strategy and N+1 user fetch.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
@@ -91,7 +92,9 @@ export const useATSAnalyses = () => {
 
       if (error) throw error
 
-      // Fetch user details separately for each analysis
+      // User display data (name, email) lives in sats_users_public + profiles — separate tables from sats_analyses.
+      // PostgREST cannot JOIN across auth.users directly, so we fetch user details per-analysis.
+      // At current scale (<200 analyses per user) the N+1 is acceptable; revisit if pagination is added.
       const analysesWithUserData = await Promise.all(
         (data || []).map(async (analysis) => {
           const { data: userData, error: userError } = await supabase
@@ -134,7 +137,9 @@ export const useATSAnalyses = () => {
     refetchOnWindowFocus: true,
   })
 
-  // Set up real-time subscription
+  // Real-time subscription: drives instant UI updates when the edge function updates an analysis row.
+  // This is the primary update path. The polling refetchInterval above is a safety net for cases
+  // where the realtime WebSocket event is delayed, dropped, or the tab was backgrounded.
   React.useEffect(() => {
     if (!user) return
 

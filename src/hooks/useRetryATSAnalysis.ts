@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS retry flow updates and added timestamped file header tracking.
  * 2026-02-20 23:29:40 | P2: Added request_id propagation and duration tracking for ATS retry flow.
+ * 2026-03-18 00:00:00 | CR4-9: Add explanatory comments for retry pattern (reset-then-reinvoke).
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -32,6 +33,10 @@ export const useRetryATSAnalysis = () => {
       if (existingAnalysis.user_id !== user.id)
         throw new Error('Cannot retry analysis of another user')
 
+      // Reset to 'queued' before re-invoking: this clears the previous error/stale score and
+      // lets the real-time subscription and polling in useATSAnalyses track progress again from
+      // a clean state. Without this reset, the UI would show the old failed result until the
+      // edge function overwrites it, which can take several seconds and confuses the user.
       // Reset the analysis back to queued state
       const { error: updateError } = await supabase
         .from('sats_analyses')

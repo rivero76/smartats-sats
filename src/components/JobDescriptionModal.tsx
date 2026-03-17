@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-18 00:00:00 | CR1-5: Extract auto-apply confidence cutoff 0.78 to AUTO_APPLY_CONFIDENCE_THRESHOLD named constant.
+ */
 import React, { useState } from 'react'
 import {
   Dialog,
@@ -33,8 +37,12 @@ import {
 import { Plus, Edit, Building, MapPin, Info, Link2, ClipboardPaste, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import { extractJobDescriptionInfo } from '@/utils/contentExtraction'
+import { extractJobDescriptionInfo } from '@/utils/content-extraction'
 import { JobDescriptionSession } from '@/lib/jobDescriptionLogger'
+
+// Minimum overall extraction confidence (0–1) required to auto-apply extracted fields.
+// Below this threshold the user is prompted to review before saving.
+const AUTO_APPLY_CONFIDENCE_THRESHOLD = 0.78
 
 interface JobDescriptionModalProps {
   jobDescription?: JobDescription
@@ -229,7 +237,7 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
       setExtractedData(extracted)
       const meta = (extracted?.extractionMeta || {}) as ExtractionMetaView
       const overallConfidence = meta.confidence?.overall || 0
-      const shouldAutoApply = overallConfidence >= 0.78 && !(meta.warnings || []).length
+      const shouldAutoApply = overallConfidence >= AUTO_APPLY_CONFIDENCE_THRESHOLD && !(meta.warnings || []).length
 
       if (shouldAutoApply) {
         applyExtractedData(extracted)

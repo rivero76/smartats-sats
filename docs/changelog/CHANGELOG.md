@@ -4,6 +4,23 @@ All notable changes to this project should be documented in this file.
 
 ## [Unreleased]
 
+- CR1-2: Centralized CORS helpers across 6 edge functions (`cancel-account-deletion`, `centralized-logging`, `delete-account`, `fetch-market-jobs`, `job-description-url-ingest`, `linkedin-profile-ingest`). Replaced inline `ALLOWED_ORIGINS` constant + `isOriginAllowed`/`buildCorsHeaders` function declarations with `import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'`. Production origin changes now require updating only `_shared/cors.ts`.
+- CR4-2: Added missing UPDATE LOG header to `job-description-url-ingest/index.ts` (was the only edge function with no header).
+- CR4-3: Created `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` — documents why P18 uses two separate `callLLM()` calls (base ATS score + CV optimisation projection) to prevent context contamination and ensure base score reproducibility.
+- CR4-4: Created `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` — documents when `async-ats-scorer` (cron/proactive pipeline) vs `ats-analysis-direct` (user-triggered) is used, why they are separate, and the long-term direction.
+- CR1-3: Extracted proactive match threshold `0.6` to `DEFAULT_PROACTIVE_MATCH_THRESHOLD` constant in `async-ats-scorer`. Overridable via `SATS_PROACTIVE_MATCH_THRESHOLD` env var.
+- CR1-4: Extracted Dice-coefficient skill dedup cutoff `0.86` to `SKILL_FUZZY_MATCH_THRESHOLD` in `linkedinImportMerge.ts`.
+- CR1-5: Extracted auto-apply confidence cutoff `0.78` to `AUTO_APPLY_CONFIDENCE_THRESHOLD` in `JobDescriptionModal.tsx`.
+- CR1-6: Added explanatory comment above the weighted confidence formula in `contentExtraction.ts` (title 40%, company 35%, location 25%).
+- CR1-7: Added inline comment to `ats-analysis-direct` explaining `temperature=0` + `seed=42` determinism rationale.
+- CR2-2: Renamed `src/utils/contentExtraction.ts` → `content-extraction.ts` (kebab-case); updated import in `JobDescriptionModal.tsx`.
+- CR2-3: Renamed `src/utils/linkedinImportMerge.ts` → `linkedin-import-merge.ts` (kebab-case); updated imports in `ProfileImportReviewModal.tsx` and `useLinkedinImportPreparation.ts`.
+- CR2-4: `_shared/cors.ts` now reads `SATS_ALLOWED_ORIGINS` env var (canonical `SATS_` prefix) with fallback to `ALLOWED_ORIGINS` for backwards compatibility. `.env.example` and `CLAUDE.md` updated.
+- CR4-5: Created `docs/decisions/adr-0005-skill-dedup-fuzzy-matching.md` — documents Dice-coefficient strategy, why 0.86, why not embeddings.
+- CR4-6: Created `docs/decisions/adr-0006-rls-first-tenant-isolation.md` — documents RLS-first multi-tenant isolation model, P8 migration patterns, service role discipline.
+- CR4-8: Updated `docs/architecture.md` — added P14 proactive matching flow, P16 Resume Personas flow, P18 two-call CV Optimisation; expanded LLM schemas table; linked all 6 ADRs; updated Last Updated date.
+- CR4-9: Added "why" comments to 5 non-obvious logic blocks across `useATSAnalyses`, `useRetryATSAnalysis`, `useEnrichedExperiences`, and `useLinkedinImportPreparation`.
+
 - P0-1: Created `scripts/playwright-linkedin/.railwayignore` — excludes `node_modules/`, `dist/`, `*.log`, `.env` from Railway uploads. Fixes `railway up --path-as-root` timeout (Railway CLI v4.30.5 reads git-root `.gitignore` not subdirectory ignore).
 - P0-2: Removed hardcoded `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from `docker-compose.yml`. Both services now use `env_file: .env` and build args reference `${VAR}`. Added `.env` to `.gitignore`.
 - P0-3: Noted `scripts/playwright-linkedin/package-lock.json` is untracked (committed separately).

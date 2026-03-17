@@ -1,8 +1,8 @@
 # Product Roadmap and Change Tracking
 
-**Last Updated:** 2026-03-17 (P17 BYOK + User-Controlled AI added; P18 CV Optimisation Score added and implemented)
+**Last Updated:** 2026-03-18 (restructure: this file is now the sole canonical roadmap; execution plans in `plans/`)
 **Vision File:** `docs/decisions/product-vision.md`
-**Execution Source:** `plans/product-improvements.md`
+**Active Plans:** `plans/` (one file per in-progress phase) | **Archive:** `plans/archive/`
 
 ## 1) Roadmap Snapshot
 

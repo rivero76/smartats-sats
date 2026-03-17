@@ -1,4 +1,15 @@
-# Product Improvements Plan
+# Product Improvements Plan — ARCHIVED 2026-03-18
+
+<!--
+  STATUS: ARCHIVED
+  Archived: 2026-03-18 — content decomposed into canonical locations:
+    - Product roadmap       → docs/decisions/product-roadmap.md (CANONICAL)
+    - Phase specs P11/P12   → docs/specs/product/ (already there)
+    - Bug backlog §1C       → docs/bugs/BACKLOG.md
+    - Strategic direction   → docs/decisions/product-vision.md
+    - Active execution      → plans/p14.md (p14 in progress)
+  DO NOT EDIT — preserved for historical reference only.
+-->
 
 ## Update Log
 

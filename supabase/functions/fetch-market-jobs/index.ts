@@ -1,17 +1,11 @@
 /**
  * UPDATE LOG
  * 2026-02-24 18:20:00 | P14 Story 1: Added scheduled staging worker with mock market jobs, URL/hash dedupe, and centralized logging.
+ * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
-const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0)
-)
+import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
 
 const MOCK_JOBS: Array<{
   source: string
@@ -45,25 +39,6 @@ const MOCK_JOBS: Array<{
       'Ship customer-facing features quickly, run A/B experiments, instrument analytics, and collaborate with marketing. Strong frontend and SQL skills required.',
   },
 ]
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true
-  return ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin)
-}
-
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = ALLOWED_ORIGINS.has('*')
-    ? '*'
-    : origin && ALLOWED_ORIGINS.has(origin)
-      ? origin
-      : 'null'
-
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-}
 
 function normalizeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim()

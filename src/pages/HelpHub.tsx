@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { HelpCircle, Search, ArrowRight } from 'lucide-react'
 import { helpContentData, type HelpContent } from '@/data/helpContent'
 
-// Updated: 2026-03-01 00:00:00 - Added route mappings for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
+// UPDATE LOG
+// 2026-03-01 00:00:00 | Added route mappings for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
+// 2026-03-18 00:00:00 | CR3-1–CR3-4: Added route mappings for linkedinProfileImport, resumePersonas, adminLogging, accountDeletion
 const HELP_ROUTE_MAP: Record<string, string> = {
   dashboard: '/',
   resumes: '/resumes',
@@ -17,6 +19,10 @@ const HELP_ROUTE_MAP: Record<string, string> = {
   enrichedExperiences: '/experiences',
   upskillingRoadmaps: '/roadmaps',
   proactiveMatches: '/opportunities',
+  linkedinProfileImport: '/settings',
+  resumePersonas: '/settings',
+  adminLogging: '/admin',
+  accountDeletion: '/settings',
 }
 
 type HelpTopic = HelpContent & { route?: string }

@@ -262,6 +262,6 @@ Detailed workflow:
   - `scripts/ops/check-secrets.sh` to detect likely secrets in newly added diff lines.
   - `scripts/ops/check-supabase.sh` to validate Supabase CLI status, migration visibility, and linked dry-run status when token is available.
   - GitHub Action quality gates in `.github/workflows/quality-gates.yml`.
-- SDLC P4 security hardening now enforces CORS allowlists in edge functions via `ALLOWED_ORIGINS` and rejects non-allowed origins with explicit `403` responses.
+- SDLC P4 security hardening now enforces CORS allowlists in edge functions via `SATS_ALLOWED_ORIGINS` and rejects non-allowed origins with explicit `403` responses.
 - P9 roadmap now defines AI runtime governance and analytics foundations: editable model/runtime parameters, immutable config audit trail, unified LLM event capture, and cost/performance/product KPI dashboards.
 - P15 Story 3 is now implemented in-app via `/roadmaps`, including sequenced milestone timeline UI, completion toggles, and progress bar tracking for persisted learning plans.

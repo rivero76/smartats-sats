@@ -2,6 +2,8 @@
  * UPDATE LOG
  * 2026-02-24 19:40:00 | P14 Story 2: Added async scorer worker for staged jobs with skills-first baseline and ATS schema-compatible scoring output.
  * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, and OpenAI fetch loop; replaced with _shared/ imports and callLLM(). Added cost tracking.
+ * 2026-03-18 | CR1-1: Config error response changed from 500 → 503 (CLAUDE.md §3.2 compliance).
+ * 2026-03-18 | CR1-3: Extract proactive match threshold 0.6 to DEFAULT_PROACTIVE_MATCH_THRESHOLD constant; override via SATS_PROACTIVE_MATCH_THRESHOLD env var.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -25,6 +27,9 @@ const SCORER_BATCH_JOBS = Math.max(
   1,
   Math.min(50, Math.floor(getEnvNumber('ASYNC_ATS_SCORER_BATCH_JOBS', 8)))
 )
+// Minimum ATS score (0–1) for triggering a proactive match notification.
+// Overridable per-user via profiles.proactive_match_threshold; globally via SATS_PROACTIVE_MATCH_THRESHOLD env var.
+const DEFAULT_PROACTIVE_MATCH_THRESHOLD = getEnvNumber('SATS_PROACTIVE_MATCH_THRESHOLD', 0.6)
 
 const ATS_JSON_SCHEMA = {
   type: 'object',
@@ -109,7 +114,7 @@ type ResumeRow = {
 }
 
 function clampThreshold(value: number): number {
-  if (!Number.isFinite(value)) return 0.6
+  if (!Number.isFinite(value)) return DEFAULT_PROACTIVE_MATCH_THRESHOLD
   return Math.max(0, Math.min(1, value))
 }
 
@@ -304,7 +309,7 @@ async function getGlobalThresholdDefault(supabase: ReturnType<typeof createClien
     .maybeSingle()
 
   if (error) throw error
-  return parseThreshold(data?.value, 0.6)
+  return parseThreshold(data?.value, DEFAULT_PROACTIVE_MATCH_THRESHOLD)
 }
 
 async function getUserThresholdMap(
@@ -322,7 +327,7 @@ async function getUserThresholdMap(
   if (error) throw error
 
   for (const row of data || []) {
-    const threshold = parseThreshold((row as { proactive_match_threshold: number | null }).proactive_match_threshold, 0.6)
+    const threshold = parseThreshold((row as { proactive_match_threshold: number | null }).proactive_match_threshold, DEFAULT_PROACTIVE_MATCH_THRESHOLD)
     map.set((row as { user_id: string }).user_id, threshold)
   }
 
@@ -421,8 +426,9 @@ serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
   if (!supabaseUrl || !serviceKey || !Deno.env.get('OPENAI_API_KEY')) {
+    // 503 = misconfigured service (not a transient server error); allows correct client retry behaviour
     return new Response(JSON.stringify({ success: false, error: 'Missing required env configuration' }), {
-      status: 500,
+      status: 503,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
