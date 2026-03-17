@@ -4,6 +4,9 @@
 <!-- 2026-03-17 00:15:00 | Created. Documents model selection rationale, change procedure, and required
      test protocol for any future LLM model upgrade. Triggered by switch from gpt-4.1 to o4-mini for
      ATS scoring and introduction of seed-based determinism. -->
+<!-- 2026-03-17 00:20:00 | o4-mini rollback. API returned 400 model-not-found. Reverted to gpt-4.1.
+     Added §4.0 pre-flight check. Fixed callOpenAI fallback bug (model-not-found 400 now falls through
+     to next candidate). o4-mini re-enablement requires confirming valid API model ID. -->
 
 ## 1. Purpose
 
@@ -47,6 +50,24 @@ Switched from `gpt-4.1` to `o4-mini` on 2026-03-17. Rationale:
 ---
 
 ## 4. Model Change Protocol
+
+### 4.0 Pre-flight check (run before any model change)
+
+Verify the target model ID is accepted by the OpenAI API before deploying:
+
+```bash
+curl -s https://api.openai.com/v1/models/<model-id> \
+  -H "Authorization: Bearer $OPENAI_API_KEY" | jq '.id // .error'
+```
+
+If the response contains `"error"`, the model ID is invalid — do not proceed with the change.
+Also confirm the model appears in `curl https://api.openai.com/v1/models` output.
+
+> **Lesson from 2026-03-17**: `o4-mini` was rejected by the API (400 model not found).
+> The fallback to `gpt-4.1` also failed because `callOpenAI` was throwing immediately on 400
+> instead of falling through to the next candidate. Both issues have since been fixed:
+> the pre-flight check prevents invalid model IDs from reaching production; the fallback
+> bug in `llmProvider.ts` is fixed so model-not-found 400s now try the next candidate.
 
 Follow this protocol for **any** change to a model in the register above. A model change is:
 - Switching model family (`gpt-4.1` → `o4-mini`)
@@ -133,4 +154,4 @@ Set to a different value to verify that output changes, confirming seed is being
 
 | Date | Change | Pre-change model | Post-change model | Validated by | Notes |
 |---|---|---|---|---|---|
-| 2026-03-17 | Initial switch + determinism | `gpt-4.1`, temp=0.1, no seed | `o4-mini`, temp=0, seed=42 | Pending E2E | See UNTESTED_IMPLEMENTATIONS.md |
+| 2026-03-17 | Determinism only | `gpt-4.1`, temp=0.1, no seed | `gpt-4.1`, temp=0, seed=42 | Pending E2E | o4-mini rollback — API rejected model ID (400 model not found). Fallback bug in llmProvider.ts fixed simultaneously. |

@@ -6,6 +6,9 @@
  * 2026-03-17 00:15:00 | LLM model governance: added optional `seed` field to LLMRequest for deterministic
  *   output; added o4-mini and o3 pricing to MODEL_PRICING_USD; buildBody() now uses max_completion_tokens
  *   for reasoning models (o-series) to satisfy OpenAI API requirements.
+ * 2026-03-17 00:20:00 | Fallback bug fix: model-not-found 400 errors now fall through to next model
+ *   candidate instead of throwing immediately. Previously, an invalid primary model silently blocked
+ *   the fallback chain.
  */
 
 // ---------------------------------------------------------------------------
@@ -199,7 +202,17 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
           // Rate limit or server error — skip to next model
           if (response.status >= 500 || response.status === 429) {
             lastError = `Provider error on ${modelName}: ${response.status}`
-            continue
+            break // break retry loop, try next model candidate
+          }
+
+          // Model not found / invalid model config — skip to next model candidate
+          // (do not throw: the fallback model may be valid even when the primary isn't)
+          if (errorType === 'provider_model_config_error') {
+            console.warn(
+              `[${request.taskLabel}] Model '${modelName}' not found or invalid — trying next candidate`
+            )
+            lastError = `Model config error on ${modelName}: ${safeMessage}`
+            break // break retry loop, try next model candidate
           }
 
           throw new Error(safeMessage)

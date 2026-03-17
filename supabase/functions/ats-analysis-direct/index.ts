@@ -15,9 +15,10 @@
  * 2026-03-17 00:02:00 | P18 Story B (v2) complete: removed cv_optimisation fields from ATS_JSON_SCHEMA and
  *   ATSAnalysisResult; cleaned buildATSPrompt() of dead enrichments param; added CV_OPTIMISATION_JSON_SCHEMA,
  *   buildOptimisationPrompt(), and second callLLM() call in processAnalysis for isolated optimisation scoring.
- * 2026-03-17 00:15:00 | Model upgrade: default ATS model switched to o4-mini (reasoning model) for improved
- *   rubric consistency; temperature default 0.1→0; added OPENAI_ATS_SEED (default 42) for deterministic output;
- *   updated pricing defaults to match o4-mini rates; seed passed to both baseline and optimisation calls.
+ * 2026-03-17 00:15:00 | Model upgrade attempt: default switched to o4-mini; temperature→0; seed=42 added.
+ * 2026-03-17 00:20:00 | Rollback: code default reverted to gpt-4.1 — o4-mini rejected by API (model not
+ *   found / invalid ID). gpt-4.1 confirmed working. temperature:0 and seed:42 retained. Pricing defaults
+ *   reverted to gpt-4.1 rates. o4-mini re-enablement requires confirming valid API model ID first.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -27,20 +28,20 @@ import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
 import { getEnvNumber, getEnvBoolean } from '../_shared/env.ts'
 import { callLLM } from '../_shared/llmProvider.ts'
 
-const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'o4-mini'
-const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4.1'
+const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
+const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0)
 const OPENAI_ATS_SEED = Math.floor(getEnvNumber('OPENAI_ATS_SEED', 42))
 const OPENAI_MAX_TOKENS_ATS = Math.max(
   500,
-  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 2000))
+  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800))
 )
 const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
   0,
   Math.min(2, Math.floor(getEnvNumber('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS', 1)))
 )
-const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 1.10)
-const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 4.40)
+const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 2.00)
+const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 8.00)
 const STORE_LLM_PROMPTS = getEnvBoolean('STORE_LLM_PROMPTS', false)
 const STORE_LLM_RAW_RESPONSE = getEnvBoolean('STORE_LLM_RAW_RESPONSE', false)
 
