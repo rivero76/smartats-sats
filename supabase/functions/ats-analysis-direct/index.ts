@@ -8,9 +8,13 @@
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-02-22 10:00:00 | P10 execution start: added schema-locked ATS response contract, deterministic rubric prompt, and retry-on-invalid-output validation.
  * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, error-mapping, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
- * 2026-03-17 00:00:00 | P18 Story B: CV Optimisation Score — fetch accepted enrichments for
- *   resume; when present, include them in the prompt and extend JSON schema with
- *   cv_optimisation_score + cv_optimisation_improvements; store in analysis_data.
+ * 2026-03-17 00:00:00 | P18 Story B (v1): CV Optimisation Score — single-call design (contaminated baseline). Reverted.
+ * 2026-03-17 00:01:00 | P18 Story B (v2): Two-call isolation — baseline ATS call is pure (no enrichments);
+ *   cv_optimisation_score computed in a separate second callLLM() after baseline completes.
+ *   Eliminates context contamination that caused baseline score regression when enrichments present.
+ * 2026-03-17 00:02:00 | P18 Story B (v2) complete: removed cv_optimisation fields from ATS_JSON_SCHEMA and
+ *   ATSAnalysisResult; cleaned buildATSPrompt() of dead enrichments param; added CV_OPTIMISATION_JSON_SCHEMA,
+ *   buildOptimisationPrompt(), and second callLLM() call in processAnalysis for isolated optimisation scoring.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -79,7 +83,15 @@ const ATS_JSON_SCHEMA = {
         },
       },
     },
-    // CV Optimisation Score — only present when accepted enrichments were provided
+  },
+}
+
+// CV Optimisation Score — separate schema for the second isolated LLM call
+const CV_OPTIMISATION_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['cv_optimisation_score', 'cv_optimisation_improvements'],
+  properties: {
     cv_optimisation_score: { type: 'number', minimum: 0, maximum: 1 },
     cv_optimisation_improvements: {
       type: 'array',
@@ -123,9 +135,11 @@ interface ATSAnalysisResult {
     resume_quote: string
     reasoning: string
   }>
-  // CV Optimisation Score — optional, only present when enrichments were provided
-  cv_optimisation_score?: number
-  cv_optimisation_improvements?: Array<{
+}
+
+interface CVOptimisationResult {
+  cv_optimisation_score: number
+  cv_optimisation_improvements: Array<{
     skill: string
     role?: string
     impact: string
@@ -351,12 +365,8 @@ async function processAnalysis(
     const resumeContent = await getResumeContent(resume, supabase)
     const jobContent = jobDescription.pasted_text || ''
 
-    // Fetch accepted enrichments for CV Optimisation Score
-    const acceptedEnrichments = await getAcceptedEnrichments(resume.id, supabase)
-    console.log(`[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`)
-
-    // Build optimized prompt (with enrichment context when available)
-    const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent, acceptedEnrichments)
+    // Build baseline prompt — NO enrichments; baseline must be pure
+    const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent)
     const systemPrompt =
       'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Never invent resume evidence. If evidence is weak, lower confidence and explain with resume_warnings.'
     const promptsMetadata = {
@@ -409,6 +419,45 @@ async function processAnalysis(
       store_llm_raw_response: STORE_LLM_RAW_RESPONSE,
     }
 
+    // Fetch accepted enrichments AFTER baseline call — no contamination risk
+    const acceptedEnrichments = await getAcceptedEnrichments(resume.id, supabase)
+    console.log(`[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`)
+
+    // Second call: CV Optimisation Score (isolated — runs only when enrichments exist)
+    let optimisationResult: CVOptimisationResult | null = null
+    if (acceptedEnrichments.length > 0) {
+      try {
+        const optPrompt = buildOptimisationPrompt(
+          jobDescription.name,
+          jobContent,
+          analysisResult.match_score,
+          acceptedEnrichments
+        )
+        const optSystemPrompt =
+          'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Project only realistic, evidence-grounded score improvements.'
+        const optLlmResult = await callLLM({
+          systemPrompt: optSystemPrompt,
+          userPrompt: optPrompt,
+          modelCandidates,
+          jsonSchema: CV_OPTIMISATION_JSON_SCHEMA,
+          schemaName: 'cv_optimisation_response',
+          temperature: OPENAI_TEMPERATURE_ATS,
+          maxTokens: 800,
+          retryAttempts: 1,
+          taskLabel: 'cv-optimisation-score',
+          pricingOverride: {
+            input: OPENAI_PRICE_INPUT_PER_MILLION,
+            output: OPENAI_PRICE_OUTPUT_PER_MILLION,
+          },
+        })
+        optimisationResult = parseCVOptimisationOrNull(optLlmResult.rawContent)
+        console.log('[processAnalysis] CV Optimisation Score:', optimisationResult?.cv_optimisation_score)
+      } catch (optError) {
+        // Optimisation failure must never corrupt the baseline result
+        console.warn('[processAnalysis] CV Optimisation call failed — skipping:', optError)
+      }
+    }
+
     // Store results in database
     const updateData = {
       status: 'completed',
@@ -428,9 +477,9 @@ async function processAnalysis(
         resume_warnings: analysisResult.resume_warnings,
         score_breakdown: analysisResult.score_breakdown,
         evidence_count: analysisResult.evidence.length,
-        // CV Optimisation Score (P18)
-        cv_optimisation_score: analysisResult.cv_optimisation_score ?? null,
-        cv_optimisation_improvements: analysisResult.cv_optimisation_improvements ?? [],
+        // CV Optimisation Score (P18) — from isolated second call
+        cv_optimisation_score: optimisationResult?.cv_optimisation_score ?? null,
+        cv_optimisation_improvements: optimisationResult?.cv_optimisation_improvements ?? [],
         enrichments_used_count: acceptedEnrichments.length,
         schema_retry_attempts_used: llmResult.retryAttemptsUsed,
         ...llmStorageFlags,
@@ -541,8 +590,7 @@ function buildATSPrompt(
   jdTitle: string,
   jdText: string,
   resumeTitle: string,
-  resumeText: string,
-  enrichments: AcceptedEnrichment[] = []
+  resumeText: string
 ): string {
   const preparedJobText = buildSectionAwareContext(jdText, {
     maxChars: 12000,
@@ -573,24 +621,6 @@ function buildATSPrompt(
     priorityRegex: /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
   })
 
-  const enrichmentSection = enrichments.length > 0
-    ? `\n\nCV Optimisation Context — Accepted Enrichments:
-The candidate has approved the following improved descriptions for their skills and experiences.
-Use these as the candidate's PROJECTED CV content when computing cv_optimisation_score.
-Do NOT use them for match_score — that must reflect only the current resume above.
-${enrichments.map((e, i) => {
-  const roleLabel = e.job_title && e.company_name
-    ? ` (Role: ${e.job_title} @ ${e.company_name})`
-    : e.job_title ? ` (Role: ${e.job_title})` : ''
-  return `${i + 1}. Skill: ${e.skill_name}${roleLabel}\n   Enriched description: "${e.suggestion}"`
-}).join('\n')}
-
-Output requirements when enrichments are present:
-- Set cv_optimisation_score to the projected score if the candidate updated their CV with the above enrichments.
-- For each enrichment that meaningfully improves a score dimension, add one entry to cv_optimisation_improvements with: skill, role (if known), impact (one sentence), score_area (skills_alignment|experience_relevance|domain_fit|format_quality).
-- If the enrichments produce no material score improvement, set cv_optimisation_score equal to match_score and return an empty cv_optimisation_improvements array.`
-    : ''
-
   return `Task: Compare the resume against the job description using a deterministic ATS rubric.
 
 Scoring rubric (0.0-1.0):
@@ -603,7 +633,7 @@ Output constraints:
 - Return only valid JSON matching the required schema.
 - Use evidence-grounded findings only.
 - For each evidence item, include exact short quotes from JD and resume.
-- If evidence is weak or ambiguous, add a warning and reduce confidence.${enrichmentSection}
+- If evidence is weak or ambiguous, add a warning and reduce confidence.
 
 Job:
 - title: ${jdTitle}
@@ -614,6 +644,69 @@ Resume:
 - title: ${resumeTitle}
 - content:
 ${preparedResumeText}`.trim()
+}
+
+function buildOptimisationPrompt(
+  jdTitle: string,
+  jdText: string,
+  baselineScore: number,
+  enrichments: AcceptedEnrichment[]
+): string {
+  const preparedJobText = buildSectionAwareContext(jdText, {
+    maxChars: 8000,
+    headingKeywords: ['responsibilities', 'requirements', 'required', 'preferred', 'qualifications', 'skills', 'experience'],
+    priorityRegex: /(must|required|responsib|qualif|skill|experience|certif|years|tool|stack)/i,
+  })
+
+  const enrichmentList = enrichments.map((e, i) => {
+    const roleLabel = e.job_title && e.company_name
+      ? ` (Role: ${e.job_title} @ ${e.company_name})`
+      : e.job_title ? ` (Role: ${e.job_title})` : ''
+    return `${i + 1}. Skill: ${e.skill_name}${roleLabel}\n   Enriched description: "${e.suggestion}"`
+  }).join('\n')
+
+  return `Task: Project the ATS match score if the candidate updates their CV with the enrichments below.
+
+Current baseline ATS score: ${Math.round(baselineScore * 100)}% (${baselineScore.toFixed(3)})
+
+Scoring rubric (0.0-1.0):
+- skills_alignment (40%), experience_relevance (30%), domain_fit (20%), format_quality (10%)
+
+Job: ${jdTitle}
+${preparedJobText}
+
+Accepted CV enrichments (candidate-approved improved descriptions):
+${enrichmentList}
+
+Output requirements:
+- Set cv_optimisation_score to the projected score (0.0–1.0) if the candidate applied all enrichments above to their CV.
+- For each enrichment that meaningfully improves a score dimension, add one entry to cv_optimisation_improvements with: skill, role (if known), impact (one sentence), score_area (skills_alignment|experience_relevance|domain_fit|format_quality).
+- If enrichments produce no material improvement, set cv_optimisation_score equal to ${baselineScore.toFixed(3)} and return an empty cv_optimisation_improvements array.
+- Return only valid JSON matching the required schema.`.trim()
+}
+
+function parseCVOptimisationOrNull(rawResponse: string): CVOptimisationResult | null {
+  let text = rawResponse.trim()
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '').trim()
+  }
+  try {
+    const data = JSON.parse(text)
+    if (typeof data !== 'object' || data === null) return null
+    return {
+      cv_optimisation_score: clampScore(data.cv_optimisation_score),
+      cv_optimisation_improvements: Array.isArray(data.cv_optimisation_improvements)
+        ? data.cv_optimisation_improvements.map((item: any) => ({
+            skill: String(item.skill || '').trim(),
+            role: item.role ? String(item.role).trim() : undefined,
+            impact: String(item.impact || '').trim(),
+            score_area: String(item.score_area || '').trim(),
+          })).filter((item: any) => item.skill && item.impact && item.score_area)
+        : [],
+    }
+  } catch {
+    return null
+  }
 }
 
 function buildSectionAwareContext(
