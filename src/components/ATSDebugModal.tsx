@@ -1,6 +1,8 @@
 /**
  * UPDATE LOG
  * 2026-02-20 23:29:40 | P2: Added request_id visibility for log correlation in ATS debug modal.
+ * 2026-03-17 00:10:00 | P18 trace: added score_breakdown, enrichments_used_count, and cv_optimisation_score
+ *   to Overview tab so score regressions are diagnosable without querying the DB directly.
  */
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -65,6 +67,9 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
   const promptCharacters = analysisData.prompt_characters
   const costEstimate = analysisData.cost_estimate_usd
   const requestId = analysisData.request_id
+  const scoreBreakdown = analysisData.score_breakdown || null
+  const enrichmentsUsedCount: number = analysisData.enrichments_used_count ?? 0
+  const cvOptimisationScore: number | null = analysisData.cv_optimisation_score ?? null
   const extractedFeatures =
     (Array.isArray(analysisData.extracted_features)
       ? analysisData.extracted_features
@@ -221,6 +226,88 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                         Retry Analysis
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Score Breakdown + Enrichment Context */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      Score Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {scoreBreakdown ? (
+                      <>
+                        {(
+                          [
+                            ['Skills Alignment (40%)', scoreBreakdown.skills_alignment],
+                            ['Experience Relevance (30%)', scoreBreakdown.experience_relevance],
+                            ['Domain Fit (20%)', scoreBreakdown.domain_fit],
+                            ['Format Quality (10%)', scoreBreakdown.format_quality],
+                          ] as [string, number][]
+                        ).map(([label, value]) => (
+                          <div key={label} className="space-y-0.5">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{label}</span>
+                              <span className="font-mono font-medium">
+                                {Math.round(value * 100)}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: `${Math.round(value * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No breakdown data — analysis may predate P10.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-emerald-600" />
+                      CV Optimisation (P18)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Enrichments used:</span>
+                      <Badge variant={enrichmentsUsedCount > 0 ? 'secondary' : 'outline'} className="font-mono">
+                        {enrichmentsUsedCount}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Projected score:</span>
+                      <span className="font-mono text-sm">
+                        {cvOptimisationScore != null
+                          ? `${Math.round(cvOptimisationScore * 100)}%`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    {cvOptimisationScore != null && analysis.ats_score != null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Delta:</span>
+                        <span className={`font-mono text-sm font-medium ${Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0 ? '+' : ''}
+                          {Math.round(cvOptimisationScore * 100) - analysis.ats_score}pp
+                        </span>
+                      </div>
+                    )}
+                    {enrichmentsUsedCount === 0 && (
+                      <p className="text-xs text-muted-foreground pt-1">
+                        No accepted enrichments were present at analysis time — baseline only.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
