@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS analysis hook updates and added timestamped file header tracking.
+ * 2026-03-17 12:00:00 | Fix misleading comment on useCreateATSAnalysis export — delegates to edge function, not direct OpenAI.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
@@ -209,7 +210,7 @@ export const useATSAnalysisStats = () => {
   })
 }
 
-// Create a new ATS analysis using direct OpenAI integration
+// Create a new ATS analysis via the edge function (delegates to useDirectATSAnalysis)
 export const useCreateATSAnalysis = useDirectATSAnalysis
 
 // Delete an ATS analysis

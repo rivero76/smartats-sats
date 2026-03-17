@@ -20,6 +20,7 @@ All notable changes to this project should be documented in this file.
 - Updated `.env.example` with `SUPABASE_SERVICE_KEY`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`.
 - Updated `CLAUDE.md` with log script usage examples.
 
+- P2-7: Replaced hardcoded "GPT-4o" label in `EnrichExperienceModal.tsx` with `{import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'}`. Added `VITE_AI_MODEL_LABEL=gpt-4.1-mini` to `.env.example` with cross-reference to `OPENAI_MODEL_ENRICH`. Fixed misleading comment on `useCreateATSAnalysis` in `useATSAnalyses.ts` (was "direct OpenAI integration", now correctly describes delegation to edge function).
 - Confirmed `o4-mini` and `o3-mini` available on OpenAI account via pre-flight check. Re-enabled `o4-mini` as ATS scoring model (`OPENAI_MODEL_ATS=o4-mini`, fallback `gpt-4.1`, `temperature:0`, `seed:42`).
 - Fixed `callOpenAI` fallback bug in `llmProvider.ts`: model-not-found 400 errors now fall through to the next model candidate instead of throwing immediately. Previously, an invalid primary model silently blocked the fallback chain entirely.
 - ATS scoring: set `temperature:0` + `seed:42` on `gpt-4.1` for deterministic output. `o4-mini` upgrade attempted but rolled back — API returned 400 model not found. Added `§4.0 pre-flight check` to `llm-model-governance.md` requiring `curl /v1/models/<id>` validation before any future model change.

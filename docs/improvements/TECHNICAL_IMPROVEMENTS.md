@@ -4,6 +4,7 @@
 <!-- Updated: 2026-03-17 — added P1-6 (CI pipeline) and P1-7 (Supabase type regeneration) -->
 <!-- Updated: 2026-03-17 — P0-1, P0-2, P0-3 completed; P1-1, P1-2, P1-4, P1-6, P1-7 completed -->
 <!-- Updated: 2026-03-17 (session 2) — BUG-2026-03-17-LOCATION-RLS fixed; log fetch script hardened; LogViewer time-window filter added; P17 BYOK added as future backlog item -->
+<!-- Updated: 2026-03-17 (session 3) — P2-7 (sync AI model label) completed; VITE_AI_MODEL_LABEL env var added -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -314,6 +315,20 @@ Functions to cover: `ats-analysis-direct`, `enrich-experiences`, `generate-upski
 
 ---
 
+### P2-7 · Sync AI model label in UI with active LLM configuration
+
+**Area:** Frontend / Developer Experience
+**Effort:** 15 minutes
+**Status:** **Done 2026-03-17**
+
+`EnrichExperienceModal.tsx` displayed "The enrichment engine uses GPT-4o…" — wrong on two counts: the active model is `gpt-4.1-mini`, and the string was hardcoded so it fell out of sync every model change.
+
+**Fix:** Added `VITE_AI_MODEL_LABEL` build-time env var to `.env.example` (defaulting to `gpt-4.1-mini`). Modal footer now reads `{import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'}` so operators can update the displayed label by changing a single env var without touching code. The `'AI'` fallback keeps the message accurate in test environments or when P17 dynamic selection ships.
+
+Also fixed a misleading comment on `useCreateATSAnalysis` in `useATSAnalyses.ts` that incorrectly described the export as "direct OpenAI integration" when it actually delegates through the edge function.
+
+---
+
 ## Fixed Issues (Session 2 — 2026-03-17)
 
 ### BUG-2026-03-17-LOCATION-RLS · `sats_locations` and `sats_companies` RLS INSERT failure
@@ -388,4 +403,5 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 | P2-4 | Add Supabase seed file | P2 | 1–2 hr | Open |
 | P2-5 | Add smoke test script for edge functions | P2 | 1–2 hr | Open |
 | P2-6 | Archive completed plans | P2 | 15 min | Open |
+| P2-7 | Sync AI model label in UI with active LLM config | P2 | 15 min | **Done 2026-03-17** |
 | P17-BYOK | Per-user model preference + BYOK + AI opt-out | High | 3 stories | Planned (P17) |

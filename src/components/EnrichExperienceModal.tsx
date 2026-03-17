@@ -3,6 +3,7 @@
  * 2026-02-20 22:19:11 | Reviewed enrichment modal updates and added timestamped file header tracking.
  * 2026-02-21 00:40:00 | Implemented product/usability enhancements: evidence checklist, tone controls, batch actions, progress state, and metrics instrumentation.
  * 2026-03-17 00:00:00 | Fix BUG-2026-02-24-ENRICH-SCROLL: removed nested ScrollArea h-[44vh] from suggestion list; outer modal flex-1 overflow-y-auto now handles all scrolling so action buttons are always reachable.
+ * 2026-03-17 12:00:00 | Replace hardcoded "GPT-4o" label with VITE_AI_MODEL_LABEL env var (fallback: "AI") so model name stays accurate without code changes.
  */
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -495,8 +496,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
 
             <DialogFooter className="flex-row justify-between gap-2">
               <div className="text-xs text-muted-foreground">
-                The enrichment engine uses GPT-4o with traceable explanations. Nothing is saved until
-                you approve it.
+                The enrichment engine uses{' '}
+                {import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'} with traceable explanations.
+                Nothing is saved until you approve it.
               </div>
               <Button
                 type="submit"
