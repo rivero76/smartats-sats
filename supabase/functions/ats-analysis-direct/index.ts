@@ -8,6 +8,9 @@
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-02-22 10:00:00 | P10 execution start: added schema-locked ATS response contract, deterministic rubric prompt, and retry-on-invalid-output validation.
  * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, error-mapping, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
+ * 2026-03-17 00:00:00 | P18 Story B: CV Optimisation Score — fetch accepted enrichments for
+ *   resume; when present, include them in the prompt and extend JSON schema with
+ *   cv_optimisation_score + cv_optimisation_improvements; store in analysis_data.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -76,6 +79,22 @@ const ATS_JSON_SCHEMA = {
         },
       },
     },
+    // CV Optimisation Score — only present when accepted enrichments were provided
+    cv_optimisation_score: { type: 'number', minimum: 0, maximum: 1 },
+    cv_optimisation_improvements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['skill', 'impact', 'score_area'],
+        properties: {
+          skill: { type: 'string' },
+          role: { type: 'string' },
+          impact: { type: 'string' },
+          score_area: { type: 'string' },
+        },
+      },
+    },
   },
 }
 
@@ -104,6 +123,22 @@ interface ATSAnalysisResult {
     resume_quote: string
     reasoning: string
   }>
+  // CV Optimisation Score — optional, only present when enrichments were provided
+  cv_optimisation_score?: number
+  cv_optimisation_improvements?: Array<{
+    skill: string
+    role?: string
+    impact: string
+    score_area: string
+  }>
+}
+
+interface AcceptedEnrichment {
+  skill_name: string
+  suggestion: string
+  skill_experience_id: string | null
+  job_title: string | null
+  company_name: string | null
 }
 
 async function logEvent(
@@ -316,8 +351,12 @@ async function processAnalysis(
     const resumeContent = await getResumeContent(resume, supabase)
     const jobContent = jobDescription.pasted_text || ''
 
-    // Build optimized prompt
-    const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent)
+    // Fetch accepted enrichments for CV Optimisation Score
+    const acceptedEnrichments = await getAcceptedEnrichments(resume.id, supabase)
+    console.log(`[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`)
+
+    // Build optimized prompt (with enrichment context when available)
+    const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent, acceptedEnrichments)
     const systemPrompt =
       'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Never invent resume evidence. If evidence is weak, lower confidence and explain with resume_warnings.'
     const promptsMetadata = {
@@ -389,6 +428,10 @@ async function processAnalysis(
         resume_warnings: analysisResult.resume_warnings,
         score_breakdown: analysisResult.score_breakdown,
         evidence_count: analysisResult.evidence.length,
+        // CV Optimisation Score (P18)
+        cv_optimisation_score: analysisResult.cv_optimisation_score ?? null,
+        cv_optimisation_improvements: analysisResult.cv_optimisation_improvements ?? [],
+        enrichments_used_count: acceptedEnrichments.length,
         schema_retry_attempts_used: llmResult.retryAttemptsUsed,
         ...llmStorageFlags,
         ...(STORE_LLM_PROMPTS ? { prompts: promptsMetadata } : {}),
@@ -498,7 +541,8 @@ function buildATSPrompt(
   jdTitle: string,
   jdText: string,
   resumeTitle: string,
-  resumeText: string
+  resumeText: string,
+  enrichments: AcceptedEnrichment[] = []
 ): string {
   const preparedJobText = buildSectionAwareContext(jdText, {
     maxChars: 12000,
@@ -529,6 +573,24 @@ function buildATSPrompt(
     priorityRegex: /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
   })
 
+  const enrichmentSection = enrichments.length > 0
+    ? `\n\nCV Optimisation Context — Accepted Enrichments:
+The candidate has approved the following improved descriptions for their skills and experiences.
+Use these as the candidate's PROJECTED CV content when computing cv_optimisation_score.
+Do NOT use them for match_score — that must reflect only the current resume above.
+${enrichments.map((e, i) => {
+  const roleLabel = e.job_title && e.company_name
+    ? ` (Role: ${e.job_title} @ ${e.company_name})`
+    : e.job_title ? ` (Role: ${e.job_title})` : ''
+  return `${i + 1}. Skill: ${e.skill_name}${roleLabel}\n   Enriched description: "${e.suggestion}"`
+}).join('\n')}
+
+Output requirements when enrichments are present:
+- Set cv_optimisation_score to the projected score if the candidate updated their CV with the above enrichments.
+- For each enrichment that meaningfully improves a score dimension, add one entry to cv_optimisation_improvements with: skill, role (if known), impact (one sentence), score_area (skills_alignment|experience_relevance|domain_fit|format_quality).
+- If the enrichments produce no material score improvement, set cv_optimisation_score equal to match_score and return an empty cv_optimisation_improvements array.`
+    : ''
+
   return `Task: Compare the resume against the job description using a deterministic ATS rubric.
 
 Scoring rubric (0.0-1.0):
@@ -541,7 +603,7 @@ Output constraints:
 - Return only valid JSON matching the required schema.
 - Use evidence-grounded findings only.
 - For each evidence item, include exact short quotes from JD and resume.
-- If evidence is weak or ambiguous, add a warning and reduce confidence.
+- If evidence is weak or ambiguous, add a warning and reduce confidence.${enrichmentSection}
 
 Job:
 - title: ${jdTitle}
@@ -694,6 +756,47 @@ function coerceToStringArray(value: unknown): string[] {
     return [value]
   }
   return []
+}
+
+// ---------------------------------------------------------------------------
+// CV Optimisation Score — fetch accepted enrichments for a resume
+// ---------------------------------------------------------------------------
+async function getAcceptedEnrichments(
+  resumeId: string,
+  supabase: ReturnType<typeof createClient>
+): Promise<AcceptedEnrichment[]> {
+  try {
+    const { data, error } = await supabase
+      .from('enriched_experiences')
+      .select(`
+        skill_name,
+        suggestion,
+        skill_experience_id,
+        skill_experience:sats_skill_experiences!enriched_experiences_skill_experience_id_fkey (
+          job_title,
+          company:sats_companies!sats_skill_experiences_company_id_fkey ( name )
+        )
+      `)
+      .eq('resume_id', resumeId)
+      .eq('user_action', 'accepted')
+      .is('deleted_at', null)
+
+    if (error) {
+      console.warn('[getAcceptedEnrichments] Query error — skipping enrichments:', error.message)
+      return []
+    }
+
+    return (data ?? []).map((row: any) => ({
+      skill_name: row.skill_name,
+      suggestion: row.suggestion,
+      skill_experience_id: row.skill_experience_id ?? null,
+      job_title: row.skill_experience?.job_title ?? null,
+      company_name: row.skill_experience?.company?.name ?? null,
+    }))
+  } catch (err) {
+    console.warn('[getAcceptedEnrichments] Unexpected error — skipping enrichments:', err)
+    return []
+  }
 }
 
 async function getResumeContent(

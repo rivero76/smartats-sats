@@ -1,6 +1,9 @@
 /**
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed ATS analyses page updates and added timestamped file header tracking.
+ * 2026-03-17 00:00:00 | P18 CV Optimisation Score: read cv_optimisation_score and
+ *   cv_optimisation_improvements from analysis_data; render optimisation panel below
+ *   the ATS score when enrichments were applied.
  */
 import { useMemo, useState } from 'react'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
@@ -23,6 +26,8 @@ import {
   RefreshCw,
   Bug,
   Download,
+  Sparkles,
+  ArrowUpRight,
 } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -503,6 +508,64 @@ const ATSAnalyses = () => {
                           <p className="text-sm text-muted-foreground">{analysis.suggestions}</p>
                         </div>
                       )}
+
+                      {/* CV Optimisation Score (P18) */}
+                      {(() => {
+                        const optScore = analysis.analysis_data?.cv_optimisation_score
+                        const improvements = analysis.analysis_data?.cv_optimisation_improvements ?? []
+                        const enrichmentsUsed = analysis.analysis_data?.enrichments_used_count ?? 0
+                        if (optScore == null || enrichmentsUsed === 0) return null
+                        const baseline = analysis.ats_score ?? 0
+                        const optimised = Math.round(optScore * 100)
+                        const delta = optimised - baseline
+                        return (
+                          <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-emerald-600" />
+                                <HelpTooltip content="Projected ATS score if you update your CV with your accepted enrichments. Run 'Add Missing Experience' to build more enrichments.">
+                                  <span className="text-sm font-semibold text-emerald-800">
+                                    CV Optimisation Score
+                                  </span>
+                                </HelpTooltip>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl font-bold text-emerald-700">
+                                  {optimised}%
+                                </span>
+                                {delta > 0 && (
+                                  <Badge className="bg-emerald-600 text-white flex items-center gap-1">
+                                    <ArrowUpRight className="h-3 w-3" />
+                                    +{delta}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Progress value={optimised} className="h-2 bg-emerald-200 [&>div]:bg-emerald-600" />
+                            <p className="text-xs text-emerald-700">
+                              Based on {enrichmentsUsed} accepted enrichment{enrichmentsUsed !== 1 ? 's' : ''}. Update your CV to realise this score.
+                            </p>
+                            {improvements.length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                {improvements.slice(0, 4).map((imp: any, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 text-xs text-emerald-800">
+                                    <CheckCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600" />
+                                    <span>
+                                      <span className="font-medium">{imp.skill}</span>
+                                      {imp.role ? ` (${imp.role})` : ''} — {imp.impact}
+                                    </span>
+                                  </div>
+                                ))}
+                                {improvements.length > 4 && (
+                                  <p className="text-xs text-emerald-600 pl-5">
+                                    +{improvements.length - 4} more improvement{improvements.length - 4 !== 1 ? 's' : ''}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
 
                       {/* Action Button */}
                       <Button
