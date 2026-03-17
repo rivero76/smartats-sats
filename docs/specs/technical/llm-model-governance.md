@@ -154,4 +154,4 @@ Set to a different value to verify that output changes, confirming seed is being
 
 | Date | Change | Pre-change model | Post-change model | Validated by | Notes |
 |---|---|---|---|---|---|
-| 2026-03-17 | Determinism only | `gpt-4.1`, temp=0.1, no seed | `gpt-4.1`, temp=0, seed=42 | Pending E2E | o4-mini rollback — API rejected model ID (400 model not found). Fallback bug in llmProvider.ts fixed simultaneously. |
+| 2026-03-17 | Determinism + reasoning model | `gpt-4.1`, temp=0.1, no seed | `o4-mini`, temp=0, seed=42 | Pending E2E | Initial attempt failed: env var `OPENAI_MODEL_ATS=gpt-4.1` set as rollback was still active. Model ID `o4-mini` confirmed valid via `curl /v1/models/o4-mini`. Re-enabled. Fallback: `gpt-4.1`. |

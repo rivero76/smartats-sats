@@ -20,6 +20,7 @@ All notable changes to this project should be documented in this file.
 - Updated `.env.example` with `SUPABASE_SERVICE_KEY`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`.
 - Updated `CLAUDE.md` with log script usage examples.
 
+- Confirmed `o4-mini` and `o3-mini` available on OpenAI account via pre-flight check. Re-enabled `o4-mini` as ATS scoring model (`OPENAI_MODEL_ATS=o4-mini`, fallback `gpt-4.1`, `temperature:0`, `seed:42`).
 - Fixed `callOpenAI` fallback bug in `llmProvider.ts`: model-not-found 400 errors now fall through to the next model candidate instead of throwing immediately. Previously, an invalid primary model silently blocked the fallback chain entirely.
 - ATS scoring: set `temperature:0` + `seed:42` on `gpt-4.1` for deterministic output. `o4-mini` upgrade attempted but rolled back — API returned 400 model not found. Added `§4.0 pre-flight check` to `llm-model-governance.md` requiring `curl /v1/models/<id>` validation before any future model change.
 - Upgraded ATS scoring model from `gpt-4.1` to `o4-mini` (reasoning model) for improved rubric consistency; set `temperature:0` + `seed:42` for deterministic output; updated pricing defaults to `$1.10/$4.40` per 1M tokens; updated `llmProvider.ts` with o4-mini/o3 pricing entries and reasoning model `max_completion_tokens` body handling; fallback remains `gpt-4.1`. Created `docs/specs/technical/llm-model-governance.md` with model register, change protocol, and pre/post validation test suite.
