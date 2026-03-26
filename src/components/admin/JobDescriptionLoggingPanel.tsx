@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table log_entries → sats_log_entries.
+ */
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -58,7 +62,7 @@ export const JobDescriptionLoggingPanel = () => {
         timeRange === '1h' ? 1 : timeRange === '24h' ? 24 : timeRange === '7d' ? 168 : 720
 
       let query = supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .select('*')
         .in('script_name', [
           'job-description-ingest',

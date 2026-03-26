@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to job description table rows (P19-S2-3)
+ * 2026-03-26 | S3-1: fix heading hierarchy — section CardTitle → h2, empty-state h3 → h2 (P19-S3-1)
  */
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
@@ -140,10 +141,10 @@ const JobDescriptions = () => {
       {/* Search and Filter */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Search className="h-5 w-5" />
             <span>Search & Filter</span>
-          </CardTitle>
+          </h2>
           <CardDescription>Find job descriptions by title or company name.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -163,7 +164,7 @@ const JobDescriptions = () => {
       {/* Job Descriptions List */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Job Descriptions</CardTitle>
+          <h2 className="text-2xl font-semibold leading-none tracking-tight">Your Job Descriptions</h2>
           <CardDescription>
             Manage your job descriptions and analyze ATS compatibility.
           </CardDescription>
@@ -184,9 +185,9 @@ const JobDescriptions = () => {
           ) : filteredJobDescriptions.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium mb-2">
+              <h2 className="text-lg font-medium mb-2">
                 {searchQuery ? 'No matching job descriptions' : 'No job descriptions created yet'}
-              </h3>
+              </h2>
               <p className="text-muted-foreground mb-4">
                 {searchQuery
                   ? 'Try adjusting your search terms.'

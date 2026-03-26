@@ -5,6 +5,7 @@
  *   cv_optimisation_improvements from analysis_data; render optimisation panel below
  *   the ATS score when enrichments were applied.
  * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to analysis list cards (P19-S2-3)
+ * 2026-03-26 | S3-1: fix heading hierarchy — stat CardTitle → p, section CardTitle → h2, empty-state h3 → h2 (P19-S3-1)
  */
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
@@ -286,7 +287,7 @@ const ATSAnalyses = () => {
             ].map((stat, index) => (
               <Card key={index} className="transition-shadow hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <p className="text-sm font-medium tracking-tight">{stat.title}</p>
                   <stat.icon className={`h-4 w-4 ${stat.color}`} />
                 </CardHeader>
                 <CardContent>
@@ -300,7 +301,7 @@ const ATSAnalyses = () => {
       {/* Analysis List */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Analyses</CardTitle>
+          <h2 className="text-2xl font-semibold leading-none tracking-tight">Your Analyses</h2>
           <CardDescription>
             View and manage your ATS analyses and their results.
             {inFlightCount > 0 && (
@@ -333,7 +334,7 @@ const ATSAnalyses = () => {
           ) : !analyses || analyses.length === 0 ? (
             <div className="text-center py-8">
               <Target className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No analyses completed yet</h3>
+              <h2 className="text-lg font-medium mb-2">No analyses completed yet</h2>
               <p className="text-muted-foreground mb-4">
                 Run your first ATS analysis to see how well your resume matches job requirements.
               </p>

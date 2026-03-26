@@ -247,7 +247,7 @@ Detailed workflow:
 
 - Reviewed code files include an `UPDATE LOG` header entry with timestamp format `YYYY-MM-DD HH24:MM:SS`.
 - `README.md` is updated when functionality/process changes are introduced.
-- `docs/changelog/SATS_CHANGES.txt` records product-level changes, updated files, reasons, and timestamps.
+- `docs/changelog/CHANGELOG.md` is the canonical changelog — records product-level changes grouped by Added/Changed/Fixed. (`SATS_CHANGES.txt` is archived; `git log --stat` is the authoritative file-level history.)
 - Centralized logging now validates request shape and payload size, and normalizes structured metadata fields:
   `event_name`, `component`, `operation`, `outcome`, `duration_ms`, `request_id`, `session_id`, `user_id`.
 - P2 correlation is now wired through ATS and enrichment flows with `request_id` propagated from frontend hooks to edge functions and log storage.

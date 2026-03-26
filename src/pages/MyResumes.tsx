@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to resume table rows (P19-S2-3)
+ * 2026-03-26 | S3-1: fix heading hierarchy — section CardTitle → h2, empty-state h3 → h2 (P19-S3-1)
  */
 // src/pages/MyResumes.tsx
 import React, { useState } from 'react'
@@ -200,7 +201,7 @@ const MyResumes = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Your Resumes</CardTitle>
+              <h2 className="text-2xl font-semibold leading-none tracking-tight">Your Resumes</h2>
               <CardDescription>
                 Manage your uploaded resumes and view ATS compatibility scores.
               </CardDescription>
@@ -230,7 +231,7 @@ const MyResumes = () => {
           ) : resumes.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No resumes uploaded yet</h3>
+              <h2 className="text-lg font-medium mb-2">No resumes uploaded yet</h2>
               <p className="text-muted-foreground mb-4">
                 Upload your first resume to get started with ATS analysis and optimization.
               </p>

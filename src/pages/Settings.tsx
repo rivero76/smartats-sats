@@ -1,5 +1,6 @@
 // UPDATE LOG
 // 2026-03-17 12:00:00 | P16 Story 1: added PersonaManager (My Resume Profiles) section
+// 2026-03-26 | S3-1: fix heading hierarchy (section CardTitle → h2, h4 → h3); add aria-label to Switch components (P19-S3-1)
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -115,10 +116,10 @@ const Settings = () => {
       {/* Profile Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <User className="h-5 w-5" />
             <span>Profile Settings</span>
-          </CardTitle>
+          </h2>
           <CardDescription>Update your personal information and preferences.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -265,13 +266,13 @@ const Settings = () => {
       {/* Notification Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Bell className="h-5 w-5" />
             <span>
               Notification Preferences{' '}
               <span className="text-sm text-muted-foreground">(Coming Soon)</span>
             </span>
-          </CardTitle>
+          </h2>
           <CardDescription>Choose what notifications you'd like to receive.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 opacity-60">
@@ -282,7 +283,7 @@ const Settings = () => {
                 Get notified when your ATS analysis is ready
               </p>
             </div>
-            <Switch disabled />
+            <Switch disabled aria-label="Analysis complete notifications" />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -292,7 +293,7 @@ const Settings = () => {
                 Stay updated on new Smart ATS features and improvements
               </p>
             </div>
-            <Switch disabled />
+            <Switch disabled aria-label="New features notifications" />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -302,7 +303,7 @@ const Settings = () => {
                 Receive weekly summaries of your ATS activities
               </p>
             </div>
-            <Switch disabled />
+            <Switch disabled aria-label="Weekly summary notifications" />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -312,7 +313,7 @@ const Settings = () => {
                 Receive tips and insights about resume optimization
               </p>
             </div>
-            <Switch disabled />
+            <Switch disabled aria-label="Marketing communications notifications" />
           </div>
         </CardContent>
       </Card>
@@ -320,10 +321,10 @@ const Settings = () => {
       {/* Security Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Shield className="h-5 w-5" />
             <span>Security & Privacy</span>
-          </CardTitle>
+          </h2>
           <CardDescription>Manage your account security and data privacy settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -374,16 +375,16 @@ const Settings = () => {
       {/* Data & Export */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Database className="h-5 w-5" />
             <span>Data Management</span>
-          </CardTitle>
+          </h2>
           <CardDescription>Export your data or manage your account data.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
             <div>
-              <h4 className="font-medium">Export Data</h4>
+              <h3 className="font-medium">Export Data</h3>
               <p className="text-sm text-muted-foreground">
                 Download all your resumes, analyses, and job descriptions
               </p>
@@ -394,7 +395,7 @@ const Settings = () => {
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
-              <h4 className="font-medium">Delete Account</h4>
+              <h3 className="font-medium">Delete Account</h3>
               <p className="text-sm text-muted-foreground">
                 Permanently delete your account and all associated data
               </p>
@@ -443,10 +444,10 @@ const Settings = () => {
       {/* API Settings (Future) */}
       <Card className="opacity-75">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Key className="h-5 w-5" />
             <span>API Access (Coming Soon)</span>
-          </CardTitle>
+          </h2>
           <CardDescription>
             Generate API keys for integrating Smart ATS with your applications.
           </CardDescription>

@@ -20,6 +20,8 @@
  *   found / invalid ID). gpt-4.1 confirmed working. temperature:0 and seed:42 retained. Pricing defaults
  *   reverted to gpt-4.1 rates. o4-mini re-enablement requires confirming valid API model ID first.
  * 2026-03-18 00:00:00 | CR1-7: Add explanatory comment for temperature=0 + seed=42 determinism.
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table enriched_experiences → sats_enriched_experiences.
+ *   Also updated FK alias in PostgREST select to match new table name.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -899,13 +901,13 @@ async function getAcceptedEnrichments(
 ): Promise<AcceptedEnrichment[]> {
   try {
     const { data, error } = await supabase
-      .from('enriched_experiences')
+      .from('sats_enriched_experiences')
       .select(
         `
         skill_name,
         suggestion,
         skill_experience_id,
-        skill_experience:sats_skill_experiences!enriched_experiences_skill_experience_id_fkey (
+        skill_experience:sats_skill_experiences!sats_enriched_experiences_skill_experience_id_fkey (
           job_title,
           company:sats_companies!sats_skill_experiences_company_id_fkey ( name )
         )

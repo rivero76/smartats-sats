@@ -4,12 +4,72 @@ All notable changes to this project should be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- P21 S1 — Universal audit trigger function `set_audit_fields()` (SECURITY DEFINER). Auto-stamps `created_by`/`updated_by`/`version` on INSERT/UPDATE across all application tables. Migration: `20260327000000_p21_s1_universal_audit_trigger.sql`.
+- P21 S1 — Added `created_by` and `updated_by` UUID columns to 19 tables with attached `trg_audit_<table>` triggers for automatic user tracking on mutations. Migration: `20260327100000_p21_s1_add_created_by_updated_by.sql`.
+- P21 S1 — Added `deleted_by` UUID column to 13 soft-delete tables; patched `soft_delete_enriched_experience()` RPC to update `deleted_by` on record deletion. Migration: `20260327110000_p21_s1_add_deleted_by.sql`.
+- P21 S1 — Added `deleted_at` + `deleted_by` + partial indexes to 3 tables missing soft-delete columns; recreated RLS policies with soft-delete guards. Migration: `20260327120000_p21_s1_add_missing_deleted_at.sql`.
+- P21 S1 — Added `version` INT DEFAULT 1 column to 9 mutable tables for optimistic locking and concurrency control. Migration: `20260327130000_p21_s1_add_version_column.sql`.
+- P21 S1 — Created `sats_llm_call_logs` table with comprehensive LLM observability schema: model used, tokens consumed (prompt/completion/total), cost estimate, latency, finish reason, task label, and user correlation. 3 indexes (user_id, task_label, created_at). RLS policies (owner-only read, admin metrics). Migration: `20260327140000_p21_s1_llm_call_logs.sql`.
+- P21 S1 — Tier-1 table rename to universal `sats_` convention: `enriched_experiences` → `sats_enriched_experiences`, `log_entries` → `sats_log_entries`, `log_settings` → `sats_log_settings`, `account_deletion_logs` → `sats_account_deletion_logs`, `log_cleanup_policies` → `sats_log_cleanup_policies`, `user_roles` → `sats_user_roles`. Updated RPCs `run_log_cleanup_policies()` and `soft_delete_enriched_experience()` with new table references. Fixed admin policy on `sats_llm_call_logs`. Migration: `20260327150000_p21_tier1_rename_tables.sql`.
+- P21 S1 — Wired `llmProvider.ts` to `sats_llm_call_logs`: added optional `logContext` field to `LLMRequest` and `finishReason` to `LLMResponse`; fire-and-forget insert executes after every successful LLM call with user_id, model, token counts, cost, duration, and task label.
+- P21 S1 — Extended `docs/conventions/coding-conventions.md` with legacy `ats_*` table exceptions (7 tables documented); added Section 8 (SQL Function Naming: `sats_<verb>_<noun>()` pattern); added Section 9 (Trigger Naming: `sats_update_<table>_updated_at` / `trg_audit_<table>`).
+
+- P21 S2 — RBAC infrastructure: created `sats_roles`, `sats_permissions`, `sats_role_permissions`, `sats_user_role_assignments` tables with full FK/index structure, RLS policies enforcing admin-only writes. Implemented `sats_has_permission(user_id UUID, permission_code TEXT)` function. Backfilled from legacy `sats_user_roles` one-time migration. Migration: `20260327200000_p21_s2_rbac_tables.sql`.
+- P21 S2 — API key infrastructure: created `sats_api_keys` table with hash-only storage (keys never persisted raw), scoped to tenant, with rotation/expiry fields and RLS owner-only access. Migration: `20260327210000_p21_s2_api_keys.sql`.
+- P21 S2 — Unified audit logging: created append-only `sats_audit_logs` table with UPDATE/DELETE policies blocked at database level. Implemented `sats_log_audit_event()` trigger firing on mutation (INSERT/UPDATE/DELETE) of `sats_analyses`, `sats_resumes`, `sats_enriched_experiences`, and `sats_api_keys`. Logs action, old/new values, user/IP, and timestamp. Migration: `20260327220000_p21_s2_unified_audit_logs.sql`.
+
+- P21 S3 — Multi-tenancy foundation: created `sats_tenants` table with personal sentinel UUID for solo-user accounts; tenant_id flows to `sats_user_role_assignments`. Migration: `20260327230000_p21_s3_tenants_table.sql`.
+- P21 S3 — SaaS feature gating: created `sats_plans` (4 tiers: Free, Pro, Enterprise, Custom with JSON metadata), `sats_features` (8 core features seeded), and `sats_tenant_features` junction table with feature-per-plan assignment. RLS policies enforce tenant isolation. Migration: `20260327240000_p21_s3_plans_subscriptions.sql`.
+- P21 S3 — Added `tenant_id UUID` column to 12 tables with partial indexes (backfilled to personal sentinel UUID). Tenant-scoped RLS policies created but not yet activated (Stage 7). Migration: `20260327250000_p21_s3_add_tenant_id.sql`.
+
+- P21 S4 — Multi-currency support: created `sats_currencies` table with 8 ISO 4217 currencies seeded (USD, EUR, GBP, JPY, AUD, CAD, CHF, INR); `sats_exchange_rates` table with live provider integration points. Added `currency_code CHAR(3)` columns to `sats_llm_call_logs`, `sats_plans`, and `profiles`. Migration: `20260328040000_p21_s4_multi_currency.sql`.
+- P21 S4 — Internationalization infrastructure: created `sats_locales` table with 6 BCP 47 locales seeded (en-US, en-GB, de-DE, fr-FR, ja-JP, es-ES); `sats_translations` table with `locale_code`, `namespace`, `key`, `value` for string externalization. Added `preferred_locale` and `timezone` columns to `profiles`. Migration: `20260328050000_p21_s4_i18n.sql`.
+
+- P21 S5 — Vector embeddings foundation: executed `CREATE EXTENSION vector` for pgvector support. Created `sats_knowledge_sources` (RAG source registry), `sats_document_chunks` (vector-stored extracts with HNSW index on `embedding`). Implemented `sats_search_document_chunks(query_embedding VECTOR)` function for semantic search. Migration: `20260328000000_p21_s5_pgvector_knowledge_base.sql`.
+- P21 S5 — AI agent infrastructure: created `sats_ai_agents` table with 17 canonical agents seeded (ATS Optimizer, Resume Coach, Skill Enumerator, etc.). Created `sats_ai_sessions` (agent conversation threads) and `sats_ai_messages` (turn-by-turn message store). RLS enforces session ownership. Migration: `20260328010000_p21_s5_ai_agent_infrastructure.sql`.
+- P21 S5 — Agent orchestration layer: created `sats_agent_tasks`, `sats_agent_handoffs` (agent-to-agent handoff routing), and `sats_agent_memory` with HNSW vector index on `value_embedding` for semantic memory retrieval. Enables multi-agent workflows with context preservation. Migration: `20260328020000_p21_s5_agent_orchestration.sql`.
+- P21 S5 — Prompt management and AI evaluation: created `sats_prompt_templates` (parameterized prompt registry), `sats_ai_evaluations` (rubric-based LLM output scoring). Added `prompt_template_id` and `prompt_version` columns to `sats_llm_call_logs` for audit trail linking evaluation results to prompts. Migration: `20260328030000_p21_s5_prompt_templates.sql`.
+
+- P21 S6 — Idempotency keys for safe retries: created `sats_idempotency_keys` table with UNIQUE constraint on (user_id, idempotency_key, endpoint_path) and 24-hour TTL. Enables at-most-once semantics for edge function mutations. Migration: `20260328060000_p21_s6_idempotency.sql`.
+- P21 S6 — Transactional outbox pattern: created `sats_outbox_events` table (immutable event log, service-role-only writes) for reliable async event publishing. Enables dual-write elimination and consistency guarantees. Migration: `20260328070000_p21_s6_outbox_events.sql`.
+- P21 S6 — Distributed rate limiting: created `sats_rate_limit_counters` table with sliding-window counters keyed by user/tenant/endpoint. Supports granular per-user and per-tenant rate limit enforcement. Migration: `20260328080000_p21_s6_rate_limits.sql`.
+
+- TypeScript types regenerated via `bash scripts/ops/gen-types.sh` after all P21 S2–S6 migrations applied to live Supabase project. All migrations tested against live Supabase project and committed.
+
+### Changed
+
+- P21 S1 — Updated 10 application files to reference renamed tables: `useEnrichedExperiences.ts` (enriched_experiences → sats_enriched_experiences), `useLogSettings.ts` (log_settings/log_entries renamed), `LogViewer.tsx`, `LoggingControlPanel.tsx`, `LogCleanupManager.tsx`, `ObservabilityPanel.tsx`, `JobDescriptionLoggingPanel.tsx`, `centralized-logging/index.ts`, `delete-account/index.ts`, `cancel-account-deletion/index.ts`, and `ats-analysis-direct/index.ts` (enriched_experiences → sats_enriched_experiences, FK alias updated).
+
+### Fixed
+
+- 2026-03-26: Merged dual-changelog into single source of truth. Migrated unique early-history entries (SDLC P0–P4 hardening, lint cleanup, P5 enrichment lifecycle) from `SATS_CHANGES.txt` into a [Pre-v1 Development History] section. Archived `SATS_CHANGES.txt` with a stub pointing to `CHANGELOG.md`. Updated `changelog-keeper` agent, `CLAUDE.md`, `README.md`, `llm-model-governance.md`, and `docs/audits/code-review-prompt.md` to remove all dual-changelog requirements.
+
+- P19 S3-1: Fixed heading-order a11y violations across Dashboard, MyResumes, JobDescriptions, ATSAnalyses, Settings, and PersonaManager by converting secondary CardTitle components from `h3` to `h2` for section headings, stat metric CardTitle to `p`, and empty-state headings to `h2` where they follow `h1` directly.
+- P19 S3-1: Fixed button-name a11y violations by adding `aria-label` to Switch components in Settings, SelectTrigger in ResumePreview, and icon-only HelpButton variant for screen reader users.
+
+### Changed
+
+- P21 S1 — Updated 10 application files to reference renamed tables: `useEnrichedExperiences.ts` (enriched_experiences → sats_enriched_experiences), `useLogSettings.ts` (log_settings/log_entries renamed), `LogViewer.tsx`, `LoggingControlPanel.tsx`, `LogCleanupManager.tsx`, `ObservabilityPanel.tsx`, `JobDescriptionLoggingPanel.tsx`, `centralized-logging/index.ts`, `delete-account/index.ts`, `cancel-account-deletion/index.ts`, and `ats-analysis-direct/index.ts` (enriched_experiences → sats_enriched_experiences, FK alias updated).
 - P19 S1-1: Installed `@fontsource-variable/geist` and `@fontsource-variable/geist-mono`. Added `@font-face` imports to `src/index.css` via `@fontsource-variable` CSS. Extended `tailwind.config.ts` with `fontFamily.sans: ['Geist Variable', ...]` and `fontFamily.mono: ['Geist Mono Variable', ...]`. Applied `font-sans` to body with `font-feature-settings` for ligatures. Font loads with `font-display: swap` to prevent FOUT.
 - P19 S1-2: Created `src/lib/animations.ts` with six Framer Motion variant presets (`fadeIn`, `slideUp`, `scaleIn`, `listItem`, `staggerContainer`, `slideInFromRight`). Installed `framer-motion`. No component changes — presets only, applied in S2.
 - fix(ops): `check-docs.sh` — replaced stale `plans/product-improvements.md` reference (archived) with `docs/decisions/product-roadmap.md` in required files list and error message. `check-secrets.sh` — tightened `SUPABASE_SERVICE_ROLE_KEY` pattern to require `=` sign (false positive on docs text).
 
 - 2026-03-23: Created `docs/improvements/technical_review_2026-03-18.md` — Mac developer environment and repository organisation recommendations (OneDrive risk, node_modules sync, stray files, scripts layout, pre-commit hook setup, .railwayignore).
 - 2026-03-23: Extended `technical_review_2026-03-18.md` with i18n readiness assessment (NOT READY — zero translation infrastructure, all strings hardcoded in English; date-fns and toLocaleString present as foundation) and multi-user readiness assessment (READY — RLS enforced on all user-owned tables, query-layer filtering correct, admin role gated; gap: no per-user API quotas on ATS/enrichment edge functions).
+- 2026-03-26: Updated `CLAUDE.md` to document `npm run test:visual` and `npm run test:visual:update` commands for Playwright visual regression testing and clarify test locations (`tests/e2e/visual/` for Playwright e2e, `tests/unit/a11y/` for axe-core accessibility).
+- 2026-03-26: Updated `CLAUDE.md` — fixed stale Role section that still referenced Codex/AGENTS.md; now correctly states Claude Code is the sole agentic development environment. Updated Implementation Delegation section: replaced the paragraph listing agents with a full phase-by-phase agent table (Product → Planning → Development → Review → Testing → Release → Operations), added a "Typical PM-to-developer flow" line showing the agent pipeline.
+- 2026-03-26: Updated `docs/improvements/TECHNICAL_IMPROVEMENTS.md` — updated the P1-10 agent table from 16 to 17 agents, added product-analyst.md as the new Product phase entry.
+- MAINT-2: Retired `AGENTS.md` — replaced with archive stub redirecting to `CLAUDE.md`. OpenAI Codex is no longer the implementation agent; Claude Code is now the sole agentic toolchain.
+- MAINT-2: Archived `docs/runbooks/CODEX_SESSION_CONTINUITY.md` — replaced with stub pointing to new runbook. Created `docs/runbooks/SESSION_CONTINUITY.md` with Claude Code–flavoured session continuity patterns (checkpoint discipline, execution loop, start/end-of-session checklists) migrated from the Codex runbook.
+- MAINT-2: Updated `docs/runbooks/README.md` — removed `CODEX_SESSION_CONTINUITY.md` entry, added `SESSION_CONTINUITY.md`.
+- MAINT-2: Marked `docs/decisions/adr-0001-agent-collaboration-model.md` Status as Superseded. Claude Code is now the sole agentic toolchain.
+- MAINT-2: Updated `docs/conventions/coding-conventions.md` Owner line from "Architecture (Claude Code) + Implementation (Codex)" to "Claude Code".
+- MAINT-2: Renamed "Handoff to Codex" section in `CLAUDE.md` to "Implementation Delegation"; updated body to reference `.claude/agents/` sub-agents instead of Codex.
+- MAINT-2: Added archive note to `docs/sessions/README.md` clarifying these are Codex-era checkpoints; documented Claude Code project memory as the current continuity mechanism.
+- MAINT-2: Updated Owner line in `plans/p19-uiux-excellence.md` from "Architecture (Claude Code) + Implementation (Codex)" to "Claude Code".
+- MAINT-2: Marked `docs/improvements/TECHNICAL_IMPROVEMENTS.md` — MAINT-2 status changed to Done 2026-03-26.
 
 - CR1-2: Centralized CORS helpers across 6 edge functions (`cancel-account-deletion`, `centralized-logging`, `delete-account`, `fetch-market-jobs`, `job-description-url-ingest`, `linkedin-profile-ingest`). Replaced inline `ALLOWED_ORIGINS` constant + `isOriginAllowed`/`buildCorsHeaders` function declarations with `import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'`. Production origin changes now require updating only `_shared/cors.ts`.
 - CR4-2: Added missing UPDATE LOG header to `job-description-url-ingest/index.ts` (was the only edge function with no header).
@@ -81,3 +141,27 @@ All notable changes to this project should be documented in this file.
 - Added `scripts/ops/check-secrets.sh` to scan added diff lines for potential secret leaks.
 - Added `scripts/ops/check-supabase.sh` for Supabase CLI/local-status/migration/linked dry-run checks.
 - Updated `scripts/ops/smartats.sh verify` to always generate timestamped execution logs under `scripts/ops/logs/`.
+
+---
+
+## [Pre-v1 Development History] – 2026-02-20 to 2026-03-01
+
+> Migrated from `SATS_CHANGES.txt` on 2026-03-26. Contains granular detail for early infrastructure phases not fully captured above. `SATS_CHANGES.txt` is now archived; `git log --stat` is the authoritative file-level history.
+
+### Added
+
+- Implemented P5 enriched experience lifecycle: active-record filtering, in-place update mutation (`useUpdateEnrichedExperience`), soft-delete mutation (`useDeleteEnrichedExperience`), UI edit/delete actions. Added `deleted_at` / `updated_at` soft-delete fields and RLS policies for `enriched_experiences`. Aligned `cancel-account-deletion`, `delete-account` edge functions to include enrichment records in deletion scope.
+- Implemented P5 enrichment modal product enhancements: evidence-checklist gating for inferred claims, tone controls + soften action, batch save/reject, workflow progress states, reasoning trace expansion, interview-safe tagging, and outcome metrics (acceptance rate, edit-before-save rate, rejection reasons, time-to-approve, ATS delta).
+- Standardized Dockerfile healthcheck target to `127.0.0.1:3000`; added file-level update headers to `Dockerfile` and `docker-compose.yml`.
+- Updated `README.md` to remove Lovable deployment documentation; replaced with current SmartATS architecture, features, routes, and deployment workflows.
+
+### Changed
+
+- SDLC P0 — removed hardcoded Supabase URL / project-id from `src/integrations/supabase/client.ts` and `src/lib/centralizedLogger.ts`; replaced with environment-driven endpoint resolution and fail-fast validation.
+- SDLC P1 — moved OpenAI endpoint, model, and temperature (plus ATS token pricing inputs) to environment-driven configuration with safe defaults in `ats-analysis-direct` and `enrich-experiences` edge functions.
+- SDLC P2 — disabled prompt and raw LLM payload persistence by default; added `STORE_LLM_PROMPTS` and `STORE_LLM_RAW_RESPONSE` runtime env var controls in `ats-analysis-direct`.
+- SDLC P3 — moved logging retry/backoff, sampling rate limits, and payload size thresholds to environment-driven configuration in `centralizedLogger.ts` and `centralized-logging` edge function.
+- SDLC P4 — replaced wildcard CORS with environment-driven `ALLOWED_ORIGINS` allowlist enforcement (explicit origin rejection + preflight support) across all five edge functions.
+- Phase A lint cleanup: fixed `no-empty-object-type`, `no-case-declarations`, `ban-ts-comment`, and `no-require-imports` violations in `command.tsx`, `textarea.tsx`, `documentProcessor.ts`, `ats-analysis-direct/index.ts`, `tailwind.config.ts`.
+- Phase B lint reduction: replaced `any` with typed/unknown metadata in all logger modules (`authLogger`, `documentLogger`, `jobDescriptionLogger`, `devLogger`, `localLogger`); added error-shape normalization helpers. Reduced global lint issues from 107 to 69.
+- Hardened enrichment failure handling in `enrich-experiences`: mapped OpenAI provider failures (401/429/5xx) to safe client messages via `mapProviderError()`; removed raw provider payload logging; improved invoke diagnostics with error name/context/status and top-level `request_id` propagation.

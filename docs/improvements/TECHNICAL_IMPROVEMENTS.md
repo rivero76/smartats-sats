@@ -12,6 +12,8 @@
 <!-- Updated: 2026-03-26 — P1-12 completed: .claude/commands/ created with 2 command files (verify, release-check) -->
 <!-- Updated: 2026-03-26 — full comparison with audit_smartats-sats_20260326_164646.md: added P2-10 (CLAUDE.md updates); confirmed P0-1 verified done (.railwayignore exists with correct content) -->
 <!-- Updated: 2026-03-26 — added UIUX-1 through UIUX-7 (UI/UX Excellence Programme); full plan in plans/p19-uiux-excellence.md -->
+<!-- Updated: 2026-03-26 — added MAINT-1 (remove Lovable.dev artifacts) and MAINT-2 (migrate Codex tooling to Claude Code) -->
+<!-- Updated: 2026-03-26 — MAINT-2 completed: AGENTS.md retired, CODEX_SESSION_CONTINUITY.md archived, SESSION_CONTINUITY.md created, ADR-0001 marked Superseded, CLAUDE.md updated, docs/sessions/README.md updated, coding-conventions.md and p19 plan Owner updated -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -441,10 +443,11 @@ This is a mechanical refactor with no architectural changes required.
 **Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
 **Status:** **Done 2026-03-26**
 
-Created `.claude/agents/` with 16 agent files covering the full development lifecycle:
+Created `.claude/agents/` with 16 agent files covering the full development lifecycle. A 17th agent (`product-analyst`) was added on 2026-03-26:
 
 | File                      | Model  | Phase          |
 | ------------------------- | ------ | -------------- |
+| `product-analyst.md`      | Sonnet | Product        |
 | `plan-decomposer.md`      | Sonnet | Planning       |
 | `adr-author.md`           | Sonnet | Planning       |
 | `migration-writer.md`     | Haiku  | Development    |
@@ -662,6 +665,69 @@ Storybook isolates component development, documents variants, and catches visual
 
 ---
 
+## Maintenance Backlog (2026-03-26 — platform migration)
+
+### MAINT-1 · Remove Lovable.dev artifacts and redirect everything to local development
+
+**Area:** Codebase Hygiene / Infrastructure
+**Priority:** P1
+**Effort:** 1–2 hr
+**Identified:** 2026-03-26 — application was bootstrapped on lovable.dev, subscription cancelled, source moved to local development
+
+The codebase still carries Lovable.dev platform artifacts. These are harmless in development but expose a stale external dependency (`lovable-tagger`) and incorrect metadata served to browsers and crawlers.
+
+**Files to audit and fix:**
+
+| File | What to change |
+| --- | --- |
+| `index.html` | Replace `<meta name="description">`, `<meta name="author">`, `<meta property="og:*">`, and `<meta name="twitter:*">` tags that reference `lovable.dev` or "Lovable Generated Project" with SmartATS-specific values. Remove the `og:image` and `twitter:image` URLs pointing to `https://lovable.dev/opengraph-image-p98pqg.png`. |
+| `vite.config.ts` | Remove the `componentTagger()` Vite plugin import and usage. `lovable-tagger` injects Lovable editor overlays and is a no-op (or a liability) outside the Lovable IDE. |
+| `package.json` | Remove `lovable-tagger` from `devDependencies`. Run `npm install` to update `package-lock.json`. |
+
+**Search command to confirm no remaining references after fix:**
+
+```bash
+grep -r "lovable" . --include="*.{ts,tsx,html,json,md}" --exclude-dir=node_modules
+```
+
+**Non-goals:** Do not audit `package-lock.json` manually — it regenerates on `npm install`. Do not remove the README.md UPDATE LOG entry that documents the migration history.
+
+---
+
+### MAINT-2 · Migrate all OpenAI Codex tooling, runbooks, and references to Claude Code exclusively
+
+**Area:** Developer Tooling / Documentation
+**Priority:** P1
+**Effort:** 2–4 hr
+**Identified:** 2026-03-26 — development transitioned from OpenAI Codex → Claude Code; residual Codex scaffolding still present
+
+The project was developed sequentially on: Lovable.dev → OpenAI Codex → Claude Code. The Claude Code environment (`CLAUDE.md`, `.claude/`) is the canonical toolchain. Codex-specific files and references should be migrated or retired so that a new contributor does not encounter contradicting or obsolete tooling instructions.
+
+**Files and areas to audit:**
+
+| File / Area | Action |
+| --- | --- |
+| `AGENTS.md` (project root) | Review content. If it contains Codex-specific prompt instructions that are superseded by `CLAUDE.md`, retire or archive it. If it contains instructions still relevant to agent collaboration, migrate the relevant content into `CLAUDE.md` or a new `.claude/` agent file, then delete or stub `AGENTS.md`. |
+| `docs/runbooks/CODEX_SESSION_CONTINUITY.md` | Codex session continuity runbook. Assess whether it contains reusable patterns (checkpoint discipline, handoff structure). If yes, migrate the useful parts into `docs/runbooks/` as a Claude Code–flavoured session guide. Then archive or remove the Codex-specific file. |
+| `docs/decisions/adr-0001-agent-collaboration-model.md` | Documents the original Codex/Claude split model. Update the ADR status to `Superseded` and add a note that Claude Code is now the sole agentic toolchain. |
+| `docs/conventions/coding-conventions.md` | Search for any Codex-specific workflow instructions. Replace with Claude Code equivalents where they exist; remove if obsolete. |
+| `CLAUDE.md` — "Handoff to Codex" section | Rename to "Handoff / Implementation Delegation" and update the four-point checklist to describe handing off to Claude Code sub-agents (`.claude/agents/`) instead of Codex. |
+| `docs/sessions/` | Codex session log directory. These are historical records — do **not** delete them, but add a `README.md` or header comment noting they are archived Codex session logs and that active session continuity now uses Claude Code's project memory (`.claude/projects/*/memory/`). |
+| Plans and archive files that mention Codex | Audit `plans/` and `plans/archive/` for any Codex-specific workflow steps (e.g. `make checkpoint`, Codex task format). Replace or annotate as historical. |
+
+**Search command to find all remaining Codex references:**
+
+```bash
+grep -rl "codex\|Codex\|AGENTS\.md" . \
+  --include="*.{ts,tsx,js,md,txt,yml,yaml}" \
+  --exclude-dir=node_modules \
+  --exclude-dir=.git
+```
+
+**Non-goals:** Do not rewrite the git history or commit messages that mention Codex. Do not delete `docs/sessions/` — the logs are useful institutional memory. Do not rename the `AGENTS.md` concept wholesale without first confirming Claude Code does not use `AGENTS.md` itself.
+
+---
+
 ## Future Backlog (P17 — from product roadmap)
 
 ### P17-BYOK · Per-user model preference + Bring Your Own Key + AI opt-out
@@ -719,3 +785,5 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 | UIUX-6                      | Add Playwright visual screenshot baselines — 5 main pages                                 | P2       | 2–3 hr      | Open                                  |
 | UIUX-7                      | Add bundle analyser + Lighthouse CI gate (performance ≥ 80, a11y ≥ 90)                    | P2       | 2–3 hr      | Open                                  |
 | UIUX-8                      | Bootstrap Storybook with 6 shadcn/ui component stories + a11y addon                       | P3       | 4–8 hr      | Open                                  |
+| MAINT-1                     | Remove Lovable.dev artifacts (`lovable-tagger`, `index.html` meta tags, `vite.config.ts`) | P1       | 1–2 hr      | Open                                  |
+| MAINT-2                     | Migrate all Codex tooling, runbooks, and references to Claude Code exclusively             | P1       | 2–4 hr      | **Done 2026-03-26**                   |

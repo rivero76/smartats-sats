@@ -1,5 +1,7 @@
+// UPDATE LOG
+// 2026-03-26 | S3-1: add aria-label to SelectTrigger + fix CardTitle heading-order (P19-S3-1)
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -119,10 +121,10 @@ export const ResumePreview = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Resume Content Preview
-        </CardTitle>
+        </h2>
         <CardDescription>
           Parse and preview resume content to verify text quality before sending to N8N.
         </CardDescription>
@@ -132,7 +134,7 @@ export const ResumePreview = () => {
           <div className="flex-1">
             <label className="text-sm font-medium mb-2 block">Select Resume</label>
             <Select value={selectedResumeId} onValueChange={setSelectedResumeId}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select resume">
                 <SelectValue placeholder="Choose a resume to preview" />
               </SelectTrigger>
               <SelectContent>

@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed tables log_cleanup_policies → sats_log_cleanup_policies, log_entries → sats_log_entries.
+ */
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,7 +48,7 @@ export const LogCleanupManager = () => {
     queryKey: ['cleanup-policies'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('log_cleanup_policies')
+        .from('sats_log_cleanup_policies')
         .select('*')
         .order('script_name')
 
@@ -58,7 +62,7 @@ export const LogCleanupManager = () => {
     queryKey: ['log-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .select('script_name, log_level, created_at')
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
 
@@ -92,7 +96,7 @@ export const LogCleanupManager = () => {
     mutationFn: async ({ script, days }: { script: string; days: number }) => {
       const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
-      let query = supabase.from('log_entries').delete().lt('created_at', cutoffDate)
+      let query = supabase.from('sats_log_entries').delete().lt('created_at', cutoffDate)
 
       if (script !== 'all') {
         query = query.eq('script_name', script)
@@ -115,7 +119,7 @@ export const LogCleanupManager = () => {
   const deleteAllLogsMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all records
 

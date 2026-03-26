@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed tables log_settings → sats_log_settings, log_entries → sats_log_entries.
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -32,7 +36,7 @@ export const useLogSettings = () => {
   return useQuery({
     queryKey: ['log-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('log_settings').select('*').order('script_name')
+      const { data, error } = await supabase.from('sats_log_settings').select('*').order('script_name')
 
       if (error) throw error
       return data as LogSetting[]
@@ -45,7 +49,7 @@ export const useUpdateLogSetting = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<LogSetting> }) => {
-      const { error } = await supabase.from('log_settings').update(updates).eq('id', id)
+      const { error } = await supabase.from('sats_log_settings').update(updates).eq('id', id)
 
       if (error) throw error
     },
@@ -69,7 +73,7 @@ export const useLogEntries = (filters?: {
     queryKey: ['log-entries', filters],
     queryFn: async () => {
       let query = supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(filters?.limit || 100)
@@ -100,7 +104,7 @@ export const useDeleteLogs = () => {
     mutationFn: async ({ script, days }: { script: string; days: number }) => {
       const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
-      let query = supabase.from('log_entries').delete().lt('created_at', cutoffDate)
+      let query = supabase.from('sats_log_entries').delete().lt('created_at', cutoffDate)
 
       if (script !== 'all') {
         query = query.eq('script_name', script)
@@ -126,7 +130,7 @@ export const useDeleteAllLogs = () => {
   return useMutation({
     mutationFn: async () => {
       const { error } = await supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all records
 

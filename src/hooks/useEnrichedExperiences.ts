@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table enriched_experiences → sats_enriched_experiences.
  * 2026-02-20 23:29:40 | P2: Added request_id propagation and duration tracking for enrichment generation.
  * 2026-02-21 00:05:00 | Added full enrich-experiences-client coverage for save workflow logging.
  * 2026-02-21 00:15:00 | Hardened invoke failure telemetry with error name/context/status and request_id propagation.
@@ -108,7 +109,7 @@ export const useEnrichedExperiences = () => {
       if (!user) throw new Error('Not authenticated')
 
       const { data, error } = await supabase
-        .from('enriched_experiences')
+        .from('sats_enriched_experiences')
         .select(
           `
           *,
@@ -143,7 +144,7 @@ export const useUpdateEnrichedExperience = () => {
       const startedAt = Date.now()
 
       const { data, error } = await supabase
-        .from('enriched_experiences')
+        .from('sats_enriched_experiences')
         .update({
           suggestion: payload.suggestion.trim(),
           user_action: payload.user_action || 'edited',
@@ -408,7 +409,7 @@ export const useSaveEnrichedExperience = () => {
       const startedAt = Date.now()
 
       const { data, error } = await supabase
-        .from('enriched_experiences')
+        .from('sats_enriched_experiences')
         .insert({
           user_id: user.id,
           analysis_id: payload.analysis_id || null,

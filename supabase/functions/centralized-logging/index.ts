@@ -5,6 +5,7 @@
  * 2026-02-21 03:15:00 | SDLC P3 reliability parameterization: moved centralized logging length/size limits to environment-driven configuration.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed tables log_settings → sats_log_settings, log_entries → sats_log_entries.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -78,7 +79,7 @@ serve(async (req) => {
 
     // Check if logging is enabled for this script
     const { data: logSettings, error: settingsError } = await supabase
-      .from('log_settings')
+      .from('sats_log_settings')
       .select('logging_enabled, debug_enabled, trace_enabled, log_level')
       .eq('script_name', logRequest.script_name)
       .single()
@@ -106,7 +107,7 @@ serve(async (req) => {
     }
 
     // Insert log entry
-    const { error: insertError } = await supabase.from('log_entries').insert({
+    const { error: insertError } = await supabase.from('sats_log_entries').insert({
       script_name: logRequest.script_name,
       log_level: logRequest.log_level,
       message: boundedMessage,

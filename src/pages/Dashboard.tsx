@@ -1,4 +1,9 @@
-// Updated: 2026-03-01 00:00:00 - Removed disabled Advanced Reports button; updated Working/Planned feature lists to reflect current state.
+/**
+ * UPDATE LOG
+ * 2026-03-01 00:00:00 | Removed disabled Advanced Reports button; updated Working/Planned feature lists
+ * 2026-03-26 00:00:00 | S3-1: fix heading hierarchy — stat card labels → <p>, section card titles → <h2>
+ * 2026-03-27 00:00:00 | P21: updated Supabase table references to sats_ prefix
+ */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -151,7 +156,7 @@ const Dashboard = () => {
                           : stat.description
                 }
               >
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <p className="text-sm font-medium tracking-tight">{stat.title}</p>
               </HelpTooltip>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
@@ -172,7 +177,7 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <h2 className="text-2xl font-semibold leading-none tracking-tight">Quick Actions</h2>
             <CardDescription>
               Get started with common tasks to optimize your recruitment process
             </CardDescription>
@@ -234,7 +239,7 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <h2 className="text-2xl font-semibold leading-none tracking-tight">Recent Activity</h2>
             <CardDescription>Your latest actions and system updates</CardDescription>
           </CardHeader>
           <CardContent>
@@ -260,10 +265,10 @@ const Dashboard = () => {
       {/* System Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
             <Target className="h-5 w-5" />
             <span>System Information</span>
-          </CardTitle>
+          </h2>
           <CardDescription>
             Learn about Smart ATS objectives, current capabilities, and future enhancements
           </CardDescription>

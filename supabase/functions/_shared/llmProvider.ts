@@ -9,6 +9,8 @@
  * 2026-03-17 00:20:00 | Fallback bug fix: model-not-found 400 errors now fall through to next model
  *   candidate instead of throwing immediately. Previously, an invalid primary model silently blocked
  *   the fallback chain.
+ * 2026-03-27 15:00:00 | P21 S1 — wire sats_llm_call_logs: added finishReason to LLMResponse,
+ *   logContext to LLMRequest; callLLM() does fire-and-forget insert after each successful call.
  */
 
 // ---------------------------------------------------------------------------
@@ -46,6 +48,16 @@ export interface LLMRequest {
    * When not set, the adapter uses MODEL_PRICING_USD built-in table.
    */
   pricingOverride?: { input: number; output: number }
+  /**
+   * Optional context for persisting this call to sats_llm_call_logs.
+   * When omitted the call is still made but not logged to the audit table.
+   */
+  logContext?: {
+    userId?: string
+    functionName?: string
+    runId?: string
+    analysisId?: string
+  }
 }
 
 export interface LLMResponse {
@@ -63,6 +75,8 @@ export interface LLMResponse {
   durationMs: number
   /** Number of retry attempts consumed on the winning model (0 = first try). */
   retryAttemptsUsed: number
+  /** OpenAI finish_reason for the winning response (e.g. 'stop', 'max_tokens'). */
+  finishReason: string
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +235,7 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
 
       const data = await response.json()
       const rawContent = data.choices?.[0]?.message?.content?.trim() || ''
+      const finishReason: string = data.choices?.[0]?.finish_reason || 'stop'
       const usage = data.usage || {}
       const promptTokens: number = usage.prompt_tokens || 0
       const completionTokens: number = usage.completion_tokens || 0
@@ -233,7 +248,7 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
         request.pricingOverride
       )
 
-      return {
+      const result: LLMResponse = {
         rawContent,
         modelUsed: modelName,
         provider: 'openai',
@@ -242,7 +257,45 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
         costEstimateUsd,
         durationMs,
         retryAttemptsUsed: attempt,
+        finishReason,
       }
+
+      // Fire-and-forget audit log — never blocks the response
+      if (request.logContext) {
+        const ctx = request.logContext
+        try {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')
+          const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+          if (supabaseUrl && serviceKey) {
+            fetch(`${supabaseUrl}/rest/v1/sats_llm_call_logs`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                apikey: serviceKey,
+                Authorization: `Bearer ${serviceKey}`,
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({
+                user_id: ctx.userId ?? null,
+                function_name: ctx.functionName ?? 'unknown',
+                model_provider: 'openai',
+                model_id: modelName,
+                prompt_tokens: promptTokens,
+                completion_tokens: completionTokens,
+                cost_usd: costEstimateUsd ?? 0,
+                duration_ms: durationMs,
+                finish_reason: finishReason,
+                run_id: ctx.runId ?? null,
+                analysis_id: ctx.analysisId ?? null,
+              }),
+            }).catch(() => { /* intentionally silent */ })
+          }
+        } catch {
+          // telemetry must not block
+        }
+      }
+
+      return result
     }
   }
 

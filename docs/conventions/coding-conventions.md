@@ -1,7 +1,7 @@
 # SmartATS Coding Conventions
 
 **Effective from:** 2026-03-01
-**Owner:** Architecture (Claude Code) + Implementation (Codex)
+**Owner:** Claude Code
 **Applies to:** All code in `src/`, `supabase/`, `scripts/`, `tests/`
 
 ---
@@ -34,8 +34,17 @@ The following tables **predate this convention** and will **NOT be renamed** due
 | `document_extractions` | No-prefix era |
 | `error_logs` | No-prefix era |
 | `profiles` | Supabase convention, no prefix |
+| `ats_jobs` | Pre-convention era (`ats_` prefix, before `sats_` was adopted) |
+| `ats_resumes` | Pre-convention era |
+| `ats_runs` | Pre-convention era |
+| `ats_scores` | Pre-convention era |
+| `ats_findings` | Pre-convention era |
+| `ats_derivatives` | Pre-convention era |
+| `ats_job_documents` | Pre-convention era |
 
 These are documented as legacy exceptions. Any new FK references to these tables must use the existing name as-is.
+
+> **Note on `ats_*` tables:** These tables predate the `sats_` prefix convention and used `ats_` (short for ATS) before the project was named SmartATS SATS. They are preserved as-is due to the same high-risk migration concerns. Do not create new tables with the `ats_` prefix — use `sats_` for all new tables.
 
 ---
 
@@ -166,7 +175,58 @@ See `supabase/functions/_shared/llmProvider.ts` and `docs/decisions/adr-0002-llm
 
 ---
 
-## 8. Error Handling Principles
+## 8. SQL Function Naming
+
+### Rule: `sats_<verb>_<noun>()` for new business logic functions
+
+All **new** PostgreSQL functions must use the `sats_` prefix:
+
+```
+sats_<verb>_<noun>()
+```
+
+Examples:
+- `sats_soft_delete_resume(resume_id UUID)` ✓
+- `sats_cascade_delete_job(job_id UUID)` ✓
+- `sats_increment_version(table_name TEXT, row_id UUID)` ✓
+- `soft_delete_resume()` ✗ (missing prefix)
+- `delete_resume()` ✗ (missing prefix)
+
+### Legacy Function Exceptions
+
+The following functions **predate this convention** and will **NOT be renamed**:
+
+| Function | Legacy Reason |
+|---|---|
+| `soft_delete_enriched_experience(experience_id UUID)` | Pre-convention era |
+| `handle_new_user()` | Supabase auth hook, no prefix era |
+| `update_updated_at_column()` | Generic trigger helper, no prefix era |
+| `set_audit_fields()` | P21 S1 — grandfathered at creation (audit trigger, not business logic) |
+
+---
+
+## 9. Trigger Naming
+
+Two patterns are used depending on trigger purpose:
+
+| Purpose | Pattern | Example |
+|---|---|---|
+| `updated_at` timestamp maintenance | `sats_update_<table>_updated_at` | `sats_update_sats_resumes_updated_at` |
+| Audit field stamping (`created_by`, `updated_by`, `version`) | `trg_audit_<table>` | `trg_audit_sats_resumes` |
+
+### Rules
+
+- New `updated_at` triggers must use `sats_update_<table>_updated_at` — not the legacy bare `update_<table>_updated_at` pattern.
+- Audit triggers created by P21 use `trg_audit_<table>` — do not invent other prefixes.
+- Each table should have **at most one** trigger per purpose.
+
+### Legacy Trigger Exceptions
+
+Existing triggers that predate this convention (using patterns `update_<table>_updated_at` without the `sats_` prefix) are grandfathered and will not be renamed unless a table itself is renamed.
+
+---
+
+## 10. Error Handling Principles
 
 1. **Fail fast on config errors** — validate env vars at the top of edge functions; return 503 (not 500) for misconfiguration.
 2. **Never log raw provider payloads** — use `mapProviderError()` to produce safe messages; do not forward provider error bodies to clients.
@@ -175,7 +235,7 @@ See `supabase/functions/_shared/llmProvider.ts` and `docs/decisions/adr-0002-llm
 
 ---
 
-## 9. Compliance with This Document
+## 11. Compliance with This Document
 
 - New edge functions **must** import from `_shared/` and use `callLLM`.
 - New DB tables **must** use the `sats_` prefix.

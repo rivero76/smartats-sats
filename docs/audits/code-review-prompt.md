@@ -84,7 +84,7 @@ List ALL violations with file path and recommended rename.
 **Step 2:** Read these files to understand what features exist:
 
 - `docs/changelog/CHANGELOG.md` (recent additions)
-- `docs/changelog/SATS_CHANGES.txt`
+- `docs/changelog/CHANGELOG.md` (sole changelog — `SATS_CHANGES.txt` is archived)
 - `docs/releases/UNTESTED_IMPLEMENTATIONS.md` (features code-complete but E2E-pending)
 - `docs/decisions/product-roadmap.md` (phase status)
 

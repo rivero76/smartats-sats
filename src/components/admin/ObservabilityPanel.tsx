@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table log_entries → sats_log_entries.
  * 2026-02-20 23:42:10 | P4: Added observability dashboards and rule-based alerting panel for admin monitoring.
  */
 import React from 'react'
@@ -67,7 +68,7 @@ export const ObservabilityPanel = () => {
     queryFn: async () => {
       const [logsRes, analysesRes] = await Promise.all([
         supabase
-          .from('log_entries')
+          .from('sats_log_entries')
           .select('id, script_name, log_level, timestamp, metadata')
           .gte('timestamp', last7d)
           .order('timestamp', { ascending: false })

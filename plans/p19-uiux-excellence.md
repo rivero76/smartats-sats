@@ -3,7 +3,7 @@
 # P19 — UI/UX Excellence Programme
 
 **Created:** 2026-03-26
-**Owner:** Architecture (Claude Code) + Implementation (Codex)
+**Owner:** Claude Code
 **Goal:** Elevate SmartATS from functional to delightful — modern motion, consistent typography, enforced accessibility, and visual quality gates — without breaking any existing features.
 
 ---
@@ -296,11 +296,14 @@ test('Dashboard visual baseline', async ({ page }) => {
 **Validation record:**
 
 ```
-Date:
-Baselines committed: YES / NO
-Local run: PASS / FAIL
-CI run: PASS / FAIL (non-blocking)
-Tester:
+Date: 2026-03-26
+Implementation: COMPLETE
+Baselines committed: NO — run `npm run test:visual:update` with credentials to generate and commit
+Local run: PENDING (requires PLAYWRIGHT_TEST_EMAIL + PLAYWRIGHT_TEST_PASSWORD + built app)
+CI run: PENDING (non-blocking job added to quality-gates.yml; will skip without secrets)
+Tester: Claude Code (S3-2 scaffold)
+Notes: Auth setup uses #signin-email / #signin-password selectors from Auth.tsx.
+       To generate baselines: npm run build && PLAYWRIGHT_TEST_EMAIL=... PLAYWRIGHT_TEST_PASSWORD=... npm run test:visual:update
 ```
 
 ---

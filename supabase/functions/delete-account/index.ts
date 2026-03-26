@@ -3,6 +3,7 @@
  * 2026-02-20 23:22:57 | P1: Integrated centralized structured logging for account deletion lifecycle events.
  * 2026-02-21 03:13:40 | SDLC P4 security hardening: replaced wildcard CORS with ALLOWED_ORIGINS allowlist enforcement.
  * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table account_deletion_logs → sats_account_deletion_logs.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -178,7 +179,7 @@ serve(async (req) => {
       })
       // Log the error but don't fail the entire deletion process
       // The soft delete already succeeded
-      await supabase.from('account_deletion_logs').insert({
+      await supabase.from('sats_account_deletion_logs').insert({
         user_id: user.id,
         action: 'hard_delete_failed',
         ip_address: clientIP,
@@ -197,7 +198,7 @@ serve(async (req) => {
         user_id: user.id,
       })
       // Log successful hard deletion
-      await supabase.from('account_deletion_logs').insert({
+      await supabase.from('sats_account_deletion_logs').insert({
         user_id: user.id,
         action: 'hard_deleted',
         ip_address: clientIP,
@@ -211,7 +212,7 @@ serve(async (req) => {
     }
 
     // Log additional audit information
-    await supabase.from('account_deletion_logs').insert({
+    await supabase.from('sats_account_deletion_logs').insert({
       user_id: user.id,
       action: 'confirmed',
       ip_address: clientIP,

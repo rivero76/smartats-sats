@@ -7,4 +7,4 @@ Operational procedures for deployment, rollback, incidents, and critical workflo
 - `incident-response.md`
 - `data-deletion-operations.md`
 - `llm-runtime-quality.md`
-- `CODEX_SESSION_CONTINUITY.md`
+- `SESSION_CONTINUITY.md` — how to preserve state across Claude Code sessions using checkpoints and project memory

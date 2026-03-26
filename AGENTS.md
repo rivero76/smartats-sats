@@ -1,41 +1,21 @@
 # AGENTS.md
 
-This file defines how Codex should work in this repository.
+<!-- UPDATE LOG -->
+<!-- 2026-03-26 | MAINT-2: Retired — Codex is no longer the implementation agent. Claude Code is the sole agentic toolchain. -->
 
-## Scope
+> **This file is archived.** OpenAI Codex is no longer used in this project.
+> All agent behaviour, responsibilities, and guardrails are now defined in **[CLAUDE.md](CLAUDE.md)**.
 
-- Applies to the entire repository.
-- Codex is an implementation-first agent.
+## What this file was
 
-## Source of Truth
+`AGENTS.md` defined how OpenAI Codex should operate in this repository: scope, responsibilities, guardrails, and the working convention with Claude Code (which owned architecture and review while Codex owned implementation).
 
-1. Product and execution plans: `plans/`
-2. Architecture and decisions: `docs/architecture.md`, `docs/decisions/`
-3. Coding conventions: `docs/conventions/coding-conventions.md`
-4. Runbooks and operational procedures: `docs/runbooks/`
-5. Human onboarding and commands: `README.md`
+## Current toolchain
 
-## Codex Responsibilities (Primary)
+Claude Code is the sole agentic development environment. It owns both implementation and architecture review, using specialised sub-agents in `.claude/agents/` for delegation.
 
-1. Implement scoped features from `plans/*.md`.
-2. Perform multi-file code changes across `src/`, `supabase/`, and `scripts/`.
-3. Add or update automated tests under `tests/` and existing in-source tests.
-4. Update CI and operational scripts when needed.
-5. Keep docs in sync after implementation changes.
-
-## Codex Guardrails
-
-1. Do not edit generated types in `src/integrations/supabase/types.ts` manually.
-2. Prefer incremental, reviewable commits by feature slice.
-3. Run targeted verification for every significant change (`npm run test`, `npm run build`, relevant script checks).
-4. When code/infrastructure changes, update docs at least in:
-   - `README.md`
-   - `docs/changelog/CHANGELOG.md`
-   - `docs/changelog/SATS_CHANGES.txt`
-   - and/or the relevant file in `plans/` or `docs/`
-
-## Working Convention With Claude Code
-
-- Codex owns execution.
-- Claude Code owns architecture review and risk/quality review.
-- If recommendations conflict, prioritize architecture consistency documented in `docs/architecture.md` and ADRs in `docs/decisions/`.
+See `CLAUDE.md` for:
+- Agent responsibilities and delegation model
+- Key commands
+- Coding conventions and guardrails
+- Source-of-truth file index

@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table log_settings → sats_log_settings.
+ */
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -48,7 +52,7 @@ export const LoggingControlPanel = () => {
   const { data: logSettings, isLoading } = useQuery({
     queryKey: ['log-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('log_settings').select('*').order('script_name')
+      const { data, error } = await supabase.from('sats_log_settings').select('*').order('script_name')
 
       if (error) throw error
       return data as LogSetting[]
@@ -58,7 +62,7 @@ export const LoggingControlPanel = () => {
   // Update log setting mutation
   const updateLogSettingMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<LogSetting> }) => {
-      const { error } = await supabase.from('log_settings').update(updates).eq('id', id)
+      const { error } = await supabase.from('sats_log_settings').update(updates).eq('id', id)
 
       if (error) throw error
     },

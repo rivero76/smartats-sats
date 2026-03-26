@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Role
 
-Claude Code is a **reasoning/review-first agent**. Codex (`AGENTS.md`) handles implementation. Claude Code owns architecture review, ADRs, risk/quality analysis, and documentation quality.
+Claude Code is the **sole agentic development environment** for this project. It owns architecture review, ADRs, risk/quality analysis, documentation quality, and implementation — delegating to specialised sub-agents in `.claude/agents/` as appropriate.
 
 ## Primary Responsibilities
 
@@ -19,14 +19,28 @@ Claude Code is a **reasoning/review-first agent**. Codex (`AGENTS.md`) handles i
 2. Draft ADRs under `docs/decisions/` for non-trivial technical choices.
 3. Support test strategy design for complex workflows.
 
-## Handoff to Codex
+## Implementation Delegation
 
-When requesting implementation from Codex, provide:
+When delegating implementation to a sub-agent or starting a new implementation session, provide:
 
 1. Exact scope and acceptance criteria.
 2. Files expected to change.
 3. Validation commands required.
 4. Risks and non-goals.
+
+Sub-agents available in `.claude/agents/` cover the full development lifecycle:
+
+| Phase | Agents |
+| --- | --- |
+| Product | `product-analyst` — raw PM/user input → user stories + handoff brief |
+| Planning | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions |
+| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper` |
+| Review | `arch-reviewer`, `convention-auditor`, `security-auditor` |
+| Testing | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner` |
+| Release | `release-gatekeeper` |
+| Operations | `incident-responder`, `railway-deployer`, `dev-env-doctor` |
+
+**Typical PM-to-developer flow:** `product-analyst` → `plan-decomposer` → `arch-reviewer` → implement → `test-runner` → `release-gatekeeper`
 
 ## Key Commands
 
@@ -36,13 +50,31 @@ npm run dev              # Vite dev server on http://localhost:8080
 npm run build            # Production build
 npm run lint             # ESLint
 npm run test             # Vitest (all tests)
-npm run test -- --run tests/unit/utils/someFile.test.ts  # Single test file
+npm run test:watch       # Vitest in watch mode
+npm run test -- tests/unit/utils/someFile.test.ts        # Single test file
+npm run test:visual              # Playwright visual regression (requires prior npm run build)
+npm run test:visual:update       # Update visual snapshots
+npm run format           # Prettier write
+npm run format:check     # Prettier check (CI-safe, no writes)
+npm run format:check:changed  # Format check for changed files only (pre-commit)
+npm run build:dev        # Development mode build (includes source maps)
 npm run verify           # lint + type-check + test
 npm run verify:full      # verify + build
+
+# Individual quality-gate checks (also run inside verify)
+npm run docs:check       # Validate docs completeness
+npm run secrets:check    # Diff-based secret scanning
+npm run supabase:check   # Supabase migration/config checks
+npm run supabase:check:strict  # Same, with stricter rules
+
+# LLM evaluation gate (run after any model/param change)
+npm run llm:eval         # Score responses against rubric
+npm run llm:eval:gate    # Pass/fail gate (non-zero exit on regression)
 
 # Docker
 docker compose --profile dev up smartats-dev --build  # Hot-reload dev container (localhost:8080)
 docker compose up smartats-app --build                 # Production container (localhost:3000)
+# Use /dev-start skill or dev-env-doctor agent if Docker build stalls (OneDrive node_modules issue)
 
 # Ops automation (wraps docker/git/verify into named tasks)
 npm run ops -- help                                    # List all ops commands
@@ -85,6 +117,9 @@ bash scripts/ops/clean-logs.sh --days 3 --dry-run            # Preview before de
 - Server state is managed via TanStack Query hooks in `src/hooks/` (one hook per domain: resumes, jobs, analyses, etc.)
 - Document text extraction (PDF/DOCX/HTML) happens client-side in `src/services/documentProcessor.ts`
 - Structured logging via `src/lib/centralizedLogger.ts` — sends events to the `centralized-logging` edge function
+- Animation presets live in `src/lib/animations.ts` (Framer Motion variants: `fadeIn`, `slideUp`, `scaleIn`, `listItem`, `staggerContainer`, `slideInFromRight`). All new animated components must import from here — no ad-hoc Framer Motion values. Wrap list containers with `staggerContainer` + `listItem` on children; cap stagger at 10 items.
+- Accessibility tests live in `tests/unit/a11y/` using `jest-axe` — run via `npm run test`.
+- Visual regression tests live in `tests/e2e/visual/` using Playwright. They require `PLAYWRIGHT_TEST_EMAIL` / `PLAYWRIGHT_TEST_PASSWORD` env vars and a prior `npm run build`. Base URL defaults to `http://localhost:4173` (vite preview), overridable via `PLAYWRIGHT_BASE_URL`.
 
 ### Backend Patterns (Edge Functions)
 
@@ -168,7 +203,7 @@ SQL uses `-- UPDATE LOG` / `-- YYYY-MM-DD HH:MM:SS | ...`. HTML uses `<!-- UPDAT
 
 ### Changelog updates
 
-After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/changelog/SATS_CHANGES.txt`.
+After any code change, update `docs/changelog/CHANGELOG.md`. (`SATS_CHANGES.txt` is archived — do not write to it.)
 
 ## Source of Truth
 
@@ -190,7 +225,7 @@ After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/chang
 | Security audit reports        | `docs/security/`                               |
 | Compliance policies           | `docs/compliance/`                             |
 | Release readiness             | `docs/releases/UNTESTED_IMPLEMENTATIONS.md`    |
-| Changelog                     | `docs/changelog/SATS_CHANGES.txt`              |
+| Changelog                     | `docs/changelog/CHANGELOG.md`                  |
 | LLM model governance          | `docs/specs/technical/llm-model-governance.md` |
 | CI quality gates              | `.github/workflows/quality-gates.yml`          |
 

@@ -44,3 +44,16 @@ MEMORY.md
 # Supabase local CLI temp artifacts
 supabase/.temp/
 .claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Build/temp artifacts
+node_modules.zip
+vite.config.ts.timestamp-*
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+# Auth state contains session tokens — never commit populated file
+tests/e2e/.auth/

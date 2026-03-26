@@ -127,7 +127,7 @@ moving model families — but it requires a documented explanation.
 After validation passes, update this document:
 1. Update the Model Register table (Section 2)
 2. Add an entry to the Change Log (Section 6)
-3. Update `docs/changelog/CHANGELOG.md` and `docs/changelog/SATS_CHANGES.txt`
+3. Update `docs/changelog/CHANGELOG.md`
 4. Update `docs/releases/UNTESTED_IMPLEMENTATIONS.md` with the E2E pending entry
 
 ---

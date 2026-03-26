@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-03-27 15:00:00 | P21 Tier 1 — renamed tables log_entries → sats_log_entries, log_settings → sats_log_settings.
  * 2026-03-17 16:00:00 | Added time window filter (5m/15m/1h/6h/24h/All) and defaulted
  *   to ERROR level + 1h window so the viewer opens ready for incident investigation.
  */
@@ -70,7 +71,7 @@ export const LogViewer = () => {
     queryKey: ['log-entries', filterScript, filterLevel, timeWindow, searchTerm, limit],
     queryFn: async () => {
       let query = supabase
-        .from('log_entries')
+        .from('sats_log_entries')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(limit)
@@ -103,7 +104,7 @@ export const LogViewer = () => {
     queryKey: ['log-scripts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('log_settings')
+        .from('sats_log_settings')
         .select('script_name')
         .order('script_name')
 

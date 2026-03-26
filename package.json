@@ -22,7 +22,9 @@
     "supabase:check": "bash scripts/ops/check-supabase.sh",
     "supabase:check:strict": "bash scripts/ops/check-supabase.sh --strict",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:visual": "playwright test tests/e2e/visual/",
+    "test:visual:update": "playwright test tests/e2e/visual/ --update-snapshots"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -86,7 +88,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.16",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
@@ -96,6 +101,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "jest-axe": "^10.0.0",
     "jsdom": "^27.0.1",
     "lovable-tagger": "^1.1.9",
     "postcss": "^8.5.6",

@@ -1,6 +1,7 @@
 # UPDATE LOG
 # 2026-02-20 22:19:11 | Reviewed last-2-hours updates and documented the healthcheck target change to 127.0.0.1:3000.
 # 2026-03-17 12:00:00 | P0-2: removed hardcoded VITE_SUPABASE_URL/ANON_KEY; replaced with env_file: .env
+# 2026-03-27 10:30:00 | Fix dev port mapping: vite.config.ts sets port 8080, corrected 8080:5173 → 8080:8080
 
 version: '3.9'
 
@@ -32,7 +33,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: smartats-dev
     ports:
-      - "8080:5173"
+      - "8080:8080"
     env_file: .env
     volumes:
       - .:/app
