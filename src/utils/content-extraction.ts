@@ -96,7 +96,9 @@ function normalizeCompanyName(value: string | null | undefined): string | null {
 }
 
 function sanitizeLine(line: string): string {
-  return normalizeWhitespace(line).replace(/\s*logo$/i, '').trim()
+  return normalizeWhitespace(line)
+    .replace(/\s*logo$/i, '')
+    .trim()
 }
 
 function parseLinkedInTitleLine(line: string): {
@@ -104,7 +106,9 @@ function parseLinkedInTitleLine(line: string): {
   title: string | null
   location: string | null
 } | null {
-  const cleaned = sanitizeLine(line).replace(/\s*\|\s*LinkedIn\s*$/i, '').trim()
+  const cleaned = sanitizeLine(line)
+    .replace(/\s*\|\s*LinkedIn\s*$/i, '')
+    .trim()
   const match = cleaned.match(/^(.+?)\s+hiring\s+(.+?)(?:\s+in\s+(.+))?$/i)
   if (!match) return null
 
@@ -370,17 +374,14 @@ export function extractJobDescriptionInfo(content: string, sessionId?: string): 
     linkedInHeader?.location || providerHeader?.location
       ? {
           city:
-            (linkedInHeader?.location || providerHeader?.location || '')
-              .split(',')[0]
-              ?.trim() || null,
+            (linkedInHeader?.location || providerHeader?.location || '').split(',')[0]?.trim() ||
+            null,
           state:
-            (linkedInHeader?.location || providerHeader?.location || '')
-              .split(',')[1]
-              ?.trim() || null,
+            (linkedInHeader?.location || providerHeader?.location || '').split(',')[1]?.trim() ||
+            null,
           country:
-            (linkedInHeader?.location || providerHeader?.location || '')
-              .split(',')[2]
-              ?.trim() || null,
+            (linkedInHeader?.location || providerHeader?.location || '').split(',')[2]?.trim() ||
+            null,
         }
       : null
 

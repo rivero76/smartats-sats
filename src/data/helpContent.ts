@@ -451,19 +451,22 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 1,
         title: 'Open the Enrichment Wizard',
-        description: "Click the 'Enrich Experience' button at the top of the page to open the enrichment modal.",
+        description:
+          "Click the 'Enrich Experience' button at the top of the page to open the enrichment modal.",
         tip: 'You need at least one uploaded resume and one job description before generating suggestions.',
       },
       {
         step: 2,
         title: 'Select Resume and Job Description',
-        description: 'Choose the resume version and the target job description you want to optimize for.',
+        description:
+          'Choose the resume version and the target job description you want to optimize for.',
         tip: 'Select the job description that best matches the role you are actively applying for.',
       },
       {
         step: 3,
         title: 'Generate a Suggestion',
-        description: 'The AI analyzes the gap between your resume and the job description and generates an enhanced experience bullet.',
+        description:
+          'The AI analyzes the gap between your resume and the job description and generates an enhanced experience bullet.',
         tip: 'Generation takes a few seconds. The AI focuses on measurable outcomes and relevant keywords.',
       },
       {
@@ -476,13 +479,15 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 5,
         title: 'Save or Reject',
-        description: 'Click Accept to save the suggestion as-is, Edit to customize wording before saving, or Reject to discard it.',
+        description:
+          'Click Accept to save the suggestion as-is, Edit to customize wording before saving, or Reject to discard it.',
         tip: 'Rejected suggestions are tracked to help improve future generation quality.',
       },
       {
         step: 6,
         title: 'Copy to Your Resume',
-        description: "Use the 'Copy text' button on any saved experience to copy the bullet to your clipboard, then paste it into your resume.",
+        description:
+          "Use the 'Copy text' button on any saved experience to copy the bullet to your clipboard, then paste it into your resume.",
         tip: 'Copy bullets directly into your resume editor for immediate improvement.',
       },
     ],
@@ -545,7 +550,7 @@ export const helpContentData: Record<string, HelpContent> = {
         step: 2,
         title: 'Navigate to Upskilling Roadmaps',
         description:
-          "Open the Upskilling Roadmaps page from the main navigation. Your generated roadmap will appear here automatically.",
+          'Open the Upskilling Roadmaps page from the main navigation. Your generated roadmap will appear here automatically.',
         tip: 'Roadmaps are tied to the target role from your ATS analysis.',
       },
       {
@@ -566,7 +571,7 @@ export const helpContentData: Record<string, HelpContent> = {
         step: 5,
         title: 'Mark Milestones Complete',
         description:
-          "Check the checkbox next to each milestone when you have completed the learning activity. Your progress is saved automatically.",
+          'Check the checkbox next to each milestone when you have completed the learning activity. Your progress is saved automatically.',
         tip: 'Completed milestones are preserved across sessions so you can track long-term progress.',
       },
       {
@@ -593,7 +598,8 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         problem: 'Milestone completion is not saving',
-        solution: "Click the Refresh button and try toggling the milestone again. If it persists, reload the page.",
+        solution:
+          'Click the Refresh button and try toggling the milestone again. If it persists, reload the page.',
       },
       {
         problem: 'Roadmap content seems too generic',
@@ -602,7 +608,8 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         problem: 'Cannot see my roadmap after generating it',
-        solution: 'Use the Refresh button on this page. If the roadmap still does not appear, try navigating away and back.',
+        solution:
+          'Use the Refresh button on this page. If the roadmap still does not appear, try navigating away and back.',
       },
     ],
     relatedTopics: ['ATS Analysis', 'Experience Enrichment', 'Resume Management'],
@@ -635,7 +642,7 @@ export const helpContentData: Record<string, HelpContent> = {
         step: 2,
         title: 'Review the ATS Score Badge',
         description:
-          "Each opportunity card shows a score badge. Green badges (80%+) indicate strong matches. Blue badges (60–79%) indicate good potential matches.",
+          'Each opportunity card shows a score badge. Green badges (80%+) indicate strong matches. Blue badges (60–79%) indicate good potential matches.',
         tip: 'Prioritize green-badged opportunities for your immediate applications.',
       },
       {
@@ -870,7 +877,8 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 1,
         title: 'Open the Admin Panel',
-        description: 'Navigate to Admin → Logging Control. This section is only visible to admin-role accounts.',
+        description:
+          'Navigate to Admin → Logging Control. This section is only visible to admin-role accounts.',
         tip: 'If you cannot see the Admin menu item, your account does not have admin privileges.',
       },
       {
@@ -883,7 +891,8 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 3,
         title: 'Search Log Content',
-        description: 'Use the search field to filter log entries by keyword, component name, or request ID.',
+        description:
+          'Use the search field to filter log entries by keyword, component name, or request ID.',
         tip: 'Search by request_id to trace a single user action end-to-end across frontend and edge function logs.',
       },
       {
@@ -910,7 +919,8 @@ export const helpContentData: Record<string, HelpContent> = {
     troubleshooting: [
       {
         problem: 'Admin menu is not visible',
-        solution: 'The Logging Panel requires an admin-role account. Contact your system administrator to request elevated access.',
+        solution:
+          'The Logging Panel requires an admin-role account. Contact your system administrator to request elevated access.',
       },
       {
         problem: 'Log Viewer shows no entries',
@@ -919,11 +929,13 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         problem: 'Log entries are not updating in real time',
-        solution: 'The Log Viewer does not auto-refresh. Click the Refresh button to load the latest entries.',
+        solution:
+          'The Log Viewer does not auto-refresh. Click the Refresh button to load the latest entries.',
       },
       {
         problem: 'Cannot toggle a script logging state',
-        solution: 'Refresh the page and try again. If the toggle does not persist, check the browser console for errors.',
+        solution:
+          'Refresh the page and try again. If the toggle does not persist, check the browser console for errors.',
       },
     ],
     relatedTopics: ['Dashboard Overview', 'Profile & Settings Management'],
@@ -954,7 +966,8 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 2,
         title: 'Go to Profile Settings → Account',
-        description: "Navigate to Profile Settings and scroll to the Account section. Click 'Delete Account'.",
+        description:
+          "Navigate to Profile Settings and scroll to the Account section. Click 'Delete Account'.",
         tip: 'The delete option is at the bottom of the Account section.',
       },
       {
@@ -994,11 +1007,13 @@ export const helpContentData: Record<string, HelpContent> = {
     troubleshooting: [
       {
         problem: 'Cannot find the Delete Account option',
-        solution: 'Go to Profile Settings → Account tab and scroll to the bottom. The delete option is in the Danger Zone section.',
+        solution:
+          'Go to Profile Settings → Account tab and scroll to the bottom. The delete option is in the Danger Zone section.',
       },
       {
         problem: 'Deletion request is not showing as pending',
-        solution: 'Refresh the page. If the request is not reflected in your account settings within a few minutes, contact support.',
+        solution:
+          'Refresh the page. If the request is not reflected in your account settings within a few minutes, contact support.',
       },
       {
         problem: 'Want to cancel but the cancellation button is missing',

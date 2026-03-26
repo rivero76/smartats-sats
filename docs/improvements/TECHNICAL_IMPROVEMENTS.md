@@ -5,10 +5,18 @@
 <!-- Updated: 2026-03-17 — P0-1, P0-2, P0-3 completed; P1-1, P1-2, P1-4, P1-6, P1-7 completed -->
 <!-- Updated: 2026-03-17 (session 2) — BUG-2026-03-17-LOCATION-RLS fixed; log fetch script hardened; LogViewer time-window filter added; P17 BYOK added as future backlog item -->
 <!-- Updated: 2026-03-17 (session 3) — P2-7 (sync AI model label) completed; VITE_AI_MODEL_LABEL env var added -->
+<!-- Updated: 2026-03-23 — added P2-8 (per-user API quotas) from multi-user readiness assessment; added i18n gap entry (P3-1) -->
+<!-- Updated: 2026-03-26 — added P1-10 through P1-13 and P2-9 from Claude Code audit report (audit_smartats-sats_20260326_164646.md) -->
+<!-- Updated: 2026-03-26 — P1-10 completed: .claude/agents/ created with 16 sub-agent files covering full dev lifecycle -->
+<!-- Updated: 2026-03-26 — P1-11 completed: .claude/skills/ created with 4 skill files (new-edge-function, new-migration, adr-draft, verify-gate) -->
+<!-- Updated: 2026-03-26 — P1-12 completed: .claude/commands/ created with 2 command files (verify, release-check) -->
+<!-- Updated: 2026-03-26 — full comparison with audit_smartats-sats_20260326_164646.md: added P2-10 (CLAUDE.md updates); confirmed P0-1 verified done (.railwayignore exists with correct content) -->
+<!-- Updated: 2026-03-26 — added UIUX-1 through UIUX-7 (UI/UX Excellence Programme); full plan in plans/p19-uiux-excellence.md -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
 **Priority levels:**
+
 - `P0` — Do immediately. Blocks correctness, security, or ongoing deployment.
 - `P1` — Do soon. Causes hidden failures, accumulating debt, or contributor friction.
 - `P2` — Do when convenient. Code quality and long-term maintainability.
@@ -47,6 +55,7 @@ Full context: `docs/bugs/bug-railway-up-path-as-root-timeout.md`
 `docker-compose.yml` currently has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` hardcoded inline. Even though these are anon/dev keys today, this pattern is dangerous — it gets copied for production and ends up in git history.
 
 **Fix:**
+
 1. Remove inline env vars from `docker-compose.yml`.
 2. Replace with `env_file: .env` in each service definition.
 3. Confirm `.env` is in `.gitignore`.
@@ -62,6 +71,7 @@ Full context: `docs/bugs/bug-railway-up-path-as-root-timeout.md`
 `package-lock.json` inside `scripts/playwright-linkedin/` is untracked (shows in `git status`). This is either an oversight (should be committed for reproducible installs) or intentional (should be gitignored).
 
 **Fix:** Commit it — lockfiles for deployable services should be tracked:
+
 ```bash
 git add scripts/playwright-linkedin/package-lock.json
 git commit -m "chore(p14): track playwright scraper lockfile"
@@ -127,10 +137,10 @@ There is no React error boundary in the application. A runtime error in any page
 
 ```tsx
 // src/components/ErrorBoundary.tsx
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary'
 
 // In App.tsx routes:
-<ErrorBoundary fallback={<ErrorFallback />}>
+;<ErrorBoundary fallback={<ErrorFallback />}>
   <Outlet />
 </ErrorBoundary>
 ```
@@ -148,6 +158,7 @@ The fallback should show a friendly error message with a "Reload" button, not a 
 The `async-ats-scorer` processes `sats_staged_jobs` rows on a schedule. If scoring fails (LLM timeout, schema violation, transient error), the row silently stays in its current state with no indication of failure. Admins and developers cannot distinguish "not yet scored" from "failed after N attempts."
 
 **Fix:** Add to `sats_staged_jobs`:
+
 - `scoring_failed_at TIMESTAMPTZ` — set on first failure
 - `scoring_retry_count INT DEFAULT 0` — incremented on each failure
 - `scoring_error TEXT` — last error message (sanitised, no raw LLM payloads)
@@ -165,6 +176,7 @@ Update `async-ats-scorer` to populate these on catch, and skip rows where `scori
 After `npm install` inside `scripts/playwright-linkedin/`, contributors must manually run `npx playwright install chromium`. This step is not documented in the main README onboarding flow and is easy to miss, causing silent failures when the scraper runs.
 
 **Fix:** Add to `scripts/playwright-linkedin/package.json`:
+
 ```json
 {
   "scripts": {
@@ -186,6 +198,7 @@ Also add a note to the main `README.md` under the setup section: "The LinkedIn s
 `fetch-market-jobs` calls JSearch (RapidAPI) and Adzuna. If either API returns a rate-limit error or goes down, the function returns nothing — silently. The admin dashboard shows no jobs, and there is no way to tell if this is "no matching jobs" or "API failure."
 
 **Fix (minimum viable):** Add a `sats_fetch_audit` table (or a `last_fetch_status` column on a config table) that records:
+
 - `fetched_at`
 - `source` (jsearch / adzuna)
 - `http_status`
@@ -217,6 +230,7 @@ No CI pipeline exists. `npm run verify` and `npm run ops` are manual only. There
 `src/integrations/supabase/types.ts` is auto-generated but there is no documented process and no automation to regenerate it when migrations run. If schema diverges from types, the type checker silently passes broken code.
 
 **Fix:**
+
 1. Add `supabase gen types typescript --project-id <id> > src/integrations/supabase/types.ts` to `scripts/ops/` as `gen-types.sh`.
 2. Document in `CLAUDE.md` and `AGENTS.md`: after every migration, run `npm run gen-types`.
 3. Long-term: add this as a step in the CI workflow.
@@ -234,6 +248,7 @@ No CI pipeline exists. `npm run verify` and `npm run ops` are manual only. There
 `tsconfig.app.json` has `strict: false`, which is the root cause of the 69 current lint issues. The lint issues are non-blocking in CI today (by design, to allow gradual cleanup) but will continue to accumulate if the compiler doesn't enforce them.
 
 **Recommended approach:**
+
 1. Run `npm run lint 2>&1 | grep error` and fix module-by-module (start with `src/lib/`, then `src/hooks/`, then `src/components/`).
 2. Once lint is clean, flip `"strict": true` in `tsconfig.app.json`.
 3. Change the CI lint step from non-blocking to blocking.
@@ -247,10 +262,10 @@ No CI pipeline exists. `npm run verify` and `npm run ops` are manual only. There
 
 `src/lib/` currently has 7 logging files. Only `centralizedLogger.ts` and `requestContext.ts` are general-purpose. The three domain loggers are tightly coupled to specific features and would be easier to find co-located with the code they log:
 
-| Current location | Better location |
-|---|---|
-| `src/lib/authLogger.ts` | `src/contexts/authLogger.ts` |
-| `src/lib/documentLogger.ts` | `src/services/documentLogger.ts` |
+| Current location                  | Better location                     |
+| --------------------------------- | ----------------------------------- |
+| `src/lib/authLogger.ts`           | `src/contexts/authLogger.ts`        |
+| `src/lib/documentLogger.ts`       | `src/services/documentLogger.ts`    |
 | `src/lib/jobDescriptionLogger.ts` | `src/hooks/jobDescriptionLogger.ts` |
 
 `centralizedLogger.ts`, `requestContext.ts`, `devLogger.ts`, and `localLogger.ts` stay in `src/lib/`.
@@ -265,6 +280,7 @@ No CI pipeline exists. `npm run verify` and `npm run ops` are manual only. There
 `scripts/playwright-linkedin/` is a fully separate Node.js service with its own `package.json`, `tsconfig.json`, and Railway deployment. Living under `scripts/` implies it's a utility script, but it's a long-running service. This creates ambiguity about ownership, testing, and docs.
 
 **Two options:**
+
 - **Option A (docs only):** Keep it in `scripts/`, add a `scripts/playwright-linkedin/README.md` documenting it as a standalone service, its deploy process, and its environment variables.
 - **Option B (restructure):** Move to `services/linkedin-scraper/`, add to `docs/architecture.md` as a first-class service. Better long-term, but higher migration cost.
 
@@ -350,6 +366,7 @@ PostgREST's `.insert().select().single()` pattern performs a SELECT re-check on 
 **Status:** **Done 2026-03-17**
 
 Three macOS-incompatible patterns fixed in `scripts/ops/fetch-logs.sh`:
+
 1. `head -n -1` (GNU only) → replaced with `sed '$d'` (POSIX, strips last line)
 2. `echo -e` colour output → replaced with `printf` (macOS `/bin/sh` ignores `-e`)
 3. `.env` loader didn't strip surrounding quotes from values (e.g. `VAR="value"`) → added quote and inline-comment stripping using parameter expansion
@@ -365,6 +382,286 @@ The `LogViewer` component (Admin → Logging Control → Log Viewer) previously 
 
 ---
 
+## Backlog Items (from 2026-03-23 review)
+
+### P2-8 · Per-user API quotas on AI edge functions
+
+**Area:** Security / Cost control
+**Priority:** P2
+**Effort:** 2–3 hr
+**Identified:** 2026-03-23 multi-user readiness assessment
+
+Currently there are no per-user limits on ATS analysis or enrichment requests. Any authenticated user can trigger unlimited `callLLM()` calls, creating unbounded OpenAI cost exposure and an abuse vector.
+
+**Fix:** Add a pre-call quota check in each edge function (`ats-analysis-direct`, `enrich-experiences`, `linkedin-profile-ingest`):
+
+```sql
+-- Example: max 20 ATS analyses per user per day
+SELECT COUNT(*) FROM sats_analyses
+WHERE user_id = auth.uid()
+  AND created_at >= NOW() - INTERVAL '1 day'
+```
+
+Return HTTP `429 Too Many Requests` if exceeded. Quota limits should be configurable via env vars (`SATS_MAX_ANALYSES_PER_DAY`, `SATS_MAX_ENRICHMENTS_PER_DAY`).
+
+---
+
+### P3-1 · i18n foundation — react-i18next + string extraction
+
+**Area:** Internationalisation
+**Priority:** P3
+**Effort:** 3–5 days
+**Identified:** 2026-03-23 multi-language readiness assessment
+
+No i18n library is installed. All UI strings are hardcoded English throughout the component tree. The application is not ready for multi-language support.
+
+**What exists as a foundation:**
+
+- `date-fns` (`^3.6.0`) — locale-switchable date formatting already in use
+- `.toLocaleString()` / `.toLocaleDateString()` — locale-aware number/date display
+
+**Steps to implement:**
+
+1. `npm install react-i18next i18next i18next-browser-languagedetector`
+2. Create `public/locales/en/translation.json` and extract all hardcoded strings
+3. Replace string literals in components with `t('key')` calls
+4. Pass locale to `date-fns` `format()` calls
+5. Add language switcher to Settings page
+
+This is a mechanical refactor with no architectural changes required.
+
+---
+
+## Backlog Items (from 2026-03-26 Claude Code audit)
+
+### P1-10 · Create `.claude/agents/` with full lifecycle sub-agent definitions
+
+**Area:** Developer Experience / Agent Infrastructure
+**Effort:** 1–2 hours
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
+**Status:** **Done 2026-03-26**
+
+Created `.claude/agents/` with 16 agent files covering the full development lifecycle:
+
+| File                      | Model  | Phase          |
+| ------------------------- | ------ | -------------- |
+| `plan-decomposer.md`      | Sonnet | Planning       |
+| `adr-author.md`           | Sonnet | Planning       |
+| `migration-writer.md`     | Haiku  | Development    |
+| `edge-fn-scaffolder.md`   | Haiku  | Development    |
+| `component-scaffolder.md` | Haiku  | Development    |
+| `changelog-keeper.md`     | Haiku  | Development    |
+| `arch-reviewer.md`        | Sonnet | Review         |
+| `convention-auditor.md`   | Sonnet | Review         |
+| `security-auditor.md`     | Sonnet | Review         |
+| `test-writer.md`          | Haiku  | Testing        |
+| `test-runner.md`          | Haiku  | Testing        |
+| `e2e-validator.md`        | Sonnet | Testing        |
+| `llm-eval-runner.md`      | Sonnet | LLM Governance |
+| `release-gatekeeper.md`   | Sonnet | Release        |
+| `incident-responder.md`   | Sonnet | Operations     |
+| `railway-deployer.md`     | Haiku  | Operations     |
+
+---
+
+### P1-11 · Create `.claude/skills/` with four reusable skill files
+
+**Area:** Developer Experience / Agent Infrastructure
+**Effort:** 1 hour
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
+**Status:** **Done 2026-03-26**
+
+Created `.claude/skills/` with four skill files grounded in actual `_shared/` export signatures:
+
+| Folder                       | Trigger phrases                                 | Purpose                                                                                                                         |
+| ---------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `new-edge-function/SKILL.md` | "create edge function", "scaffold function"     | Full `index.ts` scaffold with real `cors.ts`/`env.ts`/`llmProvider.ts` imports, OPTIONS handler, 503 guard, telemetry try/catch |
+| `new-migration/SKILL.md`     | "add a table", "create migration", "new column" | 14-digit timestamp name, `sats_` prefix, RLS policies template, `gen-types.sh` reminder                                         |
+| `adr-draft/SKILL.md`         | "write an ADR", "document this decision"        | Auto-increments from current ADR-0006, canonical section structure                                                              |
+| `verify-gate/SKILL.md`       | "run verify", "check before merge"              | Runs all 5 gates (`verify:full`, secrets, docs, update-log, blockers) and produces ✅/⚠️/❌ verdict                             |
+
+---
+
+### P1-12 · Create `.claude/commands/` with two operator shortcuts
+
+**Area:** Developer Experience / Operator UX
+**Effort:** 30 minutes
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
+**Status:** **Done 2026-03-26**
+
+Created `.claude/commands/` with two slash commands:
+
+- `/verify` — runs `npm run verify:full` and reports lint/type/test/build results
+- `/release-check` — runs all release gates and produces a GO / NO-GO verdict table
+
+---
+
+### P1-13 · Make CI lint and UPDATE LOG checks blocking
+
+**Area:** CI / Code Quality
+**Effort:** 30 minutes (fix existing violations first)
+**Files:** `.github/workflows/quality-gates.yml`
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
+
+Both the `npm run lint` and `check-update-log.sh` CI steps have `continue-on-error: true`. Convention violations (missing UPDATE LOG headers, lint errors) accumulate silently.
+
+**Fix:**
+
+1. Run `npm run lint` locally and fix any blocking errors (leave `no-unused-vars: off` to avoid churn).
+2. Run `bash scripts/ops/check-update-log.sh` and add any missing headers.
+3. Remove `continue-on-error: true` from both steps in `quality-gates.yml`.
+
+---
+
+### P2-9 · Fix stale MEMORY.md at project root
+
+**Area:** Documentation / Agent Infrastructure
+**Effort:** 15 minutes
+**File:** `MEMORY.md` (project root, not `.claude/`)
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md`
+
+The `MEMORY.md` at project root contains early-version instructions that conflict with `CLAUDE.md` and `coding-conventions.md`. Specifically, the header format it documents (`YYYY-MM-DD HH24:MM:SS`) differs from the UPDATE LOG format in `coding-conventions.md` (`YYYY-MM-DD HH:MM:SS`). Claude Code reads this file alongside `CLAUDE.md` and may act on contradicting instructions.
+
+**Fix:** Review against `docs/conventions/coding-conventions.md` and either remove outdated entries or replace the file content with a single redirect line pointing to the canonical files.
+
+---
+
+### P2-10 · Update CLAUDE.md with agent delegation table, test coverage expectations, and Codex handoff note
+
+**Area:** Documentation / Agent Infrastructure
+**Effort:** 20 minutes
+**File:** `CLAUDE.md`
+**Source:** Audit report `claude-audit-reports/audit_smartats-sats_20260326_164646.md` — CLAUDE.md Recommendation section
+
+Now that `.claude/agents/` (16 agents) and `.claude/skills/` (4 skills) exist, `CLAUDE.md` should reference them so future sessions know what is available. Three targeted changes:
+
+**1. ADD — Agent Delegation section** (insert after `## Primary Responsibilities`):
+
+A table mapping tasks to agents (arch-reviewer, migration-writer, edge-fn-scaffolder, security-auditor, test-runner, release-gatekeeper) and a list of available skills (`/new-edge-function`, `/new-migration`, `/adr-draft`, `/verify-gate`).
+
+**2. ADD — Test coverage expectations** (append to `## Key Commands`):
+
+```
+# Test coverage expectations
+# Unit tests: tests/unit/**/*.test.ts
+# E2E tests: manual validation documented in docs/releases/UNTESTED_IMPLEMENTATIONS.md
+# New features: at minimum one unit test per utility/hook; E2E session required before
+#   removing an item from UNTESTED_IMPLEMENTATIONS.md
+```
+
+**3. CHANGE — Codex handoff section**: Add one line noting that after creating a handoff plan, a session checkpoint should be recorded via `make checkpoint`.
+
+---
+
+---
+
+## UI/UX Excellence Backlog (P19 — from 2026-03-26 gap analysis)
+
+> Full staged plan: `plans/p19-uiux-excellence.md`. Each item below maps to a story in that plan.
+
+### UIUX-1 · Install Geist font and define type scale in Tailwind
+
+**Area:** Frontend / Design Foundation
+**Priority:** P1
+**Effort:** 1 hr
+**Plan story:** P19 S1-1
+**Status:** Open
+
+SmartATS has no custom typeface. The browser renders with the default system-ui stack, which lacks the personality and legibility of products like Linear, Vercel, and Notion. Geist (Vercel's open-source font) is designed for developer-facing UIs and pairs well with the existing slate/HSL token palette.
+
+**Fix:** Install `geist` npm package, add `@font-face` to `src/index.css`, extend `tailwind.config.ts` with `fontFamily.sans`. Record layout regression check in the validation form in P19 S1-1.
+
+---
+
+### UIUX-2 · Install Framer Motion and create animation presets
+
+**Area:** Frontend / Motion System
+**Priority:** P1
+**Effort:** 1 hr
+**Plan story:** P19 S1-2
+**Status:** Open
+
+No motion library is installed. UI interactions (modal open/close, page load, list renders) feel static compared to modern apps. `tailwindcss-animate` only covers CSS enter/exit transitions — no spring physics, gesture animations, or layout animations.
+
+**Fix:** `npm install framer-motion`, create `src/lib/animations.ts` with five named presets (`fadeIn`, `slideUp`, `scaleIn`, `listItem`, `staggerContainer`). No component changes in this story — presets are applied in UIUX-3, UIUX-4, UIUX-5.
+
+---
+
+### UIUX-3 · Animate modals and dialogs (Dialog, Sheet, Drawer)
+
+**Area:** Frontend / Micro-interactions
+**Priority:** P1
+**Effort:** 1–2 hr
+**Plan story:** P19 S2-1
+**Status:** Open — blocked by UIUX-2
+
+Wrap `DialogContent`, `SheetContent`, and `DrawerContent` in `<motion.div>` using the `scaleIn`/`slideUp` presets. Must verify ESC, backdrop close, and form submission still work. Respect `prefers-reduced-motion`.
+
+---
+
+### UIUX-4 · Animate page transitions and list renders
+
+**Area:** Frontend / Micro-interactions
+**Priority:** P1
+**Effort:** 2–3 hr
+**Plan stories:** P19 S2-2, S2-3
+**Status:** Open — blocked by UIUX-2
+
+Two sub-tasks:
+
+1. Wrap route `<Outlet />` in `<AnimatePresence>` + `fadeIn` for smooth page transitions.
+2. Apply `staggerContainer` + `listItem` to Analyses, Resumes, and Jobs list pages for a staggered card entrance.
+
+---
+
+### UIUX-5 · Add axe-core accessibility tests to Vitest
+
+**Area:** Frontend / Accessibility
+**Priority:** P2
+**Effort:** 2–3 hr
+**Plan story:** P19 S3-1
+**Status:** Open
+
+No accessibility testing exists. Radix UI primitives provide structural a11y, but focus management, ARIA labels, and colour contrast are not validated. Add `jest-axe` + `@testing-library/react` tests for 5 main pages. Make the CI step blocking.
+
+---
+
+### UIUX-6 · Add Playwright visual screenshot baselines
+
+**Area:** Frontend / Visual Regression
+**Priority:** P2
+**Effort:** 2–3 hr
+**Plan story:** P19 S3-2
+**Status:** Open
+
+No visual regression coverage. Layout and styling changes can merge silently. Add Playwright screenshot tests for Dashboard, Resumes, ATSAnalyses, Experiences, Settings. Start non-blocking; promote to blocking after 2 stable sprints.
+
+---
+
+### UIUX-7 · Add bundle analyser + Lighthouse CI gate
+
+**Area:** Frontend / Performance
+**Priority:** P2
+**Effort:** 2–3 hr
+**Plan story:** P19 S4-1
+**Status:** Open
+
+No performance gate. Framer Motion and future dependencies could silently inflate the bundle. Add `rollup-plugin-visualizer` to `vite.config.ts` (generates `dist/stats.html` on build) and Lighthouse CI to `quality-gates.yml` with thresholds: performance ≥ 80, a11y ≥ 90.
+
+---
+
+### UIUX-8 · Bootstrap Storybook with existing shadcn/ui components
+
+**Area:** Frontend / Design System
+**Priority:** P3
+**Effort:** 4–8 hr
+**Plan story:** P19 S5-1
+**Status:** Open — lowest priority, do after S1–S4
+
+Storybook isolates component development, documents variants, and catches visual drift between PRs. Bootstrap with `@storybook/react-vite`, write 6 core component stories (Button, Card, Badge, Input, Dialog, Table) with dark mode and `@storybook/addon-a11y`.
+
+---
+
 ## Future Backlog (P17 — from product roadmap)
 
 ### P17-BYOK · Per-user model preference + Bring Your Own Key + AI opt-out
@@ -374,6 +671,7 @@ The `LogViewer` component (Admin → Logging Control → Log Viewer) previously 
 **Effort:** 3 stories (see `docs/decisions/product-roadmap.md` § P17)
 
 Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
+
 - **S1** — `profiles.preferred_llm_provider` + `preferred_model` columns; Settings dropdown; edge functions read at call time (1 migration + minor `callLLM()` context change)
 - **S2** — BYOK: encrypted key per user via Supabase Vault; `callLLM()` routes through user's key when present; replaces the dead "API key generation" Settings placeholder
 - **S3** — `profiles.ai_processing_enabled` flag; all edge functions gate on it; Settings AI opt-out toggle for GDPR / data-sovereignty compliance
@@ -382,26 +680,42 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 
 ## Summary Table
 
-| ID | Area | Priority | Effort | Status |
-|---|---|---|---|---|
-| P0-1 | Create `.railwayignore` | P0 | 5 min | **Done 2026-03-17** |
-| P0-2 | Remove hardcoded creds from docker-compose | P0 | 15 min | **Done 2026-03-17** |
-| P0-3 | Commit/ignore playwright lockfile | P0 | 5 min | **Done 2026-03-17** |
-| P1-1 | Expand `.env.example` | P1 | 30 min | **Done 2026-03-17** |
-| P1-2 | Add React `ErrorBoundary` | P1 | 1–2 hr | **Done 2026-03-17** |
-| P1-3 | Add failure tracking to `sats_staged_jobs` | P1 | 2 hr | Open |
-| P1-4 | Add `postinstall` to playwright `package.json` | P1 | 5 min | **Done 2026-03-17** |
-| P1-5 | Circuit breaker / fetch audit for job APIs | P1 | 2–3 hr | Open |
-| P1-6 | Add a CI pipeline | P1 | 1–2 hr | **Done 2026-03-17** (test step added) |
-| P1-7 | Document and automate Supabase type regeneration | P1 | 30 min | **Done 2026-03-17** |
-| P1-8 | Harden `fetch-logs.sh` for macOS BSD compatibility | P1 | 30 min | **Done 2026-03-17** |
-| P1-9 | Add time-window filter to Admin LogViewer | P1 | 1 hr | **Done 2026-03-17** |
-| BUG-2026-03-17-LOCATION-RLS | Fix `sats_locations`/`sats_companies` SELECT policy | Bug/P0 | 30 min | **Done 2026-03-17** |
-| P2-1 | Enable `strict: true` in `tsconfig.app.json` | P2 | 4–8 hr | Open |
-| P2-2 | Co-locate domain loggers with their domains | P2 | 1 hr | Open |
-| P2-3 | Clarify LinkedIn scraper service boundary | P2 | 30 min–2 hr | Open |
-| P2-4 | Add Supabase seed file | P2 | 1–2 hr | Open |
-| P2-5 | Add smoke test script for edge functions | P2 | 1–2 hr | Open |
-| P2-6 | Archive completed plans | P2 | 15 min | Open |
-| P2-7 | Sync AI model label in UI with active LLM config | P2 | 15 min | **Done 2026-03-17** |
-| P17-BYOK | Per-user model preference + BYOK + AI opt-out | High | 3 stories | Planned (P17) |
+| ID                          | Area                                                                                      | Priority | Effort      | Status                                |
+| --------------------------- | ----------------------------------------------------------------------------------------- | -------- | ----------- | ------------------------------------- |
+| P0-1                        | Create `.railwayignore`                                                                   | P0       | 5 min       | **Done 2026-03-17**                   |
+| P0-2                        | Remove hardcoded creds from docker-compose                                                | P0       | 15 min      | **Done 2026-03-17**                   |
+| P0-3                        | Commit/ignore playwright lockfile                                                         | P0       | 5 min       | **Done 2026-03-17**                   |
+| P1-1                        | Expand `.env.example`                                                                     | P1       | 30 min      | **Done 2026-03-17**                   |
+| P1-2                        | Add React `ErrorBoundary`                                                                 | P1       | 1–2 hr      | **Done 2026-03-17**                   |
+| P1-3                        | Add failure tracking to `sats_staged_jobs`                                                | P1       | 2 hr        | Open                                  |
+| P1-4                        | Add `postinstall` to playwright `package.json`                                            | P1       | 5 min       | **Done 2026-03-17**                   |
+| P1-5                        | Circuit breaker / fetch audit for job APIs                                                | P1       | 2–3 hr      | Open                                  |
+| P1-6                        | Add a CI pipeline                                                                         | P1       | 1–2 hr      | **Done 2026-03-17** (test step added) |
+| P1-7                        | Document and automate Supabase type regeneration                                          | P1       | 30 min      | **Done 2026-03-17**                   |
+| P1-8                        | Harden `fetch-logs.sh` for macOS BSD compatibility                                        | P1       | 30 min      | **Done 2026-03-17**                   |
+| P1-9                        | Add time-window filter to Admin LogViewer                                                 | P1       | 1 hr        | **Done 2026-03-17**                   |
+| BUG-2026-03-17-LOCATION-RLS | Fix `sats_locations`/`sats_companies` SELECT policy                                       | Bug/P0   | 30 min      | **Done 2026-03-17**                   |
+| P2-1                        | Enable `strict: true` in `tsconfig.app.json`                                              | P2       | 4–8 hr      | Open                                  |
+| P2-2                        | Co-locate domain loggers with their domains                                               | P2       | 1 hr        | Open                                  |
+| P2-3                        | Clarify LinkedIn scraper service boundary                                                 | P2       | 30 min–2 hr | Open                                  |
+| P2-4                        | Add Supabase seed file                                                                    | P2       | 1–2 hr      | Open                                  |
+| P2-5                        | Add smoke test script for edge functions                                                  | P2       | 1–2 hr      | Open                                  |
+| P2-6                        | Archive completed plans                                                                   | P2       | 15 min      | Open                                  |
+| P2-7                        | Sync AI model label in UI with active LLM config                                          | P2       | 15 min      | **Done 2026-03-17**                   |
+| P2-8                        | Add per-user API quotas (ATS/enrichment rate limiting)                                    | P2       | 2–3 hr      | Open                                  |
+| P3-1                        | i18n foundation — install react-i18next, extract all hardcoded strings                    | P3       | 3–5 days    | Open                                  |
+| P17-BYOK                    | Per-user model preference + BYOK + AI opt-out                                             | High     | 3 stories   | Planned (P17)                         |
+| P1-10                       | Create `.claude/agents/` with full lifecycle sub-agent definitions (16 agents)            | P1       | 1–2 hr      | **Done 2026-03-26**                   |
+| P1-11                       | Create `.claude/skills/` with 4 skill files                                               | P1       | 1 hr        | **Done 2026-03-26**                   |
+| P1-12                       | Create `.claude/commands/` with 2 operator shortcuts                                      | P1       | 30 min      | **Done 2026-03-26**                   |
+| P1-13                       | Make CI lint + UPDATE LOG checks blocking (remove `continue-on-error`)                    | P1       | 30 min      | Open                                  |
+| P2-9                        | Fix stale MEMORY.md at project root (conflicting header format)                           | P2       | 15 min      | Open                                  |
+| P2-10                       | Update CLAUDE.md — agent delegation table, test coverage expectations, Codex handoff note | P2       | 20 min      | Open                                  |
+| UIUX-1                      | Install Geist font + Tailwind type scale                                                  | P1       | 1 hr        | Open                                  |
+| UIUX-2                      | Install Framer Motion + animation presets in `src/lib/animations.ts`                      | P1       | 1 hr        | Open                                  |
+| UIUX-3                      | Animate modals/dialogs (Dialog, Sheet, Drawer)                                            | P1       | 1–2 hr      | Open                                  |
+| UIUX-4                      | Animate page transitions + list stagger (Analyses, Resumes, Jobs)                         | P1       | 2–3 hr      | Open                                  |
+| UIUX-5                      | Add axe-core a11y tests to Vitest — 5 main pages, CI blocking                             | P2       | 2–3 hr      | Open                                  |
+| UIUX-6                      | Add Playwright visual screenshot baselines — 5 main pages                                 | P2       | 2–3 hr      | Open                                  |
+| UIUX-7                      | Add bundle analyser + Lighthouse CI gate (performance ≥ 80, a11y ≥ 90)                    | P2       | 2–3 hr      | Open                                  |
+| UIUX-8                      | Bootstrap Storybook with 6 shadcn/ui component stories + a11y addon                       | P3       | 4–8 hr      | Open                                  |

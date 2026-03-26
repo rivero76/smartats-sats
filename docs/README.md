@@ -3,6 +3,7 @@
 This folder contains product, technical, help, release, and compliance documentation.
 
 ## Sections
+
 - `architecture.md`: current technical architecture baseline
 - `decisions/`: ADRs and product/architecture decision records — canonical roadmap and vision live here
 - `improvements/`: prioritised technical improvement backlog (DX, robustness, code quality) + periodic code review findings (`CODE-REVIEW-YYYY-MM-DD.md`)

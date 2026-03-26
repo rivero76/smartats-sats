@@ -57,45 +57,55 @@
 2. Severity: High (blocks core UX for reviewing/saving all suggestions).
 3. Priority: P1 (next UI bugfix batch).
 4. Affected area:
+
 - `src/components/EnrichExperienceModal.tsx`
 - `src/components/ui/dialog.tsx`
 - `src/components/ui/scroll-area.tsx`
+
 5. Current behavior:
+
 - After generating multiple suggestions, lower content in the modal becomes partially inaccessible.
 - Users do not see an obvious/usable scrollbar for navigating the whole modal.
 - Action controls for later suggestions can be clipped below viewport on common laptop resolutions.
+
 6. Expected behavior:
+
 - Modal remains fully navigable on desktop and mobile breakpoints.
 - Users can always scroll through all generated suggestions and reach all action buttons.
 - Scroll affordance is visible and discoverable.
+
 7. Reproduction steps:
 1. Open `Enriched Experiences` and launch `AI Experience Enrichment`.
-2. Select an ATS analysis with enough matched/missing skills to produce multiple suggestions.
-3. Click `Generate Suggestions`.
-4. Attempt to navigate to the final suggestions and their action controls.
-5. Observe that full content cannot be reliably reached or scrollbar is not apparent for the full modal context.
-8. User impact:
+1. Select an ATS analysis with enough matched/missing skills to produce multiple suggestions.
+1. Click `Generate Suggestions`.
+1. Attempt to navigate to the final suggestions and their action controls.
+1. Observe that full content cannot be reliably reached or scrollbar is not apparent for the full modal context.
+1. User impact:
+
 - Prevents completion of review workflow (`Save Experience` / `Reject`) for all generated items.
 - Creates impression that content is missing or app is frozen.
 - Increases abandonment risk on a key product differentiator (trust-first enrichment review).
+
 9. Root-cause hypothesis (from code review):
+
 - `DialogContent` has no viewport height cap + no dedicated outer modal scroll container.
 - Nested scrolling is limited to suggestion list (`ScrollArea max-h-[360px]`) while other sections still expand total modal height.
 - Scrollbar styling/visibility in `ScrollArea` is subtle and can be missed.
+
 10. Proposed fix direction (for implementation phase):
 1. Constrain modal container height to viewport (`max-h`), make modal body scrollable.
-2. Keep suggestion list scroll bounded but rebalance heights to reduce nested-scroll friction.
-3. Improve scrollbar visibility/affordance for discoverability.
-4. Validate behavior on both `localhost:3000` and `localhost:8080` across desktop/mobile widths.
-11. Acceptance criteria:
+1. Keep suggestion list scroll bounded but rebalance heights to reduce nested-scroll friction.
+1. Improve scrollbar visibility/affordance for discoverability.
+1. Validate behavior on both `localhost:3000` and `localhost:8080` across desktop/mobile widths.
+1. Acceptance criteria:
 1. User can reach all suggestion cards and all action buttons in one modal session.
-2. Vertical scrolling is consistently available for long content.
-3. No clipped controls at 1366x768 and common mobile viewport sizes.
-4. Existing enrichment actions (generate/edit/save/reject/batch) remain functional.
-12. Testing requirements before release:
+1. Vertical scrolling is consistently available for long content.
+1. No clipped controls at 1366x768 and common mobile viewport sizes.
+1. Existing enrichment actions (generate/edit/save/reject/batch) remain functional.
+1. Testing requirements before release:
 1. Manual UI test with 8+ suggestions generated.
-2. Verify keyboard accessibility (`Tab`, arrow keys, page scroll) inside modal.
-3. Confirm no regression in modal close behavior and focus trap.
+1. Verify keyboard accessibility (`Tab`, arrow keys, page scroll) inside modal.
+1. Confirm no regression in modal close behavior and focus trap.
 
 ## 2. Delivery Phases
 
@@ -117,7 +127,6 @@
 
 1. 5-9 days
 
-
 ### Phase P1: Unified Structured Logging
 
 1. Introduce a shared log event schema:
@@ -135,7 +144,6 @@
 **Estimated effort**
 
 1. 3-5 days
-
 
 ### Phase P2: Correlation + Tracing
 
@@ -155,7 +163,6 @@
 
 1. 2-3 days
 
-
 ### Phase P3: Retention Automation + Reliability
 
 1. Implement scheduled cleanup job based on `log_cleanup_policies`.
@@ -172,7 +179,6 @@
 **Estimated effort**
 
 1. 2-4 days
-
 
 ### Phase P4: Operational Features (Future-ready)
 
@@ -191,7 +197,6 @@
 **Estimated effort**
 
 1. 4-6 days
-
 
 ### Phase P5: Enrichment Lifecycle + User Data Erasure (Next Priority)
 
@@ -232,7 +237,6 @@
 **Estimated effort**
 
 1. 5-8 days
-
 
 ### Phase P6: Modern SDLC Operations and Product Governance
 
@@ -284,7 +288,6 @@
 4. Completed: diff-based secret scan via `scripts/ops/check-secrets.sh`.
 5. Pending hardening: make lint fully blocking after legacy lint debt remediation.
 
-
 ### Phase P7: Release Version Synchronization and Deployment Control (Future)
 
 1. Create a release manifest per version (tag, commit SHA, image digest, migration set, config version).
@@ -305,7 +308,6 @@
 
 1. 3-5 days
 
-
 ### Phase P8: Global MVP/1.0 Readiness for Multi-User and Multi-Country Distribution (Future)
 
 1. Security and tenant isolation hardening:
@@ -318,15 +320,19 @@
 
 1. Execute the migration bundle `supabase/migrations/20260224235000_p8_rls_tenant_isolation_hardening.sql`.
 2. Validate RLS policy convergence:
+
 - no overlapping/conflicting policy sets on tenant tables.
 - explicit `WITH CHECK` present on all user-writable owner policies.
 - role scope tightened to `authenticated` for owner/admin policies unless explicitly anonymous.
+
 3. Run post-migration tenant-isolation verification:
+
 - positive tests for owner CRUD.
 - negative tests for cross-tenant access and ownership reassignment attempts.
+
 4. Publish audit evidence (policy dump + test results) and close P8.1 only after evidence is stored in release docs.
 
-2. Robustness and operations readiness:
+5. Robustness and operations readiness:
 
 - Define SLIs/SLOs and error budgets for auth, analysis, enrichment, and admin paths.
 - Load and concurrency testing for multi-user behavior.
@@ -361,7 +367,6 @@
 **Estimated effort**
 
 1. 8-14 days
-
 
 ### Phase P9: AI Runtime Governance + LLM Operations Analytics (Future)
 
@@ -413,7 +418,6 @@
 
 1. 6-10 days
 
-
 ### Phase P10: Prompt Reliability + Model Quality Execution (Completed)
 
 1. Upgrade prompt execution contracts with strict structured outputs:
@@ -463,7 +467,6 @@
 
 1. 5-9 days
 
-
 ### Phase P11: Job Description ETL + Market Intelligence Analytics (Next Priority)
 
 **P11 Ingestion Rollout Sequence**
@@ -475,7 +478,7 @@
 5. `P11.5` ATS export template ingestion (CSV/XML/JSON files, no direct API dependency).
 6. `P11.6` Feed/webhook-style secure dropbox ingestion (object storage or secure upload endpoint).
 
-1. Add JD ingestion channels for initial non-API release:
+7. Add JD ingestion channels for initial non-API release:
 
 - Support direct text ingestion (copy/paste job descriptions).
 - Support single-URL ingestion for user-provided job pages (no crawler behavior).
@@ -530,7 +533,6 @@
 
 1. 7-12 days
 
-
 ### Phase P12: Multi-language + Cloud Migration + Enterprise Scale Readiness (New)
 
 1. Multi-language product foundation:
@@ -580,7 +582,6 @@
 
 1. 10-16 days (phased by platform and compliance scope)
 
-
 ### Phase P13: LinkedIn Ingestion Loop Upgrade (Next 1-2 Weeks)
 
 1. Upgrade LinkedIn handling from URL storage to structured profile ingestion.
@@ -599,7 +600,6 @@
 
 1. 1-2 weeks
 
-
 ### Phase P14: Proactive Search Engine (Next 3-4 Weeks)
 
 1. Build background worker pipeline to discover jobs asynchronously from approved external sources.
@@ -617,7 +617,6 @@
 **Estimated effort**
 
 1. 3-4 weeks
-
 
 ### Phase P15: Upskilling Roadmap Engine (Next 4-6 Weeks)
 
@@ -643,7 +642,6 @@
 2. Story 2 completed: `generate-upskill-roadmap` edge function delivered/deployed with schema-locked output, mandatory project milestone enforcement, and persistence.
 3. Story 3 completed: `/roadmaps` timeline UI delivered with completion toggles and progress bar.
 4. Release note: Stories 1-3 remain blocked for end-user release until E2E validation entries are closed in `docs/releases/UNTESTED_IMPLEMENTATIONS.md`.
-
 
 ## 3. Technical Work Packages (Concrete)
 

@@ -82,14 +82,18 @@ export const usePrepareLinkedinImport = () => {
 
       if (existingExperiencesError) throw existingExperiencesError
 
-      const existingExperiences: ExistingSkillExperience[] = (existingExperiencesData || []).map((row) => ({
-        id: String(row.id),
-        skill_id: String(row.skill_id),
-        skill_name: String((row.skill as { name?: string } | null)?.name || ''),
-        job_title: row.job_title ? String(row.job_title) : null,
-        description: row.description ? String(row.description) : null,
-        keywords: Array.isArray(row.keywords) ? row.keywords.map((keyword) => String(keyword)) : [],
-      }))
+      const existingExperiences: ExistingSkillExperience[] = (existingExperiencesData || []).map(
+        (row) => ({
+          id: String(row.id),
+          skill_id: String(row.skill_id),
+          skill_name: String((row.skill as { name?: string } | null)?.name || ''),
+          job_title: row.job_title ? String(row.job_title) : null,
+          description: row.description ? String(row.description) : null,
+          keywords: Array.isArray(row.keywords)
+            ? row.keywords.map((keyword) => String(keyword))
+            : [],
+        })
+      )
 
       return mergeLinkedinImportData({
         proposedSkills: preview.normalized_skills || [],
@@ -108,4 +112,3 @@ export const usePrepareLinkedinImport = () => {
     },
   })
 }
-

@@ -8,17 +8,17 @@ The repo's documentation grew **organically**, not from a pre-designed structure
 
 ### What Lives Where (Current State)
 
-| Content Type | Where It Is | Should Be |
-|---|---|---|
-| Product roadmap (phase list, status) | `docs/decisions/product-roadmap.md` ✓ | Here — correct |
-| Phase execution plans (P13, P14, P15) | `plans/p13.md`, `plans/p14.md`, `plans/p15.md` ✓ | Here — correct |
-| Phase specs (P0–P12 detail) | `plans/product-improvements.md` ← **old god-doc** | `docs/specs/` (partially there for P11, P12, P16) |
-| Bug backlog (active defects) | `plans/product-improvements.md §1C` | `docs/bugs/` |
-| Operational incidents (deploy failures) | `docs/bugs/bug-railway-up-path-as-root-timeout.md` | `docs/incidents/` (doesn't exist) |
-| Strategic product direction | `plans/product-improvements.md §1A` | `docs/decisions/product-vision.md` (exists but not all content is there) |
-| AI session continuity notes | `docs/sessions/` | OK, but purpose is unclear from the folder name |
-| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` ✓ | Here — correct |
-| Runtime logs | Supabase `log_entries` table (not in repo) | Correct — should not be in repo |
+| Content Type                            | Where It Is                                        | Should Be                                                                |
+| --------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| Product roadmap (phase list, status)    | `docs/decisions/product-roadmap.md` ✓              | Here — correct                                                           |
+| Phase execution plans (P13, P14, P15)   | `plans/p13.md`, `plans/p14.md`, `plans/p15.md` ✓   | Here — correct                                                           |
+| Phase specs (P0–P12 detail)             | `plans/product-improvements.md` ← **old god-doc**  | `docs/specs/` (partially there for P11, P12, P16)                        |
+| Bug backlog (active defects)            | `plans/product-improvements.md §1C`                | `docs/bugs/`                                                             |
+| Operational incidents (deploy failures) | `docs/bugs/bug-railway-up-path-as-root-timeout.md` | `docs/incidents/` (doesn't exist)                                        |
+| Strategic product direction             | `plans/product-improvements.md §1A`                | `docs/decisions/product-vision.md` (exists but not all content is there) |
+| AI session continuity notes             | `docs/sessions/`                                   | OK, but purpose is unclear from the folder name                          |
+| Technical improvement backlog           | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` ✓    | Here — correct                                                           |
+| Runtime logs                            | Supabase `log_entries` table (not in repo)         | Correct — should not be in repo                                          |
 
 ### The Three Specific Problems You Asked About
 
@@ -36,6 +36,7 @@ The folder contains AI agent continuity checkpoints (session transcripts + resum
 ## Proposed Information Architecture
 
 ### Guiding Principles
+
 1. **One type of content, one canonical location** — no file should be authoritative for two content types
 2. **`plans/`** = what we are building right now (active execution only)
 3. **`docs/`** = stable knowledge, specs, decisions, and history
@@ -89,17 +90,17 @@ docs/
 
 ### Key Changes (delta from today)
 
-| Action | From | To | Effort |
-|---|---|---|---|
-| Move completed plans to archive | `plans/p13.md`, `plans/p15.md`, `plans/p10-p11-agent-prompts.md` | `plans/archive/` | 5 min |
-| Decompose god-doc | `plans/product-improvements.md` — bug backlog section | `docs/bugs/BACKLOG.md` | 30 min |
-| Decompose god-doc | `plans/product-improvements.md` — phase specs P0-P12 | `docs/specs/` (some already exist) or archive | 1 hr |
-| Archive remainder | `plans/product-improvements.md` | `plans/archive/product-improvements-history.md` | 5 min |
-| Create incidents folder | — | `docs/incidents/` | 5 min |
-| Move deploy incident | `docs/bugs/bug-railway-up-path-as-root-timeout.md` | `docs/incidents/incident-2026-03-03-railway-deploy-timeout.md` | 5 min |
-| Clarify sessions folder | `docs/sessions/README.md` | Update README to say: "AI agent continuity checkpoints — used to resume Codex/Claude Code sessions after context window resets" | 5 min |
-| Update `docs/README.md` | Add `incidents/` and `audits/` to the sections list | 10 min |
-| Update `CLAUDE.md` source-of-truth table | Add `docs/incidents/` for "Operational incidents" and `docs/audits/` for "Periodic review prompts" | 10 min |
+| Action                                   | From                                                                                               | To                                                                                                                              | Effort |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Move completed plans to archive          | `plans/p13.md`, `plans/p15.md`, `plans/p10-p11-agent-prompts.md`                                   | `plans/archive/`                                                                                                                | 5 min  |
+| Decompose god-doc                        | `plans/product-improvements.md` — bug backlog section                                              | `docs/bugs/BACKLOG.md`                                                                                                          | 30 min |
+| Decompose god-doc                        | `plans/product-improvements.md` — phase specs P0-P12                                               | `docs/specs/` (some already exist) or archive                                                                                   | 1 hr   |
+| Archive remainder                        | `plans/product-improvements.md`                                                                    | `plans/archive/product-improvements-history.md`                                                                                 | 5 min  |
+| Create incidents folder                  | —                                                                                                  | `docs/incidents/`                                                                                                               | 5 min  |
+| Move deploy incident                     | `docs/bugs/bug-railway-up-path-as-root-timeout.md`                                                 | `docs/incidents/incident-2026-03-03-railway-deploy-timeout.md`                                                                  | 5 min  |
+| Clarify sessions folder                  | `docs/sessions/README.md`                                                                          | Update README to say: "AI agent continuity checkpoints — used to resume Codex/Claude Code sessions after context window resets" | 5 min  |
+| Update `docs/README.md`                  | Add `incidents/` and `audits/` to the sections list                                                | 10 min                                                                                                                          |
+| Update `CLAUDE.md` source-of-truth table | Add `docs/incidents/` for "Operational incidents" and `docs/audits/` for "Periodic review prompts" | 10 min                                                                                                                          |
 
 **Total estimated effort: ~2 hours**
 
@@ -108,6 +109,7 @@ docs/
 ## Why This Matters
 
 At Beta stage with 5+ active phases and a growing team toolset (Codex + Claude Code), documentation debt compounds fast. The current mixed structure means:
+
 - **A new team member** can't tell if `plans/product-improvements.md` or `docs/decisions/product-roadmap.md` is the authoritative roadmap
 - **An agent (Codex or Claude Code)** asked to "check the roadmap" will find conflicting information in two places
 - **Incidents have no home**, so they pile up in the wrong folders and become hard to retrieve during a real incident

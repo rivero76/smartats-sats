@@ -16,17 +16,18 @@ This directory stores execution plans and feature phase documents used by both c
 
 ## Active Plans
 
-| File | Status |
-|---|---|
-| `p14.md` | IN PROGRESS — branch: p14 |
+| File                     | Status                     |
+| ------------------------ | -------------------------- |
+| `p14.md`                 | IN PROGRESS — branch: p14  |
+| `p19-uiux-excellence.md` | PLANNED — branch: p19-uiux |
 
 ## Archive (`plans/archive/`)
 
-| File | Status |
-|---|---|
-| `p13.md` | COMPLETED — merged to main (~2026-02-28) |
-| `p15.md` | COMPLETED — merged to main (~2026-02-28) |
-| `p10-p11-agent-prompts.md` | Historical reference (agent prompt templates) |
+| File                              | Status                                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `p13.md`                          | COMPLETED — merged to main (~2026-02-28)                                                                                           |
+| `p15.md`                          | COMPLETED — merged to main (~2026-02-28)                                                                                           |
+| `p10-p11-agent-prompts.md`        | Historical reference (agent prompt templates)                                                                                      |
 | `product-improvements-history.md` | Archived god-doc (2026-03-18) — content decomposed into `docs/decisions/product-roadmap.md`, `docs/bugs/BACKLOG.md`, `docs/specs/` |
 
 ## Related Docs

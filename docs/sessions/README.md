@@ -24,6 +24,7 @@ SESSION_FILE="docs/sessions/p15-story-3.md" make checkpoint
 ```
 
 Each checkpoint includes:
+
 - reusable template sections
 - branch and commit snapshot
 - current `git status --short`

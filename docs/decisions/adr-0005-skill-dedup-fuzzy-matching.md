@@ -16,12 +16,12 @@ When a user imports their LinkedIn profile, the normalized skill payload may con
 
 Three broad strategies were considered:
 
-| Strategy | Pros | Cons |
-|---|---|---|
-| **Exact string match** | Simple, zero false positives | Misses casing variants, punctuation differences, common aliases |
-| **Phonetic matching** (Soundex/Metaphone) | Catches phonetic variants | Very poor for technical skill names ("TypeScript" and "JavaScript" sound similar but are different) |
-| **Embedding similarity** (vector cosine) | Semantically powerful, catches conceptual equivalence | Requires LLM call per comparison, costly, overkill for near-identical string variants |
-| **Fuzzy string similarity** (Dice coefficient) | Cheap, no network call, handles casing/punctuation without false semantic matches | Does not catch true synonyms or abbreviations unless handled separately |
+| Strategy                                       | Pros                                                                              | Cons                                                                                                |
+| ---------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Exact string match**                         | Simple, zero false positives                                                      | Misses casing variants, punctuation differences, common aliases                                     |
+| **Phonetic matching** (Soundex/Metaphone)      | Catches phonetic variants                                                         | Very poor for technical skill names ("TypeScript" and "JavaScript" sound similar but are different) |
+| **Embedding similarity** (vector cosine)       | Semantically powerful, catches conceptual equivalence                             | Requires LLM call per comparison, costly, overkill for near-identical string variants               |
+| **Fuzzy string similarity** (Dice coefficient) | Cheap, no network call, handles casing/punctuation without false semantic matches | Does not catch true synonyms or abbreviations unless handled separately                             |
 
 ---
 
@@ -32,6 +32,7 @@ Use **Dice-coefficient fuzzy matching** with a **synonym table pre-pass** (`SKIL
 ### Step 1 — Canonicalization
 
 Before comparison, all skill names are passed through `canonicalizeSkillName()`:
+
 - Lowercased
 - Punctuation normalized (`.`, `-`, `_`, `/` → space)
 - Whitespace collapsed
@@ -58,14 +59,14 @@ A score of **1.0** means the strings are identical after canonicalization. A sco
 
 The threshold was chosen empirically by testing against a corpus of real skill name variants:
 
-| Pair | Dice Score | Expected | Result |
-|---|---|---|---|
-| "react" vs "react" | 1.0 | same | ✓ merge |
-| "javascript" vs "typescript" | 0.70 | different | ✓ insert |
-| "node" vs "nodejs" (after synonym) | 1.0 | same | ✓ merge |
-| "postgresql" vs "postgres" | 0.83 | same | ~borderline — insert |
-| "kubernetes" vs "kubernetess" (typo) | 0.89 | same | ✓ merge |
-| "python" vs "python3" | 0.86 | same | ✓ merge |
+| Pair                                 | Dice Score | Expected  | Result               |
+| ------------------------------------ | ---------- | --------- | -------------------- |
+| "react" vs "react"                   | 1.0        | same      | ✓ merge              |
+| "javascript" vs "typescript"         | 0.70       | different | ✓ insert             |
+| "node" vs "nodejs" (after synonym)   | 1.0        | same      | ✓ merge              |
+| "postgresql" vs "postgres"           | 0.83       | same      | ~borderline — insert |
+| "kubernetes" vs "kubernetess" (typo) | 0.89       | same      | ✓ merge              |
+| "python" vs "python3"                | 0.86       | same      | ✓ merge              |
 
 0.86 was identified as the point that correctly separates near-identical string variants from distinct technologies, without requiring a synonym entry for every common abbreviation. Below 0.86, too many distinct technologies would be merged; above 0.90, common typos and version suffixes would be missed.
 
@@ -74,6 +75,7 @@ The threshold was chosen empirically by testing against a corpus of real skill n
 ## Why Not Embedding Similarity?
 
 Embedding similarity would catch semantic equivalence (e.g. "ML" and "Machine Learning"), but:
+
 1. It requires an LLM call for every comparison — O(n×m) calls for n proposed × m existing skills.
 2. It would incorrectly merge conceptually related but distinct skills ("React" and "Angular" have high embedding similarity).
 3. The current deduplication problem is primarily about string variants of the same skill name, not semantic equivalence.

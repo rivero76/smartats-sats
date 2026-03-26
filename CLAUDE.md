@@ -41,8 +41,14 @@ npm run verify           # lint + type-check + test
 npm run verify:full      # verify + build
 
 # Docker
-docker compose up smartats-dev     # Hot-reload dev container
-docker compose up smartats-app     # Production container
+docker compose --profile dev up smartats-dev --build  # Hot-reload dev container (localhost:8080)
+docker compose up smartats-app --build                 # Production container (localhost:3000)
+
+# Ops automation (wraps docker/git/verify into named tasks)
+npm run ops -- help                                    # List all ops commands
+bash scripts/ops/smartats.sh dev-start --build        # Alt: start dev container
+bash scripts/ops/smartats.sh prod-start --build       # Alt: start prod container
+bash scripts/ops/smartats.sh git-safe-push            # Push with pre-flight checks
 
 # Supabase edge functions (local)
 supabase functions serve <function-name>  # Serve a single function locally
@@ -84,11 +90,11 @@ bash scripts/ops/clean-logs.sh --days 3 --dry-run            # Preview before de
 
 All edge functions share three utilities in `supabase/functions/_shared/`:
 
-| File | Purpose |
-|---|---|
-| `llmProvider.ts` | Single `callLLM(LLMRequest)` entry point; provider selected by `SATS_LLM_PROVIDER` env var (default: `openai`) |
-| `cors.ts` | `isOriginAllowed(origin)` + `buildCorsHeaders(origin)` against `SATS_ALLOWED_ORIGINS` env var (falls back to `ALLOWED_ORIGINS` for backwards compat) |
-| `env.ts` | `getEnvNumber(name, fallback)` and `getEnvBoolean(name, fallback)` |
+| File             | Purpose                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `llmProvider.ts` | Single `callLLM(LLMRequest)` entry point; provider selected by `SATS_LLM_PROVIDER` env var (default: `openai`)                                       |
+| `cors.ts`        | `isOriginAllowed(origin)` + `buildCorsHeaders(origin)` against `SATS_ALLOWED_ORIGINS` env var (falls back to `ALLOWED_ORIGINS` for backwards compat) |
+| `env.ts`         | `getEnvNumber(name, fallback)` and `getEnvBoolean(name, fallback)`                                                                                   |
 
 **Every new edge function must use these shared utilities.** Direct OpenAI SDK calls or inline CORS logic are not permitted.
 
@@ -105,7 +111,16 @@ LLMRequest { systemPrompt, userPrompt, modelCandidates[], jsonSchema?, temperatu
 LLMResponse { rawContent, modelUsed, provider, promptTokens, completionTokens, costEstimateUsd, durationMs, retryAttemptsUsed }
 ```
 
-Models in active use: `gpt-4.1` (ATS scoring), `gpt-4.1-mini` (enrichment, roadmaps). Fallback: `gpt-4o-mini`.
+**Model register** (authoritative source: `docs/specs/technical/llm-model-governance.md`):
+
+| Task                          | Env var                        | Default (code fallback)                                   |
+| ----------------------------- | ------------------------------ | --------------------------------------------------------- |
+| ATS scoring / CV Optimisation | `OPENAI_MODEL_ATS`             | `gpt-4.1` (target: `o4-mini`, `temperature:0`, `seed:42`) |
+| Skill enrichment              | `OPENAI_MODEL_ENRICH`          | `gpt-4.1-mini`                                            |
+| Upskilling roadmap            | `OPENAI_MODEL_UPSKILL_ROADMAP` | `gpt-4.1-mini`                                            |
+| LinkedIn profile parse        | `OPENAI_MODEL_LINKEDIN_INGEST` | `gpt-4.1-mini`                                            |
+
+Fallback for all tasks: `OPENAI_MODEL_ATS_FALLBACK` / `gpt-4o-mini`. Any model change must follow the governance protocol in that spec (pre-flight check + LLM eval gate).
 
 ### Database
 
@@ -134,21 +149,22 @@ SQL uses `-- UPDATE LOG` / `-- YYYY-MM-DD HH:MM:SS | ...`. HTML uses `<!-- UPDAT
 
 ### TypeScript / frontend naming
 
-| Construct | Convention |
-|---|---|
-| React components | `PascalCase.tsx` |
-| Hooks | `camelCase`, `use` prefix |
-| File names in `src/` | `kebab-case` |
-| Interfaces / types | `PascalCase` |
+| Construct            | Convention                |
+| -------------------- | ------------------------- |
+| React components     | `PascalCase.tsx`          |
+| Hooks                | `camelCase`, `use` prefix |
+| File names in `src/` | `kebab-case`              |
+| Interfaces / types   | `PascalCase`              |
 
 ### Environment variables
 
-| Scope | Pattern |
-|---|---|
-| Global SATS config | `SATS_<NOUN>` |
-| Task-specific model | `OPENAI_MODEL_<TASK>` |
-| Feature flags | `SATS_<FEATURE>_ENABLED` |
-| Storage flags | `STORE_LLM_<NOUN>` |
+| Scope                | Pattern                                                 |
+| -------------------- | ------------------------------------------------------- |
+| Global SATS config   | `SATS_<NOUN>`                                           |
+| Task-specific model  | `OPENAI_MODEL_<TASK>`                                   |
+| Task-specific params | `OPENAI_<PARAM>_<TASK>` (e.g. `OPENAI_TEMPERATURE_ATS`) |
+| Feature flags        | `SATS_<FEATURE>_ENABLED`                                |
+| Storage flags        | `STORE_LLM_<NOUN>`                                      |
 
 ### Changelog updates
 
@@ -156,25 +172,27 @@ After any code change, update both `docs/changelog/CHANGELOG.md` and `docs/chang
 
 ## Source of Truth
 
-| Concern | Location |
-|---|---|
-| Architecture baseline | `docs/architecture.md` |
-| Technical decisions (ADRs) | `docs/decisions/` |
-| Coding conventions | `docs/conventions/coding-conventions.md` |
-| Product roadmap | `docs/decisions/product-roadmap.md` |
-| Product specs (per phase) | `docs/specs/` |
-| Active feature plans | `plans/` |
-| Completed/archived plans | `plans/archive/` |
-| Operational runbooks | `docs/runbooks/` |
-| Active code defects (bugs) | `docs/bugs/` |
-| Operational/deploy incidents | `docs/incidents/` |
-| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` |
-| Periodic code review findings | `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md` |
-| Reusable audit prompts | `docs/audits/` |
-| Security audit reports | `docs/security/` |
-| Compliance policies | `docs/compliance/` |
-| Release readiness | `docs/releases/UNTESTED_IMPLEMENTATIONS.md` |
-| Changelog | `docs/changelog/SATS_CHANGES.txt` |
+| Concern                       | Location                                       |
+| ----------------------------- | ---------------------------------------------- |
+| Architecture baseline         | `docs/architecture.md`                         |
+| Technical decisions (ADRs)    | `docs/decisions/`                              |
+| Coding conventions            | `docs/conventions/coding-conventions.md`       |
+| Product roadmap               | `docs/decisions/product-roadmap.md`            |
+| Product specs (per phase)     | `docs/specs/`                                  |
+| Active feature plans          | `plans/`                                       |
+| Completed/archived plans      | `plans/archive/`                               |
+| Operational runbooks          | `docs/runbooks/`                               |
+| Active code defects (bugs)    | `docs/bugs/`                                   |
+| Operational/deploy incidents  | `docs/incidents/`                              |
+| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md`  |
+| Periodic code review findings | `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md`  |
+| Reusable audit prompts        | `docs/audits/`                                 |
+| Security audit reports        | `docs/security/`                               |
+| Compliance policies           | `docs/compliance/`                             |
+| Release readiness             | `docs/releases/UNTESTED_IMPLEMENTATIONS.md`    |
+| Changelog                     | `docs/changelog/SATS_CHANGES.txt`              |
+| LLM model governance          | `docs/specs/technical/llm-model-governance.md` |
+| CI quality gates              | `.github/workflows/quality-gates.yml`          |
 
 ## Repository Structure (Canonical)
 

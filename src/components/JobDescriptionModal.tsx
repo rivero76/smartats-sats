@@ -206,10 +206,11 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
         .filter(Boolean)
         .join(', ')
 
-      const existingLocation = locations.find((l) =>
-        normalizeField(l.city) === normalizeField(normalizedExtractedLocation.city) &&
-        normalizeField(l.state) === normalizeField(normalizedExtractedLocation.state) &&
-        normalizeField(l.country) === normalizeField(normalizedExtractedLocation.country)
+      const existingLocation = locations.find(
+        (l) =>
+          normalizeField(l.city) === normalizeField(normalizedExtractedLocation.city) &&
+          normalizeField(l.state) === normalizeField(normalizedExtractedLocation.state) &&
+          normalizeField(l.country) === normalizeField(normalizedExtractedLocation.country)
       )
       if (existingLocation) {
         setLocationId(existingLocation.id)
@@ -237,7 +238,8 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
       setExtractedData(extracted)
       const meta = (extracted?.extractionMeta || {}) as ExtractionMetaView
       const overallConfidence = meta.confidence?.overall || 0
-      const shouldAutoApply = overallConfidence >= AUTO_APPLY_CONFIDENCE_THRESHOLD && !(meta.warnings || []).length
+      const shouldAutoApply =
+        overallConfidence >= AUTO_APPLY_CONFIDENCE_THRESHOLD && !(meta.warnings || []).length
 
       if (shouldAutoApply) {
         applyExtractedData(extracted)
@@ -293,7 +295,11 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     onClose?.()
   }
 
-  const handleFileUpload = (url: string, fileName: string, extractedContent?: { text?: string }) => {
+  const handleFileUpload = (
+    url: string,
+    fileName: string,
+    extractedContent?: { text?: string }
+  ) => {
     setFileUrl(url)
 
     // Auto-populate job title from filename if it's empty
@@ -636,15 +642,16 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
               <AlertDescription>
                 <div className="space-y-1 text-xs">
                   <p>
-                    Use <strong>Paste Text</strong> first for best reliability, especially for login-gated
-                    pages (for example LinkedIn).
+                    Use <strong>Paste Text</strong> first for best reliability, especially for
+                    login-gated pages (for example LinkedIn).
                   </p>
                   <p>
-                    Use <strong>URL</strong> only for direct public job pages. Single-page fetch only, no
-                    crawler behavior.
+                    Use <strong>URL</strong> only for direct public job pages. Single-page fetch
+                    only, no crawler behavior.
                   </p>
                   <p>
-                    If URL ingestion fails, switch to <strong>Paste Text</strong> or <strong>Upload File</strong>.
+                    If URL ingestion fails, switch to <strong>Paste Text</strong> or{' '}
+                    <strong>Upload File</strong>.
                   </p>
                 </div>
               </AlertDescription>
@@ -692,8 +699,8 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
               <TabsContent value="url" className="space-y-4">
                 <p className="text-xs text-muted-foreground flex items-center gap-2">
                   <Link2 className="h-3.5 w-3.5" />
-                  Use only direct public URLs. If blocked, Smart ATS will not bypass login or anti-bot
-                  controls.
+                  Use only direct public URLs. If blocked, Smart ATS will not bypass login or
+                  anti-bot controls.
                 </p>
                 <div className="space-y-2">
                   <Label htmlFor="source-url">Job Description URL</Label>
@@ -805,7 +812,8 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   <span className="font-medium">Confidence:</span>
                   <span>
                     {Math.round(
-                      ((extractedData.extractionMeta?.confidence?.overall as number | undefined) || 0) * 100
+                      ((extractedData.extractionMeta?.confidence?.overall as number | undefined) ||
+                        0) * 100
                     )}
                     %
                   </span>
@@ -813,8 +821,9 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span className="font-medium">Applied Rules:</span>
                   <span className="text-right">
-                    {((extractedData.extractionMeta?.rules as string[] | undefined) || []).join(', ') ||
-                      'none'}
+                    {((extractedData.extractionMeta?.rules as string[] | undefined) || []).join(
+                      ', '
+                    ) || 'none'}
                   </span>
                 </div>
               </div>
@@ -888,8 +897,9 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   <span className="font-medium">Rules</span>
                   <span className="font-mono break-words">
-                    {((extractedData.extractionMeta?.rules as string[] | undefined) || []).join(', ') ||
-                      '-'}
+                    {((extractedData.extractionMeta?.rules as string[] | undefined) || []).join(
+                      ', '
+                    ) || '-'}
                   </span>
                   <span className="font-mono break-words">
                     {pendingApply ? 'pending_manual_apply' : 'applied_or_manual_edit'}

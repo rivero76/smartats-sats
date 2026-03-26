@@ -35,16 +35,13 @@ const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || '
 // The same resume+JD pair must always yield the same score regardless of when it runs.
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0)
 const OPENAI_ATS_SEED = Math.floor(getEnvNumber('OPENAI_ATS_SEED', 42))
-const OPENAI_MAX_TOKENS_ATS = Math.max(
-  500,
-  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800))
-)
+const OPENAI_MAX_TOKENS_ATS = Math.max(500, Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800)))
 const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
   0,
   Math.min(2, Math.floor(getEnvNumber('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS', 1)))
 )
-const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 2.00)
-const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 8.00)
+const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 2.0)
+const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 8.0)
 const STORE_LLM_PROMPTS = getEnvBoolean('STORE_LLM_PROMPTS', false)
 const STORE_LLM_RAW_RESPONSE = getEnvBoolean('STORE_LLM_RAW_RESPONSE', false)
 
@@ -430,7 +427,9 @@ async function processAnalysis(
 
     // Fetch accepted enrichments AFTER baseline call — no contamination risk
     const acceptedEnrichments = await getAcceptedEnrichments(resume.id, supabase)
-    console.log(`[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`)
+    console.log(
+      `[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`
+    )
 
     // Second call: CV Optimisation Score (isolated — runs only when enrichments exist)
     let optimisationResult: CVOptimisationResult | null = null
@@ -461,7 +460,10 @@ async function processAnalysis(
           },
         })
         optimisationResult = parseCVOptimisationOrNull(optLlmResult.rawContent)
-        console.log('[processAnalysis] CV Optimisation Score:', optimisationResult?.cv_optimisation_score)
+        console.log(
+          '[processAnalysis] CV Optimisation Score:',
+          optimisationResult?.cv_optimisation_score
+        )
       } catch (optError) {
         // Optimisation failure must never corrupt the baseline result
         console.warn('[processAnalysis] CV Optimisation call failed — skipping:', optError)
@@ -628,7 +630,8 @@ function buildATSPrompt(
       'education',
       'achievements',
     ],
-    priorityRegex: /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
+    priorityRegex:
+      /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
   })
 
   return `Task: Compare the resume against the job description using a deterministic ATS rubric.
@@ -664,16 +667,29 @@ function buildOptimisationPrompt(
 ): string {
   const preparedJobText = buildSectionAwareContext(jdText, {
     maxChars: 8000,
-    headingKeywords: ['responsibilities', 'requirements', 'required', 'preferred', 'qualifications', 'skills', 'experience'],
+    headingKeywords: [
+      'responsibilities',
+      'requirements',
+      'required',
+      'preferred',
+      'qualifications',
+      'skills',
+      'experience',
+    ],
     priorityRegex: /(must|required|responsib|qualif|skill|experience|certif|years|tool|stack)/i,
   })
 
-  const enrichmentList = enrichments.map((e, i) => {
-    const roleLabel = e.job_title && e.company_name
-      ? ` (Role: ${e.job_title} @ ${e.company_name})`
-      : e.job_title ? ` (Role: ${e.job_title})` : ''
-    return `${i + 1}. Skill: ${e.skill_name}${roleLabel}\n   Enriched description: "${e.suggestion}"`
-  }).join('\n')
+  const enrichmentList = enrichments
+    .map((e, i) => {
+      const roleLabel =
+        e.job_title && e.company_name
+          ? ` (Role: ${e.job_title} @ ${e.company_name})`
+          : e.job_title
+            ? ` (Role: ${e.job_title})`
+            : ''
+      return `${i + 1}. Skill: ${e.skill_name}${roleLabel}\n   Enriched description: "${e.suggestion}"`
+    })
+    .join('\n')
 
   return `Task: Project the ATS match score if the candidate updates their CV with the enrichments below.
 
@@ -698,7 +714,10 @@ Output requirements:
 function parseCVOptimisationOrNull(rawResponse: string): CVOptimisationResult | null {
   let text = rawResponse.trim()
   if (text.startsWith('```')) {
-    text = text.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '').trim()
+    text = text
+      .replace(/^```(?:json)?\s*/, '')
+      .replace(/```\s*$/, '')
+      .trim()
   }
   try {
     const data = JSON.parse(text)
@@ -706,12 +725,14 @@ function parseCVOptimisationOrNull(rawResponse: string): CVOptimisationResult | 
     return {
       cv_optimisation_score: clampScore(data.cv_optimisation_score),
       cv_optimisation_improvements: Array.isArray(data.cv_optimisation_improvements)
-        ? data.cv_optimisation_improvements.map((item: any) => ({
-            skill: String(item.skill || '').trim(),
-            role: item.role ? String(item.role).trim() : undefined,
-            impact: String(item.impact || '').trim(),
-            score_area: String(item.score_area || '').trim(),
-          })).filter((item: any) => item.skill && item.impact && item.score_area)
+        ? data.cv_optimisation_improvements
+            .map((item: any) => ({
+              skill: String(item.skill || '').trim(),
+              role: item.role ? String(item.role).trim() : undefined,
+              impact: String(item.impact || '').trim(),
+              score_area: String(item.score_area || '').trim(),
+            }))
+            .filter((item: any) => item.skill && item.impact && item.score_area)
         : [],
     }
   } catch {
@@ -727,7 +748,10 @@ function buildSectionAwareContext(
     priorityRegex: RegExp
   }
 ): string {
-  const normalized = text.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim()
+  const normalized = text
+    .replace(/\r/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim()
   if (!normalized) return ''
 
   const lines = normalized.split('\n').map((line) => line.trim())
@@ -764,7 +788,8 @@ function buildSectionAwareContext(
   }
   flushSection()
 
-  const allSections = sectionBuckets.length > 0 ? sectionBuckets : [`## general\n${lines.join('\n')}`]
+  const allSections =
+    sectionBuckets.length > 0 ? sectionBuckets : [`## general\n${lines.join('\n')}`]
   const rankedLines = allSections
     .join('\n')
     .split('\n')
@@ -830,8 +855,12 @@ function parseATSResponseOrNull(rawResponse: string): ATSAnalysisResult | null {
               }
             })
             .filter(
-              (item: { skill: string; jd_quote: string; resume_quote: string; reasoning: string }) =>
-                item.skill && item.jd_quote && item.resume_quote && item.reasoning
+              (item: {
+                skill: string
+                jd_quote: string
+                resume_quote: string
+                reasoning: string
+              }) => item.skill && item.jd_quote && item.resume_quote && item.reasoning
             )
         : [],
     }
@@ -871,7 +900,8 @@ async function getAcceptedEnrichments(
   try {
     const { data, error } = await supabase
       .from('enriched_experiences')
-      .select(`
+      .select(
+        `
         skill_name,
         suggestion,
         skill_experience_id,
@@ -879,7 +909,8 @@ async function getAcceptedEnrichments(
           job_title,
           company:sats_companies!sats_skill_experiences_company_id_fkey ( name )
         )
-      `)
+      `
+      )
       .eq('resume_id', resumeId)
       .eq('user_action', 'accepted')
       .is('deleted_at', null)

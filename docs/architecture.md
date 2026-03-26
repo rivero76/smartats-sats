@@ -45,12 +45,12 @@ SmartATS is a React + TypeScript application with Supabase (Postgres + Auth + Ed
 
 ### Current Provider: OpenAI
 
-| Edge Function | Primary Model | Fallback Model |
-|---|---|---|
-| `ats-analysis-direct` | `gpt-4.1` | `gpt-4o-mini` |
-| `async-ats-scorer` | `gpt-4.1` | `gpt-4o-mini` |
-| `enrich-experiences` | `gpt-4.1-mini` | `gpt-4o-mini` |
-| `generate-upskill-roadmap` | `gpt-4.1-mini` | `gpt-4o-mini` |
+| Edge Function              | Primary Model  | Fallback Model |
+| -------------------------- | -------------- | -------------- |
+| `ats-analysis-direct`      | `gpt-4.1`      | `gpt-4o-mini`  |
+| `async-ats-scorer`         | `gpt-4.1`      | `gpt-4o-mini`  |
+| `enrich-experiences`       | `gpt-4.1-mini` | `gpt-4o-mini`  |
+| `generate-upskill-roadmap` | `gpt-4.1-mini` | `gpt-4o-mini`  |
 
 All calls use structured JSON output (`response_format.json_schema` with `strict: true`). Cost estimates are tracked per analysis in `sats_analyses.cost_estimate_usd`.
 
@@ -67,7 +67,7 @@ See `docs/decisions/adr-0002-llm-provider-abstraction.md` for full rationale and
 ATS analysis with CV Optimisation uses two sequential, isolated `callLLM()` calls:
 
 1. **Call 1 — Base ATS Score**: Pure scoring prompt. No enrichment context. `temperature: 0`, `seed: 42` for deterministic output. Produces the raw ATS score and gap analysis.
-2. **Call 2 — CV Optimisation Projection**: Receives Call 1 output + accepted enrichments. Projects what the score *could be* if improvements are applied.
+2. **Call 2 — CV Optimisation Projection**: Receives Call 1 output + accepted enrichments. Projects what the score _could be_ if improvements are applied.
 
 The two calls are never merged. Call 1 output is read-only input to Call 2. See `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` for full rationale.
 
@@ -75,10 +75,10 @@ The two calls are never merged. Call 1 output is read-only input to Call 2. See 
 
 Two code paths for ATS scoring exist and are intentionally separate:
 
-| Path | File | Trigger | Use |
-|---|---|---|---|
+| Path   | File                  | Trigger     | Use                                              |
+| ------ | --------------------- | ----------- | ------------------------------------------------ |
 | Direct | `ats-analysis-direct` | User action | On-demand, user-facing, includes CV Optimisation |
-| Async | `async-ats-scorer` | Cron job | Background proactive scoring against market jobs |
+| Async  | `async-ats-scorer`    | Cron job    | Background proactive scoring against market jobs |
 
 See `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` for full rationale.
 
@@ -86,14 +86,14 @@ See `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` for full rationale.
 
 All LLM calls enforce schema-locked JSON output (`response_format.json_schema`, `strict: true`). Schemas in use:
 
-| Schema | Owner function | Purpose |
-|---|---|---|
-| `ATS_JSON_SCHEMA` | `ats-analysis-direct`, `async-ats-scorer` | ATS scoring with evidence and skill match |
-| `CV_OPTIMISATION_JSON_SCHEMA` | `ats-analysis-direct` (Call 2 only) | CV improvement projection score (P18) |
-| `ENRICHMENT_JSON_SCHEMA` | `enrich-experiences` | Experience enrichment with evidence constraints |
-| `ROADMAP_JSON_SCHEMA` | `generate-upskill-roadmap` | Upskilling milestones with ordered sequence |
-| `CAREER_FIT_JSON_SCHEMA` | `suggest-career-fit` | Role suggestions with match strength and skill gaps (P16) |
-| `LINKEDIN_NORMALIZATION_SCHEMA` | `linkedin-profile-ingest` | Skills and experiences normalized from raw scraper payload (P13) |
+| Schema                          | Owner function                            | Purpose                                                          |
+| ------------------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| `ATS_JSON_SCHEMA`               | `ats-analysis-direct`, `async-ats-scorer` | ATS scoring with evidence and skill match                        |
+| `CV_OPTIMISATION_JSON_SCHEMA`   | `ats-analysis-direct` (Call 2 only)       | CV improvement projection score (P18)                            |
+| `ENRICHMENT_JSON_SCHEMA`        | `enrich-experiences`                      | Experience enrichment with evidence constraints                  |
+| `ROADMAP_JSON_SCHEMA`           | `generate-upskill-roadmap`                | Upskilling milestones with ordered sequence                      |
+| `CAREER_FIT_JSON_SCHEMA`        | `suggest-career-fit`                      | Role suggestions with match strength and skill gaps (P16)        |
+| `LINKEDIN_NORMALIZATION_SCHEMA` | `linkedin-profile-ingest`                 | Skills and experiences normalized from raw scraper payload (P13) |
 
 ---
 
@@ -101,12 +101,12 @@ All LLM calls enforce schema-locked JSON output (`response_format.json_schema`, 
 
 ### Design: Split Storage
 
-| Data | Location | Details |
-|---|---|---|
-| Resume file bytes | Supabase Storage, `SATS_resumes` bucket | Private bucket, path: `{user_id}/{random_filename}.{ext}` |
-| Resume metadata | `sats_resumes` table | name, object_key, sha256, mime_type, size_bytes |
-| Extracted text | `document_extractions` table | Full text, word count, extraction method, warnings |
-| Persona configuration | `sats_resume_personas` table (P16 Story 1) | Role weights, keyword highlights, custom summary |
+| Data                  | Location                                   | Details                                                   |
+| --------------------- | ------------------------------------------ | --------------------------------------------------------- |
+| Resume file bytes     | Supabase Storage, `SATS_resumes` bucket    | Private bucket, path: `{user_id}/{random_filename}.{ext}` |
+| Resume metadata       | `sats_resumes` table                       | name, object_key, sha256, mime_type, size_bytes           |
+| Extracted text        | `document_extractions` table               | Full text, word count, extraction method, warnings        |
+| Persona configuration | `sats_resume_personas` table (P16 Story 1) | Role weights, keyword highlights, custom summary          |
 
 ### Security Controls
 
@@ -127,37 +127,37 @@ All LLM calls enforce schema-locked JSON output (`response_format.json_schema`, 
 
 ## Key Data Tables
 
-| Table | Purpose |
-|---|---|
-| `sats_resumes` | Resume file metadata and storage references |
-| `document_extractions` | Extracted text content from resume files |
-| `sats_resume_personas` | Role-specific profile configurations (P16) |
-| `sats_job_descriptions` | User-managed job descriptions for ATS matching |
-| `sats_analyses` | ATS analysis results with score, matched/missing skills |
-| `sats_user_skills` | User's canonical skill records with proficiency |
-| `sats_skill_experiences` | Detailed work experience records per skill |
-| `sats_enriched_experiences` | AI-generated experience enrichment suggestions |
-| `sats_learning_roadmaps` | P15 upskilling roadmap records |
-| `sats_roadmap_milestones` | Ordered milestones within a roadmap |
-| `sats_reconciliation_runs` | Profile reconciliation session audit trail (P16) |
-| `sats_profile_conflicts` | Detected conflicts between profile data sources (P16) |
-| `sats_conflict_resolutions` | Immutable record of user resolution decisions (P16) |
-| `sats_career_fit_suggestions` | AI-generated role suggestions per user/persona (P16) |
-| `sats_job_discovery_cache` | Live job listings from external APIs, 4h TTL (P16) |
-| `sats_staged_jobs` | P14 proactive market job pool |
-| `sats_user_notifications` | User notification records (P14) |
+| Table                         | Purpose                                                 |
+| ----------------------------- | ------------------------------------------------------- |
+| `sats_resumes`                | Resume file metadata and storage references             |
+| `document_extractions`        | Extracted text content from resume files                |
+| `sats_resume_personas`        | Role-specific profile configurations (P16)              |
+| `sats_job_descriptions`       | User-managed job descriptions for ATS matching          |
+| `sats_analyses`               | ATS analysis results with score, matched/missing skills |
+| `sats_user_skills`            | User's canonical skill records with proficiency         |
+| `sats_skill_experiences`      | Detailed work experience records per skill              |
+| `sats_enriched_experiences`   | AI-generated experience enrichment suggestions          |
+| `sats_learning_roadmaps`      | P15 upskilling roadmap records                          |
+| `sats_roadmap_milestones`     | Ordered milestones within a roadmap                     |
+| `sats_reconciliation_runs`    | Profile reconciliation session audit trail (P16)        |
+| `sats_profile_conflicts`      | Detected conflicts between profile data sources (P16)   |
+| `sats_conflict_resolutions`   | Immutable record of user resolution decisions (P16)     |
+| `sats_career_fit_suggestions` | AI-generated role suggestions per user/persona (P16)    |
+| `sats_job_discovery_cache`    | Live job listings from external APIs, 4h TTL (P16)      |
+| `sats_staged_jobs`            | P14 proactive market job pool                           |
+| `sats_user_notifications`     | User notification records (P14)                         |
 
 ---
 
 ## External Integrations
 
-| Service | Purpose | API Type |
-|---|---|---|
-| OpenAI | LLM for ATS scoring, enrichment, roadmap, career fit | REST (direct HTTP fetch) |
-| Supabase Auth | User authentication and session management | Supabase client |
-| Supabase Storage | Resume and document file storage | Supabase storage client |
-| JSearch (RapidAPI) | Live job listings — US, global aggregated (P16) | REST API |
-| Adzuna | Live job listings — BR, AU, NZ, UK (P16) | REST API |
+| Service            | Purpose                                                       | API Type                                     |
+| ------------------ | ------------------------------------------------------------- | -------------------------------------------- |
+| OpenAI             | LLM for ATS scoring, enrichment, roadmap, career fit          | REST (direct HTTP fetch)                     |
+| Supabase Auth      | User authentication and session management                    | Supabase client                              |
+| Supabase Storage   | Resume and document file storage                              | Supabase storage client                      |
+| JSearch (RapidAPI) | Live job listings — US, global aggregated (P16)               | REST API                                     |
+| Adzuna             | Live job listings — BR, AU, NZ, UK (P16)                      | REST API                                     |
 | LinkedIn (planned) | Profile ingestion via `linkedin-profile-ingest` edge function | Scraping (ToS review required for live data) |
 
 ---

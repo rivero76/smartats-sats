@@ -43,3 +43,4 @@ SATS_CHANGES.txt
 
 # Supabase local CLI temp artifacts
 supabase/.temp/
+.claude/worktrees/

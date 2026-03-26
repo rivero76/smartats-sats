@@ -130,7 +130,9 @@ serve(async (req) => {
     const extractedText = isLikelyHtmlOrText ? htmlToText(rawBody) : rawBody.trim()
 
     const boundedText =
-      extractedText.length > 50_000 ? `${extractedText.slice(0, 50_000)}...[truncated]` : extractedText
+      extractedText.length > 50_000
+        ? `${extractedText.slice(0, 50_000)}...[truncated]`
+        : extractedText
 
     return new Response(
       JSON.stringify({
@@ -147,9 +149,12 @@ serve(async (req) => {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return new Response(JSON.stringify({ success: false, error: `URL ingestion failed: ${message}` }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ success: false, error: `URL ingestion failed: ${message}` }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })

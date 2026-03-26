@@ -12,7 +12,7 @@
 
 ## Context
 
-P18 introduced CV Optimisation Score: an LLM-powered projection of what an ATS score *could be* if the user applied the suggested improvements to their resume. This projection runs in the same code path as the base ATS analysis (`ats-analysis-direct`).
+P18 introduced CV Optimisation Score: an LLM-powered projection of what an ATS score _could be_ if the user applied the suggested improvements to their resume. This projection runs in the same code path as the base ATS analysis (`ats-analysis-direct`).
 
 The naive implementation would be to include the enrichment context (suggested improvements, career-fit signals) in a single combined LLM prompt that returns both the base score and the optimised projection together.
 
@@ -36,7 +36,7 @@ The two calls are never merged into a single prompt.
 
 If enrichment context is present in the same prompt used to generate the base score, the model may unconsciously inflate the base score by anchoring on the "improved" version of the candidate. This produces a base score that does not reflect the actual resume — it reflects the improved resume. The user then sees an overly optimistic baseline, defeating the purpose of ATS scoring.
 
-**Contamination in this context means**: the base score being influenced by information about the *improved* resume rather than the *submitted* resume.
+**Contamination in this context means**: the base score being influenced by information about the _improved_ resume rather than the _submitted_ resume.
 
 ### Reproducibility
 

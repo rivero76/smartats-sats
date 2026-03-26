@@ -4,6 +4,9 @@ All notable changes to this project should be documented in this file.
 
 ## [Unreleased]
 
+- 2026-03-23: Created `docs/improvements/technical_review_2026-03-18.md` — Mac developer environment and repository organisation recommendations (OneDrive risk, node_modules sync, stray files, scripts layout, pre-commit hook setup, .railwayignore).
+- 2026-03-23: Extended `technical_review_2026-03-18.md` with i18n readiness assessment (NOT READY — zero translation infrastructure, all strings hardcoded in English; date-fns and toLocaleString present as foundation) and multi-user readiness assessment (READY — RLS enforced on all user-owned tables, query-layer filtering correct, admin role gated; gap: no per-user API quotas on ATS/enrichment edge functions).
+
 - CR1-2: Centralized CORS helpers across 6 edge functions (`cancel-account-deletion`, `centralized-logging`, `delete-account`, `fetch-market-jobs`, `job-description-url-ingest`, `linkedin-profile-ingest`). Replaced inline `ALLOWED_ORIGINS` constant + `isOriginAllowed`/`buildCorsHeaders` function declarations with `import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'`. Production origin changes now require updating only `_shared/cors.ts`.
 - CR4-2: Added missing UPDATE LOG header to `job-description-url-ingest/index.ts` (was the only edge function with no header).
 - CR4-3: Created `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` — documents why P18 uses two separate `callLLM()` calls (base ATS score + CV optimisation projection) to prevent context contamination and ensure base score reproducibility.

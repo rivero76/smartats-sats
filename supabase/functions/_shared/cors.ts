@@ -9,7 +9,11 @@ const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:8080'
 // CR2-4: Canonical env var is SATS_ALLOWED_ORIGINS. ALLOWED_ORIGINS is kept as a fallback so
 // existing deployments do not break before they rename the variable.
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get('SATS_ALLOWED_ORIGINS') || Deno.env.get('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS)
+  (
+    Deno.env.get('SATS_ALLOWED_ORIGINS') ||
+    Deno.env.get('ALLOWED_ORIGINS') ||
+    DEFAULT_ALLOWED_ORIGINS
+  )
     .split(',')
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0)

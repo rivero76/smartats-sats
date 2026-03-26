@@ -48,8 +48,7 @@ describe('contentExtraction - provider headers', () => {
   })
 
   it('extracts Indeed style header', () => {
-    const input =
-      'Project Manager - LAB3 - Auckland, New Zealand | Indeed\nAbout the role...'
+    const input = 'Project Manager - LAB3 - Auckland, New Zealand | Indeed\nAbout the role...'
     const result = extractJobDescriptionInfo(input)
 
     expect(result.company).toBe('LAB3')

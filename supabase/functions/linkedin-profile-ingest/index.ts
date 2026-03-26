@@ -161,7 +161,11 @@ async function fetchLinkedInProfile(
       )
     }
     if (errCode === 'RATE_LIMITED') {
-      throw new PlaywrightServiceError('Scraper rate limit reached. Try again later.', 'RATE_LIMITED', 429)
+      throw new PlaywrightServiceError(
+        'Scraper rate limit reached. Try again later.',
+        'RATE_LIMITED',
+        429
+      )
     }
 
     throw new PlaywrightServiceError(errMsg, errCode, response.status >= 500 ? 502 : 400)
@@ -226,7 +230,9 @@ const LINKEDIN_NORMALIZATION_SCHEMA = {
               { type: 'null' },
             ],
           },
-          years_of_experience: { anyOf: [{ type: 'number', minimum: 0, maximum: 50 }, { type: 'null' }] },
+          years_of_experience: {
+            anyOf: [{ type: 'number', minimum: 0, maximum: 50 }, { type: 'null' }],
+          },
           last_used_date: { anyOf: [{ type: 'string' }, { type: 'null' }] },
           notes: { anyOf: [{ type: 'string' }, { type: 'null' }] },
           source: { type: 'string', enum: ['linkedin'] },
@@ -297,11 +303,17 @@ ${JSON.stringify(input.rawPayload, null, 2)}
 function parseNormalizedResponse(raw: string): NormalizedLinkedinData {
   let text = raw.trim()
   if (text.startsWith('```')) {
-    text = text.replace(/```json/gi, '').replace(/```/g, '').trim()
+    text = text
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim()
   }
 
   const parsed = JSON.parse(text) as Partial<NormalizedLinkedinData>
-  if (!Array.isArray(parsed.normalized_skills) || !Array.isArray(parsed.normalized_skill_experiences)) {
+  if (
+    !Array.isArray(parsed.normalized_skills) ||
+    !Array.isArray(parsed.normalized_skill_experiences)
+  ) {
     throw new Error('LLM response missing normalized arrays')
   }
 
@@ -311,7 +323,9 @@ function parseNormalizedResponse(raw: string): NormalizedLinkedinData {
       if (!skillName) return null
       const proficiencyRaw = row?.proficiency_level
       const proficiency =
-        proficiencyRaw === 'beginner' || proficiencyRaw === 'intermediate' || proficiencyRaw === 'advanced'
+        proficiencyRaw === 'beginner' ||
+        proficiencyRaw === 'intermediate' ||
+        proficiencyRaw === 'advanced'
           ? proficiencyRaw
           : null
       const yearsRaw = row?.years_of_experience
@@ -342,13 +356,17 @@ function parseNormalizedResponse(raw: string): NormalizedLinkedinData {
         company_name: row?.company_name ? String(row.company_name) : null,
         description,
         keywords: Array.isArray(row?.keywords)
-          ? row.keywords.map((keyword) => String(keyword).trim()).filter((keyword) => keyword.length > 0)
+          ? row.keywords
+              .map((keyword) => String(keyword).trim())
+              .filter((keyword) => keyword.length > 0)
           : [],
         source: 'linkedin' as const,
         import_date: String(row?.import_date || new Date().toISOString()),
       }
     })
-    .filter((row): row is NormalizedLinkedinData['normalized_skill_experiences'][number] => row !== null)
+    .filter(
+      (row): row is NormalizedLinkedinData['normalized_skill_experiences'][number] => row !== null
+    )
 
   if (normalizedSkills.length === 0 || normalizedExperiences.length === 0) {
     throw new Error('LLM normalization returned empty results')
@@ -363,7 +381,11 @@ function parseNormalizedResponse(raw: string): NormalizedLinkedinData {
 async function runNormalizationWithSchema(
   openAIApiKey: string,
   prompt: string
-): Promise<{ normalized: NormalizedLinkedinData; modelUsed: string; tokenUsage?: Record<string, unknown> }> {
+): Promise<{
+  normalized: NormalizedLinkedinData
+  modelUsed: string
+  tokenUsage?: Record<string, unknown>
+}> {
   const modelsToTry = [OPENAI_MODEL_LINKEDIN_INGEST, OPENAI_MODEL_LINKEDIN_INGEST_FALLBACK]
   let lastError = 'Unknown normalization error'
 
@@ -479,10 +501,13 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing Authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing Authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     try {
@@ -541,7 +566,11 @@ serve(async (req) => {
       linkedinUrl
     )
 
-    const prompt = buildNormalizationPrompt({ linkedinUrl, importDateIso, rawPayload: rawProviderPayload })
+    const prompt = buildNormalizationPrompt({
+      linkedinUrl,
+      importDateIso,
+      rawPayload: rawProviderPayload,
+    })
     const normalizationResult = await runNormalizationWithSchema(openAIApiKey, prompt)
 
     return new Response(

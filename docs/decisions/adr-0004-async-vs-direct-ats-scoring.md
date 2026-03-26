@@ -14,10 +14,10 @@
 
 SmartATS has two separate code paths for ATS scoring:
 
-| Path | Entry point | Trigger | Scope |
-|---|---|---|---|
-| **Direct** | `supabase/functions/ats-analysis-direct/index.ts` | User action (button click) | One resume × one job description |
-| **Async** | `supabase/functions/async-ats-scorer/index.ts` | Cron job (every N minutes) | All users × all queued staged jobs |
+| Path       | Entry point                                       | Trigger                    | Scope                              |
+| ---------- | ------------------------------------------------- | -------------------------- | ---------------------------------- |
+| **Direct** | `supabase/functions/ats-analysis-direct/index.ts` | User action (button click) | One resume × one job description   |
+| **Async**  | `supabase/functions/async-ats-scorer/index.ts`    | Cron job (every N minutes) | All users × all queued staged jobs |
 
 Both paths call the same underlying LLM scoring logic via `callLLM()`, but they serve fundamentally different purposes and are not interchangeable.
 
@@ -36,6 +36,7 @@ Maintain both paths indefinitely. They are not duplicates — they serve differe
 **Trigger:** User clicks "Analyse" in the job description modal or uploads a resume to a job.
 
 **Characteristics:**
+
 - Synchronous from the user's perspective (waits for result, shows spinner).
 - Returns within the HTTP request timeout (~30s).
 - Includes P18 CV Optimisation Score (second `callLLM()` call if enrichment context exists).
@@ -54,6 +55,7 @@ Maintain both paths indefinitely. They are not duplicates — they serve differe
 **Trigger:** Supabase cron job, typically every 5-15 minutes.
 
 **Characteristics:**
+
 - Runs entirely in the background — users are not waiting.
 - Processes `sats_staged_jobs` rows (populated by `fetch-market-jobs`) queued with `status: 'queued'`.
 - Iterates over all active users with eligible resumes and scores them against each staged job.

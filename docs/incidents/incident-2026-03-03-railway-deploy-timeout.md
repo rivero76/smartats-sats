@@ -20,10 +20,10 @@
 
 Executing the two-bug fix described in the P14 plan:
 
-| # | Bug | Status |
-|---|-----|--------|
-| 1 | Replace `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` to survive LinkedIn SPA navigations | **DONE** — `scraper.ts` updated |
-| 2 | Fix `railway up` timeout by using `--path-as-root` to upload only the subdirectory | **FAILED** — still times out |
+| #   | Bug                                                                                                                    | Status                          |
+| --- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 1   | Replace `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` to survive LinkedIn SPA navigations | **DONE** — `scraper.ts` updated |
+| 2   | Fix `railway up` timeout by using `--path-as-root` to upload only the subdirectory                                     | **FAILED** — still times out    |
 
 ---
 
@@ -124,6 +124,7 @@ The archive will shrink from ~46 MB to ~44 KB and the upload will succeed in sec
 ### Alternative fix (if `.railwayignore` still doesn't work)
 
 Use the Railway dashboard's **GitHub integration** instead of CLI upload:
+
 1. Connect the Railway service to the GitHub repo.
 2. Set **Root Directory** to `scripts/playwright-linkedin`.
 3. Railway will build directly from source using the Dockerfile, bypassing the CLI upload entirely.
@@ -151,16 +152,16 @@ Previous failure: `page.evaluate: Execution context was destroyed` — this is f
 
 ## Files Changed and Committed (commit 196615d, pushed to origin/p14)
 
-| File | Change | Deploy status |
-|------|--------|---------------|
-| `scripts/playwright-linkedin/src/scraper.ts` | Replaced `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` × 8; added `waitForLoadState('networkidle')` after both `goto()` calls; wrapped `scrollPage()` call sites in `.catch()` | Pushed — NOT yet live on Railway |
-| `scripts/playwright-linkedin/tsconfig.json` | Added `DOM` to `lib` so browser globals in `page.evaluate()` type-check | Pushed — NOT yet live on Railway |
-| `docs/bugs/bug-railway-up-path-as-root-timeout.md` | This file — created to document the deploy failure | N/A |
+| File                                               | Change                                                                                                                                                                                                      | Deploy status                    |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `scripts/playwright-linkedin/src/scraper.ts`       | Replaced `scrollPage()` `page.evaluate` loop with `page.keyboard.press('PageDown')` × 8; added `waitForLoadState('networkidle')` after both `goto()` calls; wrapped `scrollPage()` call sites in `.catch()` | Pushed — NOT yet live on Railway |
+| `scripts/playwright-linkedin/tsconfig.json`        | Added `DOM` to `lib` so browser globals in `page.evaluate()` type-check                                                                                                                                     | Pushed — NOT yet live on Railway |
+| `docs/bugs/bug-railway-up-path-as-root-timeout.md` | This file — created to document the deploy failure                                                                                                                                                          | N/A                              |
 
 ---
 
 ## Files Still Needed
 
-| File | Action | Reason |
-|------|--------|--------|
+| File                                         | Action                                                    | Reason                                                                                            |
+| -------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `scripts/playwright-linkedin/.railwayignore` | **Create** with `node_modules/`, `dist/`, `*.log`, `.env` | Required for Railway CLI to exclude `node_modules/` when using `--path-as-root` on a subdirectory |

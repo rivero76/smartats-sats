@@ -15,10 +15,7 @@ import { callLLM } from '../_shared/llmProvider.ts'
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.1)
-const OPENAI_MAX_TOKENS_ATS = Math.max(
-  500,
-  Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800))
-)
+const OPENAI_MAX_TOKENS_ATS = Math.max(500, Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800)))
 const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
   0,
   Math.min(2, Math.floor(getEnvNumber('OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS', 1)))
@@ -252,7 +249,11 @@ function parseATSResult(rawContent: string): ATSAnalysisResult {
 async function runATSCompletionWithSchema(
   systemPrompt: string,
   userPrompt: string
-): Promise<{ analysisResult: ATSAnalysisResult; modelUsed: string; costEstimateUsd: number | null }> {
+): Promise<{
+  analysisResult: ATSAnalysisResult
+  modelUsed: string
+  costEstimateUsd: number | null
+}> {
   const models = [OPENAI_MODEL_ATS]
   if (OPENAI_MODEL_ATS_FALLBACK && OPENAI_MODEL_ATS_FALLBACK !== OPENAI_MODEL_ATS) {
     models.push(OPENAI_MODEL_ATS_FALLBACK)
@@ -301,7 +302,9 @@ async function getLatestResumesByUser(
   return result
 }
 
-async function getGlobalThresholdDefault(supabase: ReturnType<typeof createClient>): Promise<number> {
+async function getGlobalThresholdDefault(
+  supabase: ReturnType<typeof createClient>
+): Promise<number> {
   const { data, error } = await supabase
     .from('sats_runtime_settings')
     .select('value')
@@ -327,7 +330,10 @@ async function getUserThresholdMap(
   if (error) throw error
 
   for (const row of data || []) {
-    const threshold = parseThreshold((row as { proactive_match_threshold: number | null }).proactive_match_threshold, DEFAULT_PROACTIVE_MATCH_THRESHOLD)
+    const threshold = parseThreshold(
+      (row as { proactive_match_threshold: number | null }).proactive_match_threshold,
+      DEFAULT_PROACTIVE_MATCH_THRESHOLD
+    )
     map.set((row as { user_id: string }).user_id, threshold)
   }
 
@@ -338,20 +344,25 @@ async function buildUserBaseline(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   resumeId: string
-): Promise<{ baselineText: string | null; baselineType: 'skills_profile' | 'resume_extraction' | 'none' }> {
-  const [{ data: userSkills, error: userSkillsError }, { data: skillExperiences, error: expError }] =
-    await Promise.all([
-      supabase
-        .from('sats_user_skills')
-        .select('proficiency_level, years_of_experience, notes, skill:sats_skills(name)')
-        .eq('user_id', userId)
-        .is('deleted_at', null),
-      supabase
-        .from('sats_skill_experiences')
-        .select('job_title, description, keywords, skill:sats_skills(name)')
-        .eq('user_id', userId)
-        .is('deleted_at', null),
-    ])
+): Promise<{
+  baselineText: string | null
+  baselineType: 'skills_profile' | 'resume_extraction' | 'none'
+}> {
+  const [
+    { data: userSkills, error: userSkillsError },
+    { data: skillExperiences, error: expError },
+  ] = await Promise.all([
+    supabase
+      .from('sats_user_skills')
+      .select('proficiency_level, years_of_experience, notes, skill:sats_skills(name)')
+      .eq('user_id', userId)
+      .is('deleted_at', null),
+    supabase
+      .from('sats_skill_experiences')
+      .select('job_title, description, keywords, skill:sats_skills(name)')
+      .eq('user_id', userId)
+      .is('deleted_at', null),
+  ])
 
   if (userSkillsError) throw userSkillsError
   if (expError) throw expError
@@ -427,10 +438,13 @@ serve(async (req) => {
 
   if (!supabaseUrl || !serviceKey || !Deno.env.get('OPENAI_API_KEY')) {
     // 503 = misconfigured service (not a transient server error); allows correct client retry behaviour
-    return new Response(JSON.stringify({ success: false, error: 'Missing required env configuration' }), {
-      status: 503,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ success: false, error: 'Missing required env configuration' }),
+      {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 
   const requestId = `p14s2-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -555,7 +569,11 @@ serve(async (req) => {
           const systemPrompt =
             'You are a deterministic ATS evaluator. Return JSON matching schema exactly. Never invent candidate evidence.'
           const userPrompt = buildPrompt(jobName, job.description_raw, baseline.baselineText)
-          const { analysisResult: result, modelUsed, costEstimateUsd } = await runATSCompletionWithSchema(systemPrompt, userPrompt)
+          const {
+            analysisResult: result,
+            modelUsed,
+            costEstimateUsd,
+          } = await runATSCompletionWithSchema(systemPrompt, userPrompt)
 
           const { error: updateError } = await supabase
             .from('sats_analyses')

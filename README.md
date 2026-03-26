@@ -21,6 +21,16 @@
 - 2026-02-25 17:50:00 | Implemented P13 Story 2 frontend dedupe/merge preparation: fuzzy skill matching, experience fingerprint dedupe, and provenance-tagged import buckets for HITL flow.
 - 2026-02-25 17:20:00 | Implemented P13 Story 1 backend preview flow: new `linkedin-profile-ingest` edge function with mock LinkedIn payload fetch and schema-locked LLM normalization for HITL review.
 - 2026-02-25 16:55:00 | Implemented P15 Story 3 roadmap UI: new `/roadmaps` dashboard with sequenced milestones, completion toggles, and progress tracking.
+- 2026-03-17 00:00:00 | Implemented P16 Story 1: Resume Persona Model — `sats_resume_personas` migration, `useResumePersonas` hook, `PersonaManager` component wired into Settings with create/edit/delete/set-active CRUD.
+- 2026-03-17 00:00:00 | Implemented P18 CV Optimisation Score: two-call isolation in `ats-analysis-direct` (baseline ATS pure; separate `callLLM()` with `CV_OPTIMISATION_JSON_SCHEMA` for enrichment projection); green optimisation panel in `ATSAnalyses.tsx`; score breakdown and enrichment context added to `ATSDebugModal`.
+- 2026-03-17 00:00:00 | Upgraded ATS scoring model to `o4-mini` (reasoning model) with `temperature:0` + `seed:42` for deterministic output; updated `llmProvider.ts` with o4-mini pricing and `max_completion_tokens` handling; fixed `callOpenAI` fallback bug (400 model-not-found now falls through to next candidate); created `docs/specs/technical/llm-model-governance.md`.
+- 2026-03-17 00:00:00 | Fixed BUG-2026-03-17-LOCATION-RLS: `sats_locations` + `sats_companies` SELECT policies replaced with open authenticated-read policies (`USING (true)`); Job Description creation with new locations no longer throws RLS error.
+- 2026-03-17 00:00:00 | Fixed BUG-2026-02-24-ENRICH-SCROLL: removed nested `ScrollArea` from `EnrichExperienceModal`; all suggestion card action buttons now reachable without double-scroll context. Fixed scroll clipping in `ProfileImportReviewModal` (scrollbar no longer overlaps content).
+- 2026-03-17 00:00:00 | Added time window filter to Admin LogViewer (Last 5 min / 15 min / 1h / 6h / 24h / All); defaults to ERROR level + Last 1 hour for incident-ready view.
+- 2026-03-17 00:00:00 | Added P17 User-Controlled AI to product roadmap: S1 per-user model preference, S2 BYOK encrypted key storage (Supabase Vault), S3 AI opt-out/GDPR toggle.
+- 2026-03-17 00:00:00 | Added operational scripts: `scripts/ops/fetch-logs.sh` (interactive multi-source log collector), `scripts/ops/clean-logs.sh` (log retention cleanup), `scripts/ops/gen-types.sh` (Supabase TypeScript type generation). Added `src/components/ErrorBoundary.tsx` and wrapped main route outlet.
+- 2026-03-18 00:00:00 | Completed full code review (23 findings — CR1–CR4): centralized CORS across 6 edge functions, extracted named constants (match threshold 0.6, fuzzy match 0.86, confidence 0.78), renamed files to kebab-case (`content-extraction.ts`, `linkedin-import-merge.ts`), promoted `SATS_ALLOWED_ORIGINS` env var with backwards-compat fallback, created ADRs 0003–0006, added pre-commit UPDATE LOG enforcement hook, updated `docs/architecture.md` with P14/P16/P18 flows.
+- 2026-03-18 00:00:00 | Created `docs/improvements/technical_review_2026-03-18.md`: Mac/repo organisation recommendations (OneDrive risk, scripts layout, stray files, .railwayignore), i18n readiness assessment (NOT READY), and multi-user readiness assessment (READY with API quota gap noted).
 - 2026-02-25 16:20:00 | Added Codex session continuity guidance and runbook links to preserve context across large/long-running implementation sessions.
 - 2026-02-20 22:25:31 | Replaced Lovable deployment documentation with the current SmartATS architecture and product feature set.
 - 2026-02-20 23:22:57 | Implemented P1 logging improvements: structured schema normalization, centralized validation, and edge-function lifecycle telemetry.
@@ -229,6 +239,7 @@ When resuming work in a new Codex session, use checkpoint artifacts instead of c
 5. End each session by updating `Next Actions` in the checkpoint file.
 
 Detailed workflow:
+
 - `docs/runbooks/CODEX_SESSION_CONTINUITY.md`
 - `docs/sessions/README.md`
 

@@ -25,10 +25,7 @@ import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  LinkedinImportMergeResult,
-  canonicalizeSkillName,
-} from '@/utils/linkedin-import-merge'
+import { LinkedinImportMergeResult, canonicalizeSkillName } from '@/utils/linkedin-import-merge'
 
 interface ProfileImportReviewModalProps {
   isOpen: boolean
@@ -121,11 +118,7 @@ export function ProfileImportReviewModal({
         if (missingNames.length > 0) {
           const insertResults = await Promise.all(
             missingNames.map((name) =>
-              supabase
-                .from('sats_skills')
-                .insert({ name })
-                .select('id, name')
-                .single()
+              supabase.from('sats_skills').insert({ name }).select('id, name').single()
             )
           )
           for (const result of insertResults) {
@@ -204,7 +197,12 @@ export function ProfileImportReviewModal({
     mergeResult.experiences_ignored.length > 0
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Review LinkedIn Import</DialogTitle>
@@ -242,10 +240,7 @@ export function ProfileImportReviewModal({
                           New skills to add
                         </p>
                         {mergeResult.skills_to_insert.map((skill) => (
-                          <div
-                            key={skill.skill_name}
-                            className="flex items-center gap-3 py-1"
-                          >
+                          <div key={skill.skill_name} className="flex items-center gap-3 py-1">
                             <Checkbox
                               id={`skill-${skill.skill_name}`}
                               checked={selectedSkillNames.has(skill.skill_name)}
@@ -337,9 +332,7 @@ export function ProfileImportReviewModal({
                               <Label htmlFor={`exp-${i}`} className="flex-1 cursor-pointer">
                                 <span className="font-medium">{exp.skill_name}</span>
                                 {exp.job_title && (
-                                  <span className="text-muted-foreground">
-                                    {' '}— {exp.job_title}
-                                  </span>
+                                  <span className="text-muted-foreground"> — {exp.job_title}</span>
                                 )}
                               </Label>
                             </div>

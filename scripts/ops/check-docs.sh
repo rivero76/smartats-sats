@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 required_files=(
   "README.md"
-  "plans/product-improvements.md"
+  "docs/decisions/product-roadmap.md"
   "docs/changelog/SATS_CHANGES.txt"
   "docs/changelog/CHANGELOG.md"
   "docs/help/README.md"
@@ -55,7 +55,7 @@ if [[ -z "$CHANGED_FILES" ]]; then
 fi
 
 if echo "$CHANGED_FILES" | grep -Eq '^(src/|supabase/|scripts/ops/|Dockerfile|Dockerfile.dev|docker-compose.yml|\.github/workflows/)'; then
-  if ! echo "$CHANGED_FILES" | grep -Eq '^(README\.md|docs/changelog/SATS_CHANGES\.txt|plans/product-improvements\.md|docs/|scripts/ops/README\.md)'; then
+  if ! echo "$CHANGED_FILES" | grep -Eq '^(README\.md|docs/changelog/SATS_CHANGES\.txt|docs/decisions/product-roadmap\.md|docs/|scripts/ops/README\.md)'; then
     echo "Code/infrastructure changed, but no docs were updated."
     echo "Update at least one of: README.md, docs/changelog/SATS_CHANGES.txt, plans/product-improvements.md, docs/*."
     exit 1
