@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 ## [Unreleased]
 
+- P19 S1-1: Installed `@fontsource-variable/geist` and `@fontsource-variable/geist-mono`. Added `@font-face` imports to `src/index.css` via `@fontsource-variable` CSS. Extended `tailwind.config.ts` with `fontFamily.sans: ['Geist Variable', ...]` and `fontFamily.mono: ['Geist Mono Variable', ...]`. Applied `font-sans` to body with `font-feature-settings` for ligatures. Font loads with `font-display: swap` to prevent FOUT.
+- P19 S1-2: Created `src/lib/animations.ts` with six Framer Motion variant presets (`fadeIn`, `slideUp`, `scaleIn`, `listItem`, `staggerContainer`, `slideInFromRight`). Installed `framer-motion`. No component changes — presets only, applied in S2.
+- fix(ops): `check-docs.sh` — replaced stale `plans/product-improvements.md` reference (archived) with `docs/decisions/product-roadmap.md` in required files list and error message. `check-secrets.sh` — tightened `SUPABASE_SERVICE_ROLE_KEY` pattern to require `=` sign (false positive on docs text).
+
 - 2026-03-23: Created `docs/improvements/technical_review_2026-03-18.md` — Mac developer environment and repository organisation recommendations (OneDrive risk, node_modules sync, stray files, scripts layout, pre-commit hook setup, .railwayignore).
 - 2026-03-23: Extended `technical_review_2026-03-18.md` with i18n readiness assessment (NOT READY — zero translation infrastructure, all strings hardcoded in English; date-fns and toLocaleString present as foundation) and multi-user readiness assessment (READY — RLS enforced on all user-owned tables, query-layer filtering correct, admin role gated; gap: no per-user API quotas on ATS/enrichment edge functions).
 

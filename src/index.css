@@ -1,8 +1,15 @@
+/* UPDATE LOG */
+/* 2026-03-26 18:30:00 | P19 S1-1: import Geist font from npm package; add --font-sans CSS var (P19-S1-1) */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Geist variable font — @fontsource-variable is Vite/bundler-compatible */
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -108,6 +115,9 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 }

@@ -57,7 +57,7 @@ fi
 if echo "$CHANGED_FILES" | grep -Eq '^(src/|supabase/|scripts/ops/|Dockerfile|Dockerfile.dev|docker-compose.yml|\.github/workflows/)'; then
   if ! echo "$CHANGED_FILES" | grep -Eq '^(README\.md|docs/changelog/SATS_CHANGES\.txt|docs/decisions/product-roadmap\.md|docs/|scripts/ops/README\.md)'; then
     echo "Code/infrastructure changed, but no docs were updated."
-    echo "Update at least one of: README.md, docs/changelog/SATS_CHANGES.txt, plans/product-improvements.md, docs/*."
+    echo "Update at least one of: README.md, docs/changelog/SATS_CHANGES.txt, docs/decisions/product-roadmap.md, docs/*."
     exit 1
   fi
 

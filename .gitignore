@@ -39,7 +39,7 @@ logs/tmp/
 Documents/
 db_restore/
 MEMORY.md
-SATS_CHANGES.txt
+# SATS_CHANGES.txt is tracked — removed from gitignore (required by check-docs.sh)
 
 # Supabase local CLI temp artifacts
 supabase/.temp/

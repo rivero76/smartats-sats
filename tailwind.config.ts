@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-26 18:30:00 | P19 S1-1: add Geist font family to fontFamily.sans (P19-S1-1)
+ */
 import type { Config } from 'tailwindcss'
 import tailwindcssAnimate from 'tailwindcss-animate'
 
@@ -19,6 +23,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Geist Variable', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['Geist Mono Variable', 'ui-monospace', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
