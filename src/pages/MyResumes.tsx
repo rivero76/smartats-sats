@@ -1,5 +1,11 @@
+/**
+ * UPDATE LOG
+ * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to resume table rows (P19-S2-3)
+ */
 // src/pages/MyResumes.tsx
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import { staggerContainer, listItem } from '@/lib/animations'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -259,9 +265,18 @@ const MyResumes = () => {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <motion.tbody
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="[&_tr:last-child]:border-0"
+              >
                 {resumes.map((resume) => (
-                  <TableRow key={resume.id}>
+                  <motion.tr
+                    key={resume.id}
+                    variants={listItem}
+                    className="border-b transition-colors hover:bg-muted/50"
+                  >
                     <TableCell className="font-medium">{resume.name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(resume.created_at)}
@@ -324,9 +339,9 @@ const MyResumes = () => {
                         </AlertDialog>
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </motion.tr>
                 ))}
-              </TableBody>
+              </motion.tbody>
             </Table>
           )}
         </CardContent>

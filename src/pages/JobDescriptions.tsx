@@ -1,4 +1,10 @@
+/**
+ * UPDATE LOG
+ * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to job description table rows (P19-S2-3)
+ */
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import { staggerContainer, listItem } from '@/lib/animations'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -231,9 +237,18 @@ const JobDescriptions = () => {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <motion.tbody
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="[&_tr:last-child]:border-0"
+              >
                 {filteredJobDescriptions.map((jd) => (
-                  <TableRow key={jd.id}>
+                  <motion.tr
+                    key={jd.id}
+                    variants={listItem}
+                    className="border-b transition-colors hover:bg-muted/50"
+                  >
                     <TableCell className="font-medium">{jd.name}</TableCell>
                     <TableCell>
                       {jd.company ? (
@@ -336,9 +351,9 @@ const JobDescriptions = () => {
                         </AlertDialog>
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </motion.tr>
                 ))}
-              </TableBody>
+              </motion.tbody>
             </Table>
           )}
         </CardContent>

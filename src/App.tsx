@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-03-17 12:00:00 | P1-2: wrap main route outlet in ErrorBoundary to prevent blank-screen crashes
+ * 2026-03-26 19:00:00 | P19 S2-2: add AnimatePresence page transitions via AnimatedRoutes component (P19-S2-2)
  */
 import React from 'react'
 import { Toaster } from '@/components/ui/toaster'
@@ -8,7 +9,9 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { fadeIn } from '@/lib/animations'
 import { AppSidebar } from './components/AppSidebar'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -37,6 +40,46 @@ const SHOULD_SHOW_DEV_OVERLAY =
 
 const queryClient = new QueryClient()
 
+// AnimatedRoutes must live inside BrowserRouter to access useLocation
+const AnimatedRoutes = () => {
+  const location = useLocation()
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        variants={fadeIn}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="flex-1"
+      >
+        <ErrorBoundary>
+          <Routes location={location}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/resumes" element={<MyResumes />} />
+            <Route path="/jobs" element={<JobDescriptions />} />
+            <Route path="/analyses" element={<ATSAnalyses />} />
+            <Route path="/opportunities" element={<ProactiveMatches />} />
+            <Route path="/experiences" element={<EnrichedExperiences />} />
+            <Route path="/roadmaps" element={<UpskillingRoadmaps />} />
+            <Route path="/help" element={<HelpHub />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 const App = () => {
   DevLogger.info('App started successfully.')
 
@@ -62,29 +105,8 @@ const App = () => {
                             <SidebarTrigger />
                             <div className="flex-1" />
                           </header>
-                          <main className="flex-1 p-6 bg-muted/30">
-                            <ErrorBoundary>
-                            <Routes>
-                              <Route path="/" element={<Dashboard />} />
-                              <Route path="/resumes" element={<MyResumes />} />
-                              <Route path="/jobs" element={<JobDescriptions />} />
-                              <Route path="/analyses" element={<ATSAnalyses />} />
-                              <Route path="/opportunities" element={<ProactiveMatches />} />
-                              <Route path="/experiences" element={<EnrichedExperiences />} />
-                              <Route path="/roadmaps" element={<UpskillingRoadmaps />} />
-                              <Route path="/help" element={<HelpHub />} />
-                              <Route path="/settings" element={<Settings />} />
-                              <Route
-                                path="/admin"
-                                element={
-                                  <AdminRoute>
-                                    <AdminDashboard />
-                                  </AdminRoute>
-                                }
-                              />
-                              <Route path="*" element={<NotFound />} />
-                            </Routes>
-                            </ErrorBoundary>
+                          <main className="flex-1 p-6 bg-muted/30 flex flex-col">
+                            <AnimatedRoutes />
                           </main>
                         </div>
                       </div>

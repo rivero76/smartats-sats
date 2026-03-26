@@ -4,8 +4,11 @@
  * 2026-03-17 00:00:00 | P18 CV Optimisation Score: read cv_optimisation_score and
  *   cv_optimisation_improvements from analysis_data; render optimisation panel below
  *   the ATS score when enrichments were applied.
+ * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to analysis list cards (P19-S2-3)
  */
 import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { staggerContainer, listItem } from '@/lib/animations'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
 import ATSDebugModal from '@/components/ATSDebugModal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,9 +68,8 @@ const ATSAnalyses = () => {
 
   const inFlightCount = useMemo(
     () =>
-      analyses?.filter((analysis) =>
-        ['initial', 'queued', 'processing'].includes(analysis.status)
-      ).length || 0,
+      analyses?.filter((analysis) => ['initial', 'queued', 'processing'].includes(analysis.status))
+        .length || 0,
     [analyses]
   )
 
@@ -138,8 +140,7 @@ const ATSAnalyses = () => {
       lines.push(`| Completed | ${analysisData.processing_completed_at} |`)
     if (analysisData.processing_time_ms)
       lines.push(`| Processing Time | ${Math.round(analysisData.processing_time_ms / 1000)}s |`)
-    if (analysisData.model_used)
-      lines.push(`| Model | \`${analysisData.model_used}\` |`)
+    if (analysisData.model_used) lines.push(`| Model | \`${analysisData.model_used}\` |`)
     if (tokenUsage.prompt_tokens)
       lines.push(`| Prompt Tokens | ${tokenUsage.prompt_tokens.toLocaleString()} |`)
     if (tokenUsage.completion_tokens)
@@ -342,9 +343,18 @@ const ATSAnalyses = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {analyses.map((analysis) => (
-                <div key={analysis.id} className="p-6 border rounded-lg space-y-4">
+            <motion.div
+              className="space-y-4"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
+              {analyses.slice(0, 20).map((analysis) => (
+                <motion.div
+                  key={analysis.id}
+                  variants={listItem}
+                  className="p-6 border rounded-lg space-y-4"
+                >
                   {/* Analysis Header */}
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -512,7 +522,8 @@ const ATSAnalyses = () => {
                       {/* CV Optimisation Score (P18) */}
                       {(() => {
                         const optScore = analysis.analysis_data?.cv_optimisation_score
-                        const improvements = analysis.analysis_data?.cv_optimisation_improvements ?? []
+                        const improvements =
+                          analysis.analysis_data?.cv_optimisation_improvements ?? []
                         const enrichmentsUsed = analysis.analysis_data?.enrichments_used_count ?? 0
                         if (optScore == null || enrichmentsUsed === 0) return null
                         const baseline = analysis.ats_score ?? 0
@@ -535,20 +546,27 @@ const ATSAnalyses = () => {
                                 </span>
                                 {delta > 0 && (
                                   <Badge className="bg-emerald-600 text-white flex items-center gap-1">
-                                    <ArrowUpRight className="h-3 w-3" />
-                                    +{delta}
+                                    <ArrowUpRight className="h-3 w-3" />+{delta}
                                   </Badge>
                                 )}
                               </div>
                             </div>
-                            <Progress value={optimised} className="h-2 bg-emerald-200 [&>div]:bg-emerald-600" />
+                            <Progress
+                              value={optimised}
+                              className="h-2 bg-emerald-200 [&>div]:bg-emerald-600"
+                            />
                             <p className="text-xs text-emerald-700">
-                              Based on {enrichmentsUsed} accepted enrichment{enrichmentsUsed !== 1 ? 's' : ''}. Update your CV to realise this score.
+                              Based on {enrichmentsUsed} accepted enrichment
+                              {enrichmentsUsed !== 1 ? 's' : ''}. Update your CV to realise this
+                              score.
                             </p>
                             {improvements.length > 0 && (
                               <div className="space-y-1.5 pt-1">
                                 {improvements.slice(0, 4).map((imp: any, i: number) => (
-                                  <div key={i} className="flex items-start gap-2 text-xs text-emerald-800">
+                                  <div
+                                    key={i}
+                                    className="flex items-start gap-2 text-xs text-emerald-800"
+                                  >
                                     <CheckCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600" />
                                     <span>
                                       <span className="font-medium">{imp.skill}</span>
@@ -558,7 +576,8 @@ const ATSAnalyses = () => {
                                 ))}
                                 {improvements.length > 4 && (
                                   <p className="text-xs text-emerald-600 pl-5">
-                                    +{improvements.length - 4} more improvement{improvements.length - 4 !== 1 ? 's' : ''}
+                                    +{improvements.length - 4} more improvement
+                                    {improvements.length - 4 !== 1 ? 's' : ''}
                                   </p>
                                 )}
                               </div>
@@ -577,9 +596,9 @@ const ATSAnalyses = () => {
                       </Button>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </CardContent>
       </Card>
