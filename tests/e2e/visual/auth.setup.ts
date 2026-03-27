@@ -34,7 +34,10 @@ setup('authenticate', async ({ page }) => {
   if (!email || !password) {
     // Write an empty state so the visual project's storageState path resolves
     fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }))
-    setup.skip(true, 'PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set — skipping auth setup')
+    setup.skip(
+      true,
+      'PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set — skipping auth setup'
+    )
     return
   }
 

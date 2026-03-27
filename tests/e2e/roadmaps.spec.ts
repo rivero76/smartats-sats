@@ -7,9 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-const hasCredentials = !!(
-  process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD
-)
+const hasCredentials = !!(process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD)
 
 test.describe('Upskilling Roadmaps — /roadmaps', () => {
   test.skip(!hasCredentials, 'Skipped: PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set')
@@ -22,9 +20,7 @@ test.describe('Upskilling Roadmaps — /roadmaps', () => {
   // ── 1. Page structure ─────────────────────────────────────────────────────
 
   test('renders Upskilling Roadmaps heading', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: 'Upskilling Roadmaps', level: 1 })
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Upskilling Roadmaps', level: 1 })).toBeVisible()
   })
 
   test('Beta badge is visible', async ({ page }) => {
@@ -42,13 +38,15 @@ test.describe('Upskilling Roadmaps — /roadmaps', () => {
   // ── 2. Empty state ────────────────────────────────────────────────────────
 
   test('empty state renders with correct CTA when no roadmaps exist', async ({ page }) => {
-    const hasRoadmaps = (await page.locator('button').filter({ hasText: /select a roadmap/i }).count()) > 0
+    const hasRoadmaps =
+      (await page
+        .locator('button')
+        .filter({ hasText: /select a roadmap/i })
+        .count()) > 0
     if (hasRoadmaps) return // data present — skip empty state test
 
     await expect(page.getByRole('heading', { name: 'No Roadmaps Yet' })).toBeVisible()
-    await expect(
-      page.getByText(/generate your first roadmap from an ats analysis/i)
-    ).toBeVisible()
+    await expect(page.getByText(/generate your first roadmap from an ats analysis/i)).toBeVisible()
   })
 
   // ── 3. Roadmap with data: milestone toggle ────────────────────────────────

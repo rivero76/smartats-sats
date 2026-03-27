@@ -14,6 +14,7 @@
 <!-- Updated: 2026-03-26 — added UIUX-1 through UIUX-7 (UI/UX Excellence Programme); full plan in plans/p19-uiux-excellence.md -->
 <!-- Updated: 2026-03-26 — added MAINT-1 (remove Lovable.dev artifacts) and MAINT-2 (migrate Codex tooling to Claude Code) -->
 <!-- Updated: 2026-03-26 — MAINT-2 completed: AGENTS.md retired, CODEX_SESSION_CONTINUITY.md archived, SESSION_CONTINUITY.md created, ADR-0001 marked Superseded, CLAUDE.md updated, docs/sessions/README.md updated, coding-conventions.md and p19 plan Owner updated -->
+<!-- Updated: 2026-03-27 — added PROD-1 through PROD-8 from job-seeker gap analysis research session (docs/audits/job-seeker-gap-analysis-2026-03-27.md) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -678,11 +679,11 @@ The codebase still carries Lovable.dev platform artifacts. These are harmless in
 
 **Files to audit and fix:**
 
-| File | What to change |
-| --- | --- |
-| `index.html` | Replace `<meta name="description">`, `<meta name="author">`, `<meta property="og:*">`, and `<meta name="twitter:*">` tags that reference `lovable.dev` or "Lovable Generated Project" with SmartATS-specific values. Remove the `og:image` and `twitter:image` URLs pointing to `https://lovable.dev/opengraph-image-p98pqg.png`. |
-| `vite.config.ts` | Remove the `componentTagger()` Vite plugin import and usage. `lovable-tagger` injects Lovable editor overlays and is a no-op (or a liability) outside the Lovable IDE. |
-| `package.json` | Remove `lovable-tagger` from `devDependencies`. Run `npm install` to update `package-lock.json`. |
+| File             | What to change                                                                                                                                                                                                                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.html`     | Replace `<meta name="description">`, `<meta name="author">`, `<meta property="og:*">`, and `<meta name="twitter:*">` tags that reference `lovable.dev` or "Lovable Generated Project" with SmartATS-specific values. Remove the `og:image` and `twitter:image` URLs pointing to `https://lovable.dev/opengraph-image-p98pqg.png`. |
+| `vite.config.ts` | Remove the `componentTagger()` Vite plugin import and usage. `lovable-tagger` injects Lovable editor overlays and is a no-op (or a liability) outside the Lovable IDE.                                                                                                                                                            |
+| `package.json`   | Remove `lovable-tagger` from `devDependencies`. Run `npm install` to update `package-lock.json`.                                                                                                                                                                                                                                  |
 
 **Search command to confirm no remaining references after fix:**
 
@@ -705,15 +706,15 @@ The project was developed sequentially on: Lovable.dev → OpenAI Codex → Clau
 
 **Files and areas to audit:**
 
-| File / Area | Action |
-| --- | --- |
-| `AGENTS.md` (project root) | Review content. If it contains Codex-specific prompt instructions that are superseded by `CLAUDE.md`, retire or archive it. If it contains instructions still relevant to agent collaboration, migrate the relevant content into `CLAUDE.md` or a new `.claude/` agent file, then delete or stub `AGENTS.md`. |
-| `docs/runbooks/CODEX_SESSION_CONTINUITY.md` | Codex session continuity runbook. Assess whether it contains reusable patterns (checkpoint discipline, handoff structure). If yes, migrate the useful parts into `docs/runbooks/` as a Claude Code–flavoured session guide. Then archive or remove the Codex-specific file. |
-| `docs/decisions/adr-0001-agent-collaboration-model.md` | Documents the original Codex/Claude split model. Update the ADR status to `Superseded` and add a note that Claude Code is now the sole agentic toolchain. |
-| `docs/conventions/coding-conventions.md` | Search for any Codex-specific workflow instructions. Replace with Claude Code equivalents where they exist; remove if obsolete. |
-| `CLAUDE.md` — "Handoff to Codex" section | Rename to "Handoff / Implementation Delegation" and update the four-point checklist to describe handing off to Claude Code sub-agents (`.claude/agents/`) instead of Codex. |
-| `docs/sessions/` | Codex session log directory. These are historical records — do **not** delete them, but add a `README.md` or header comment noting they are archived Codex session logs and that active session continuity now uses Claude Code's project memory (`.claude/projects/*/memory/`). |
-| Plans and archive files that mention Codex | Audit `plans/` and `plans/archive/` for any Codex-specific workflow steps (e.g. `make checkpoint`, Codex task format). Replace or annotate as historical. |
+| File / Area                                            | Action                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` (project root)                             | Review content. If it contains Codex-specific prompt instructions that are superseded by `CLAUDE.md`, retire or archive it. If it contains instructions still relevant to agent collaboration, migrate the relevant content into `CLAUDE.md` or a new `.claude/` agent file, then delete or stub `AGENTS.md`. |
+| `docs/runbooks/CODEX_SESSION_CONTINUITY.md`            | Codex session continuity runbook. Assess whether it contains reusable patterns (checkpoint discipline, handoff structure). If yes, migrate the useful parts into `docs/runbooks/` as a Claude Code–flavoured session guide. Then archive or remove the Codex-specific file.                                   |
+| `docs/decisions/adr-0001-agent-collaboration-model.md` | Documents the original Codex/Claude split model. Update the ADR status to `Superseded` and add a note that Claude Code is now the sole agentic toolchain.                                                                                                                                                     |
+| `docs/conventions/coding-conventions.md`               | Search for any Codex-specific workflow instructions. Replace with Claude Code equivalents where they exist; remove if obsolete.                                                                                                                                                                               |
+| `CLAUDE.md` — "Handoff to Codex" section               | Rename to "Handoff / Implementation Delegation" and update the four-point checklist to describe handing off to Claude Code sub-agents (`.claude/agents/`) instead of Codex.                                                                                                                                   |
+| `docs/sessions/`                                       | Codex session log directory. These are historical records — do **not** delete them, but add a `README.md` or header comment noting they are archived Codex session logs and that active session continuity now uses Claude Code's project memory (`.claude/projects/*/memory/`).                              |
+| Plans and archive files that mention Codex             | Audit `plans/` and `plans/archive/` for any Codex-specific workflow steps (e.g. `make checkpoint`, Codex task format). Replace or annotate as historical.                                                                                                                                                     |
 
 **Search command to find all remaining Codex references:**
 
@@ -786,4 +787,23 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 | UIUX-7                      | Add bundle analyser + Lighthouse CI gate (performance ≥ 80, a11y ≥ 90)                    | P2       | 2–3 hr      | Open                                  |
 | UIUX-8                      | Bootstrap Storybook with 6 shadcn/ui component stories + a11y addon                       | P3       | 4–8 hr      | Open                                  |
 | MAINT-1                     | Remove Lovable.dev artifacts (`lovable-tagger`, `index.html` meta tags, `vite.config.ts`) | P1       | 1–2 hr      | Open                                  |
-| MAINT-2                     | Migrate all Codex tooling, runbooks, and references to Claude Code exclusively             | P1       | 2–4 hr      | **Done 2026-03-26**                   |
+| MAINT-2                     | Migrate all Codex tooling, runbooks, and references to Claude Code exclusively            | P1       | 2–4 hr      | **Done 2026-03-26**                   |
+
+---
+
+## Product Feature Backlog — Job Seeker Gap Analysis (2026-03-27)
+
+> Items below are **product features** (not tech debt) identified from market research on 2026-03-27.
+> Source: `docs/audits/job-seeker-gap-analysis-2026-03-27.md`
+> Research basis: A Life After Layoff (Bryan Creely), The Interview Guys 2025 State of Job Search Report, scale.jobs, Reddit communities, Jobscan/Teal market data.
+
+| ID     | Feature                                                                                                                                                                                                                                                                           | Builds On                                              | Priority | Effort Est. | Status |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------- | ----------- | ------ |
+| PROD-1 | **Interview Readiness Score** — per-skill authenticity check: flags keywords on resume not backed by enriched experience entries. Surfaces as Red/Green signal alongside ATS score.                                                                                               | P13 enriched experiences + P14/P18 ATS scoring         | High     | 2–3 stories | Open   |
+| PROD-2 | **Career Gap Advisor** — detects employment gaps from resume timeline; surfaces recruiter-informed framing language, suggests what to emphasise from the gap period, and calibrates job targets accordingly. Integrates with P15 roadmap.                                         | Resume timeline analysis + P15 upskilling roadmap      | High     | 2 stories   | Open   |
+| PROD-3 | **Application Debrief** — when a user marks a role as "rejected" or "no response," runs an LLM analysis against their ATS score and gap data to explain likely rejection reasons and what a stronger application would have looked like.                                          | Application stage tracking (Priority 3 roadmap) + LLM  | Medium   | 1–2 stories | Open   |
+| PROD-4 | **Profile Consistency Check** — compares LinkedIn-imported data (P13) against resume content; flags discrepancies in titles, dates, company names, and skill claims before an application is submitted.                                                                           | P13 LinkedIn import data                               | Medium   | 1 story     | Open   |
+| PROD-5 | **Career Fit Map** — uses enriched experiences, skill profile, and aggregate ATS scoring data from the proactive job pipeline to show which role categories the user is genuinely competitive for today vs in 6/12 months, with the specific delta to close the gap.              | Aggregate ATS scores + enriched profile + P14 pipeline | High     | 3–4 stories | Open   |
+| PROD-6 | **Your Market Report** — periodic digest (weekly/monthly) personalised to the user: top skills appearing in their matched jobs that their profile lacks, ATS score trend over time, score changes as roadmap milestones complete, roles newly above threshold.                    | P14 staged jobs + scoring data in aggregate            | Medium   | 2 stories   | Open   |
+| PROD-7 | **Progress Dashboard** — surfaces positive momentum signals to combat job-search burnout: week-over-week score trend, roadmap completion %, skills added, applications sent vs interviews received rate.                                                                          | Roadmap + score history + application funnel           | Medium   | 1–2 stories | Open   |
+| PROD-8 | **Smart Cover Letter** — generates genuinely personalised, narrative-driven cover letters grounded in the user's actual enriched experiences and the specific gap analysis for each role. Not generic; leads with strongest matched skills and addresses missing skills honestly. | P13 enriched experiences + P18 CV optimisation         | High     | 2 stories   | Open   |

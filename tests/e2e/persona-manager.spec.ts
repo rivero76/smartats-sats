@@ -8,9 +8,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-const hasCredentials = !!(
-  process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD
-)
+const hasCredentials = !!(process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD)
 
 test.describe('Persona Manager — Settings /settings', () => {
   test.skip(!hasCredentials, 'Skipped: PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set')
@@ -105,7 +103,10 @@ test.describe('Persona Manager — Settings /settings', () => {
     // Confirmation dialog
     await expect(page.getByRole('alertdialog')).toBeVisible()
     await expect(page.getByText(/delete resume profile/i)).toBeVisible()
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page
+      .getByRole('button', { name: /delete/i })
+      .last()
+      .click()
 
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(500)

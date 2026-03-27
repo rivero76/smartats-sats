@@ -7,9 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-const hasCredentials = !!(
-  process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD
-)
+const hasCredentials = !!(process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD)
 
 test.describe('Admin LogViewer — /admin', () => {
   test.skip(!hasCredentials, 'Skipped: PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set')

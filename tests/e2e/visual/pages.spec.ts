@@ -19,9 +19,7 @@ import { test, expect } from '@playwright/test'
  *   - Auth state:  tests/e2e/.auth/user.json written by auth.setup.ts
  */
 
-const hasCredentials = !!(
-  process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD
-)
+const hasCredentials = !!(process.env.PLAYWRIGHT_TEST_EMAIL && process.env.PLAYWRIGHT_TEST_PASSWORD)
 
 /** Wait for the page content to settle before snapping (data loads, animations). */
 async function waitForPageReady(page: import('@playwright/test').Page) {

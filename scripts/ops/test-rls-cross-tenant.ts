@@ -119,7 +119,7 @@ async function testRoadmapCrossTenantDenial() {
     // An RLS error is also acceptable — no data should leak
     pass('User B cross-tenant read blocked (query error from RLS)')
   } else if (!readByB || readByB.length === 0) {
-    pass('User B receives 0 rows for User A\'s roadmap (RLS working)')
+    pass("User B receives 0 rows for User A's roadmap (RLS working)")
   } else {
     fail(
       'User B cross-tenant read blocked',
@@ -128,9 +128,7 @@ async function testRoadmapCrossTenantDenial() {
   }
 
   // User B attempts to read all roadmaps — sentinel must not appear
-  const { data: allByB } = await clientB
-    .from('sats_learning_roadmaps')
-    .select('id, target_role')
+  const { data: allByB } = await clientB.from('sats_learning_roadmaps').select('id, target_role')
 
   const leak = allByB?.find((r) => r.target_role === sentinel)
   if (leak) {
@@ -178,7 +176,10 @@ async function testLocationsInsertPath() {
     .single()
 
   if (insertError) {
-    fail('sats_locations INSERT succeeds', `Error: ${insertError.message} (code: ${insertError.code})`)
+    fail(
+      'sats_locations INSERT succeeds',
+      `Error: ${insertError.message} (code: ${insertError.code})`
+    )
   } else if (!insertData) {
     fail('sats_locations INSERT succeeds', 'No data returned')
   } else {

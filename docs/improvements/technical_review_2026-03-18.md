@@ -127,9 +127,11 @@ cd scripts/playwright-linkedin && npm install && npm run dev
 
 ## 4. Mac Organisation Recommendations
 
-### Recommendation 1 — Move the Repo Out of OneDrive (HIGH PRIORITY)
+### Recommendation 1 — Move the Repo Out of OneDrive ~~(HIGH PRIORITY)~~ ✅ COMPLETED 2026-03-27
 
-**Current path:** `/Users/ricardorivero/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats`
+**New path:** `~/Developer/eIT/Git_Projects/smartats-sats` (local, outside OneDrive)
+
+**Original path (archived):** `/Users/ricardorivero/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats`
 
 **Risk:** OneDrive continuously syncs `node_modules/` (~150,000 files, ~500 MB) on every `npm install`. This causes:
 

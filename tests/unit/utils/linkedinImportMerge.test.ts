@@ -136,7 +136,7 @@ describe('mergeLinkedinImportData', () => {
         {
           skill_name: 'Python',
           job_title: 'Data Engineer',
-          company_name: 'BigCorp',   // present in proposed
+          company_name: 'BigCorp', // present in proposed
           description: 'Built ETL pipelines and data quality checks.',
           keywords: ['python', 'etl'],
           source: 'linkedin',
@@ -151,7 +151,7 @@ describe('mergeLinkedinImportData', () => {
           skill_name: 'Python',
           job_title: 'Data Engineer',
           description: 'Built ETL pipelines and data quality checks.',
-          keywords: null,             // existing has no company_name column at all
+          keywords: null, // existing has no company_name column at all
         },
       ],
       importDate: '2026-02-25T17:35:00.000Z',
@@ -238,7 +238,7 @@ describe('mergeLinkedinImportData', () => {
           import_date: '2026-03-27T10:00:00.000Z',
         },
         {
-          skill_name: 'Vue',  // exact duplicate
+          skill_name: 'Vue', // exact duplicate
           proficiency_level: 'beginner',
           years_of_experience: 1,
           last_used_date: null,

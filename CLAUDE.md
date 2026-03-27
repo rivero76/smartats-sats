@@ -30,15 +30,15 @@ When delegating implementation to a sub-agent or starting a new implementation s
 
 Sub-agents available in `.claude/agents/` cover the full development lifecycle:
 
-| Phase | Agents |
-| --- | --- |
-| Product | `product-analyst` — raw PM/user input → user stories + handoff brief |
-| Planning | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions |
-| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper` |
-| Review | `arch-reviewer`, `convention-auditor`, `security-auditor` |
-| Testing | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner` |
-| Release | `release-gatekeeper` |
-| Operations | `incident-responder`, `railway-deployer`, `dev-env-doctor` |
+| Phase       | Agents                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| Product     | `product-analyst` — raw PM/user input → user stories + handoff brief                         |
+| Planning    | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions |
+| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper`         |
+| Review      | `arch-reviewer`, `convention-auditor`, `security-auditor`                                    |
+| Testing     | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner`                             |
+| Release     | `release-gatekeeper`                                                                         |
+| Operations  | `incident-responder`, `railway-deployer`, `dev-env-doctor`                                   |
 
 **Typical PM-to-developer flow:** `product-analyst` → `plan-decomposer` → `arch-reviewer` → implement → `test-runner` → `release-gatekeeper`
 
@@ -49,17 +49,18 @@ Sub-agents available in `.claude/agents/` cover the full development lifecycle:
 npm run dev              # Vite dev server on http://localhost:8080
 npm run build            # Production build
 npm run lint             # ESLint
-npm run test             # Vitest (all tests)
+npm run test             # Vitest (all tests — note: NOT included in verify)
 npm run test:watch       # Vitest in watch mode
 npm run test -- tests/unit/utils/someFile.test.ts        # Single test file
 npm run test:visual              # Playwright visual regression (requires prior npm run build)
 npm run test:visual:update       # Update visual snapshots
+# Test files can live in src/**/*.test.{ts,tsx} OR tests/**/*.test.{ts,tsx}
 npm run format           # Prettier write
 npm run format:check     # Prettier check (CI-safe, no writes)
 npm run format:check:changed  # Format check for changed files only (pre-commit)
 npm run build:dev        # Development mode build (includes source maps)
-npm run verify           # lint + type-check + test
-npm run verify:full      # verify + build
+npm run verify           # format-check + build + docs-check + secrets-check + supabase-check
+npm run verify:full      # verify + lint (full ESLint pass)
 
 # Individual quality-gate checks (also run inside verify)
 npm run docs:check       # Validate docs completeness
@@ -74,7 +75,7 @@ npm run llm:eval:gate    # Pass/fail gate (non-zero exit on regression)
 # Docker
 docker compose --profile dev up smartats-dev --build  # Hot-reload dev container (localhost:8080)
 docker compose up smartats-app --build                 # Production container (localhost:3000)
-# Use /dev-start skill or dev-env-doctor agent if Docker build stalls (OneDrive node_modules issue)
+# Use /dev-start skill or dev-env-doctor agent if Docker build stalls
 
 # Ops automation (wraps docker/git/verify into named tasks)
 npm run ops -- help                                    # List all ops commands
@@ -123,6 +124,8 @@ bash scripts/ops/clean-logs.sh --days 3 --dry-run            # Preview before de
 
 ### Backend Patterns (Edge Functions)
 
+**Edge functions** (in `supabase/functions/`): `ats-analysis-direct`, `async-ats-scorer`, `enrich-experiences`, `linkedin-profile-ingest`, `generate-upskill-roadmap`, `job-description-url-ingest`, `fetch-market-jobs`, `centralized-logging`, `delete-account`, `cancel-account-deletion`.
+
 All edge functions share three utilities in `supabase/functions/_shared/`:
 
 | File             | Purpose                                                                                                                                              |
@@ -156,6 +159,10 @@ LLMResponse { rawContent, modelUsed, provider, promptTokens, completionTokens, c
 | LinkedIn profile parse        | `OPENAI_MODEL_LINKEDIN_INGEST` | `gpt-4.1-mini`                                            |
 
 Fallback for all tasks: `OPENAI_MODEL_ATS_FALLBACK` / `gpt-4o-mini`. Any model change must follow the governance protocol in that spec (pre-flight check + LLM eval gate).
+
+### Main App Routes
+
+`/` Dashboard · `/resumes` Resumes · `/jobs` Job Descriptions · `/analyses` ATS Analyses · `/experiences` Enriched Experiences · `/roadmaps` Upskilling Roadmaps · `/settings` Settings · `/admin` Admin (role-gated) · `/auth` Auth · `/reset-password` Password Reset
 
 ### Database
 

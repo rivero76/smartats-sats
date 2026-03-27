@@ -6,6 +6,8 @@ All notable changes to this project should be documented in this file.
 
 ### Added
 
+- P19 S4-1 — Bundle analyser: `rollup-plugin-visualizer` added to `vite.config.ts`; generates `dist/stats.html` treemap on every production build (gzip + brotli sizes). Lighthouse CI added as non-blocking `lighthouse` job in `quality-gates.yml` with category assertions (perf ≥ 0.7 warn, a11y ≥ 0.85 error, bp ≥ 0.8 warn). `lighthouserc.json` committed.
+- P19 S5-1 — Storybook bootstrap: installed Storybook 8 (`@storybook/react-vite` + `addon-essentials` + `addon-a11y`). Config at `.storybook/main.ts` and `.storybook/preview.ts` (imports `src/index.css`, light/dark backgrounds). Six component story files: `Button` (10 stories), `Badge` (6), `Card` (4), `Input` (7), `Dialog` (3 — rendered open), `Table` (3). `storybook-static` and `.lighthouseci` added to `.prettierignore`.
 - P19 S3-1 — axe-core a11y tests: 5 Vitest test files in `tests/unit/a11y/` (Dashboard, Resumes, JobDescriptions, ATSAnalyses, Settings). All pass with zero violations. Blocking in CI via `npm run test` step in `quality-gates.yml`. Setup utilities: `tests/unit/a11y/setup.tsx` (QueryClient + MemoryRouter wrapper) and `tests/unit/a11y/setup-dom.ts` (DOMMatrix stub for jsdom/pdfjs-dist compat).
 - P19 S3-2 — Visual regression baselines: 5 PNG snapshots committed for Dashboard, Resumes, ATS Analyses, Enriched Experiences, Settings (`tests/e2e/visual/pages.spec.ts-snapshots/`). All 6 visual tests pass (auth setup + 5 pages). CI `visual-regression` job (non-blocking) already wired. Fixed `auth.setup.ts` ESM `__dirname` bug (`import.meta.url` + `fileURLToPath`).
 - Functional Playwright E2E test suite: 6 new spec files (51 tests total) under `tests/e2e/` covering: Help Hub `/help` (10 tests), Opportunities `/opportunities` (8), ATS Analyses auto-refresh + CV opt panel (7), Roadmaps `/roadmaps` milestone toggle + persistence (8), Persona Manager CRUD in Settings (7), Admin LogViewer time-window filter (9). All skip gracefully without credentials. `playwright.config.ts` updated with `functional` project matching `e2e/*.spec.ts`.
@@ -14,6 +16,7 @@ All notable changes to this project should be documented in this file.
 
 ### Fixed
 
+- Disabled `DevErrorOverlay` (DEV LOGS panel) by setting `VITE_LOGGING_ENABLED=false` in `.env`. The overlay was rendering log entries at the bottom of the screen in development mode.
 - `tests/e2e/visual/auth.setup.ts`: replaced `__dirname` with `fileURLToPath(import.meta.url)` to fix ESM incompatibility (`package.json` `"type":"module"` caused ReferenceError blocking all Playwright test listing).
 
 - P21 S1 — Universal audit trigger function `set_audit_fields()` (SECURITY DEFINER). Auto-stamps `created_by`/`updated_by`/`version` on INSERT/UPDATE across all application tables. Migration: `20260327000000_p21_s1_universal_audit_trigger.sql`.
@@ -178,4 +181,3 @@ All notable changes to this project should be documented in this file.
 - Phase A lint cleanup: fixed `no-empty-object-type`, `no-case-declarations`, `ban-ts-comment`, and `no-require-imports` violations in `command.tsx`, `textarea.tsx`, `documentProcessor.ts`, `ats-analysis-direct/index.ts`, `tailwind.config.ts`.
 - Phase B lint reduction: replaced `any` with typed/unknown metadata in all logger modules (`authLogger`, `documentLogger`, `jobDescriptionLogger`, `devLogger`, `localLogger`); added error-shape normalization helpers. Reduced global lint issues from 107 to 69.
 - Hardened enrichment failure handling in `enrich-experiences`: mapped OpenAI provider failures (401/429/5xx) to safe client messages via `mapProviderError()`; removed raw provider payload logging; improved invoke diagnostics with error name/context/status and top-level `request_id` propagation.
-

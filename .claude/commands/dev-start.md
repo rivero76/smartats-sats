@@ -11,6 +11,7 @@ docker info > /dev/null 2>&1 && echo "running" || echo "stopped"
 ```
 
 If stopped, launch Docker Desktop and wait up to 60s:
+
 ```bash
 open -a Docker
 for i in $(seq 1 12); do docker info &>/dev/null && echo "ready" && break || sleep 5; done
@@ -27,20 +28,16 @@ If `Up` and healthy — report `http://localhost:8080` and stop. Nothing to do.
 ### 3. Quick build-context safety check
 
 ```bash
-du -sh ~/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats/node_modules 2>/dev/null && echo "WARNING: node_modules on OneDrive" || true
-du -sh ~/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats/scripts/playwright-linkedin/node_modules 2>/dev/null && echo "WARNING: playwright node_modules on OneDrive" || true
+du -sh ~/Developer/eIT/Git_Projects/smartats-sats/node_modules 2>/dev/null && echo "WARNING: node_modules in build context" || true
+du -sh ~/Developer/eIT/Git_Projects/smartats-sats/scripts/playwright-linkedin/node_modules 2>/dev/null && echo "WARNING: playwright node_modules in build context" || true
 ```
 
-If any warning fires — remove before building:
-```bash
-rm -rf ~/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats/node_modules
-rm -rf ~/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats/scripts/playwright-linkedin/node_modules
-```
+If warnings fire and `.dockerignore` lacks `**/node_modules`, delegate to `dev-env-doctor` to fix `.dockerignore` before building.
 
 ### 4. Start the dev container
 
 ```bash
-cd ~/Library/CloudStorage/OneDrive-Personal/eIT/Git_Projects/smartats-sats && \
+cd ~/Developer/eIT/Git_Projects/smartats-sats && \
   docker compose --profile dev up smartats-dev --build --detach 2>&1
 ```
 
@@ -66,6 +63,7 @@ If not ready after 60s — run the `dev-env-doctor` agent to diagnose:
 ### 6. Report
 
 Output:
+
 - Container name and status
 - URL: `http://localhost:8080`
 - Build time (approximate)

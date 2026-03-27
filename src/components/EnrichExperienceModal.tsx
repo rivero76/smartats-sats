@@ -4,6 +4,7 @@
  * 2026-02-21 00:40:00 | Implemented product/usability enhancements: evidence checklist, tone controls, batch actions, progress state, and metrics instrumentation.
  * 2026-03-17 00:00:00 | Fix BUG-2026-02-24-ENRICH-SCROLL: removed nested ScrollArea h-[44vh] from suggestion list; outer modal flex-1 overflow-y-auto now handles all scrolling so action buttons are always reachable.
  * 2026-03-17 12:00:00 | Replace hardcoded "GPT-4o" label with VITE_AI_MODEL_LABEL env var (fallback: "AI") so model name stays accurate without code changes.
+ * 2026-03-27 | Fix Bug B: infinite re-render loop — useEffect dependency was `generate` (unstable mutation object reference); changed to `generate.reset` (stable method reference) to stop setState from firing on every render.
  */
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -51,12 +52,7 @@ import { createScriptLogger } from '@/lib/centralizedLogger'
 
 type ToneMode = 'assertive' | 'balanced' | 'conservative'
 type WorkflowState = 'input' | 'generating' | 'reviewing' | 'saved'
-type DecisionReason =
-  | 'not_relevant'
-  | 'too_strong'
-  | 'not_accurate'
-  | 'duplicate'
-  | 'other'
+type DecisionReason = 'not_relevant' | 'too_strong' | 'not_accurate' | 'duplicate' | 'other'
 
 interface EnrichExperienceModalProps {
   open: boolean
@@ -77,7 +73,8 @@ interface SuggestionReviewState {
 
 const logger = createScriptLogger('enrich-experiences-client')
 
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value))
 
 const getSuggestionKey = (suggestion: EnrichmentSuggestion): string =>
   `${suggestion.skill_name}::${suggestion.suggestion}::${suggestion.derived_context || ''}`
@@ -109,7 +106,10 @@ const applyTone = (text: string, tone: ToneMode): string => {
     .replace(/\bDelivered\b/g, 'Assisted with delivering')
 
   if (hasNumericClaims(output)) {
-    output = output.replace(/\b\d+([.,]\d+)?\s?(%|k|m|b|x|users?|days?|hours?|months?|years?)\b/gi, 'measurable outcomes')
+    output = output.replace(
+      /\b\d+([.,]\d+)?\s?(%|k|m|b|x|users?|days?|hours?|months?|years?)\b/gi,
+      'measurable outcomes'
+    )
   }
 
   return output
@@ -144,13 +144,20 @@ const getEvidenceStrength = (
   if (reviewState?.evidenceDone) score += 8
   if (reviewState?.canExplain) score += 8
   if (reviewState?.metricVerified || reviewState?.metricWarningAcknowledged) score += 6
-  if (suggestion.skill_type === 'inferred' && hasNumericClaims(reviewState?.text || suggestion.suggestion)) {
+  if (
+    suggestion.skill_type === 'inferred' &&
+    hasNumericClaims(reviewState?.text || suggestion.suggestion)
+  ) {
     score -= 8
   }
   return clamp(score, 20, 99)
 }
 
-export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }: EnrichExperienceModalProps) => {
+export const EnrichExperienceModal = ({
+  open,
+  onOpenChange,
+  initialAnalysisId,
+}: EnrichExperienceModalProps) => {
   const [selectedAnalysisId, setSelectedAnalysisId] = useState('')
   const [suggestions, setSuggestions] = useState<EnrichmentSuggestion[]>([])
   const [reviewStates, setReviewStates] = useState<Record<string, SuggestionReviewState>>({})
@@ -163,6 +170,7 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
   const { toast } = useToast()
   const { data: analyses, isLoading: analysesLoading } = useATSAnalyses()
   const generate = useGenerateEnrichmentSuggestions()
+  const { reset: resetGenerate } = generate
   const saveExperience = useSaveEnrichedExperience()
 
   const selectedAnalysis = useMemo(
@@ -180,9 +188,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
       setAcceptedCount(0)
       setEditedCount(0)
       setRejectedCount(0)
-      generate.reset()
+      resetGenerate()
     }
-  }, [open, generate])
+  }, [open, resetGenerate])
 
   useEffect(() => {
     if (open && initialAnalysisId) {
@@ -190,7 +198,10 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
     }
   }, [open, initialAnalysisId])
 
-  const setReviewState = (suggestion: EnrichmentSuggestion, next: Partial<SuggestionReviewState>) => {
+  const setReviewState = (
+    suggestion: EnrichmentSuggestion,
+    next: Partial<SuggestionReviewState>
+  ) => {
     const key = getSuggestionKey(suggestion)
     setReviewStates((prev) => ({
       ...prev,
@@ -436,7 +447,10 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
             <div className="space-y-2">
               <Label htmlFor="analysis-select">Choose an ATS Analysis</Label>
               <Select value={selectedAnalysisId} onValueChange={setSelectedAnalysisId}>
-                <SelectTrigger id="analysis-select" disabled={analysesLoading || generate.isPending}>
+                <SelectTrigger
+                  id="analysis-select"
+                  disabled={analysesLoading || generate.isPending}
+                >
                   <SelectValue placeholder="Select resume + job pairing" />
                 </SelectTrigger>
                 <SelectContent>
@@ -496,9 +510,8 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
 
             <DialogFooter className="flex-row justify-between gap-2">
               <div className="text-xs text-muted-foreground">
-                The enrichment engine uses{' '}
-                {import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'} with traceable explanations.
-                Nothing is saved until you approve it.
+                The enrichment engine uses {import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'} with
+                traceable explanations. Nothing is saved until you approve it.
               </div>
               <Button
                 type="submit"
@@ -549,7 +562,7 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
               </div>
 
               <div className="space-y-4">
-                  {suggestions.map((suggestion) => {
+                {suggestions.map((suggestion) => {
                   const key = getSuggestionKey(suggestion)
                   const reviewState = reviewStates[key]
                   const textValue = reviewState?.text ?? suggestion.suggestion
@@ -566,7 +579,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                           <CardTitle className="text-base flex items-center gap-2">
                             {suggestion.skill_name}
                             <Badge variant="secondary">{suggestion.skill_type}</Badge>
-                            {edited && <Badge variant="outline">Interview-safe check enabled</Badge>}
+                            {edited && (
+                              <Badge variant="outline">Interview-safe check enabled</Badge>
+                            )}
                           </CardTitle>
                           <div className="flex gap-2">
                             <Badge variant="outline">Role Relevance {roleRelevance}%</Badge>
@@ -639,7 +654,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
 
                         {inferredNeedsChecklist && (
                           <div className="rounded-md border bg-muted/20 p-3">
-                            <div className="mb-2 text-sm font-medium">Evidence Required (Inferred Skill)</div>
+                            <div className="mb-2 text-sm font-medium">
+                              Evidence Required (Inferred Skill)
+                            </div>
                             <div className="space-y-2 text-sm">
                               <div className="flex items-center gap-2">
                                 <Checkbox
@@ -649,7 +666,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                                     setReviewState(suggestion, { evidenceDone: checked === true })
                                   }
                                 />
-                                <Label htmlFor={`done-${key}`}>I have done this in real work.</Label>
+                                <Label htmlFor={`done-${key}`}>
+                                  I have done this in real work.
+                                </Label>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Checkbox
@@ -705,7 +724,8 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                               </p>
                               <p>
                                 <span className="font-medium text-foreground">Evidence Trace:</span>{' '}
-                                {suggestion.derived_context || 'Derived from ATS context and skill alignment.'}
+                                {suggestion.derived_context ||
+                                  'Derived from ATS context and skill alignment.'}
                               </p>
                             </div>
                           )}
@@ -743,7 +763,9 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                           <Button
                             type="button"
                             disabled={saveExperience.isPending}
-                            onClick={() => handleDecision(suggestion, edited ? 'edited' : 'accepted')}
+                            onClick={() =>
+                              handleDecision(suggestion, edited ? 'edited' : 'accepted')
+                            }
                           >
                             <Check className="mr-2 h-4 w-4" />
                             {edited ? 'Save Edited' : 'Save Experience'}
@@ -752,7 +774,7 @@ export const EnrichExperienceModal = ({ open, onOpenChange, initialAnalysisId }:
                       </CardContent>
                     </Card>
                   )
-                  })}
+                })}
               </div>
             </div>
           )}
