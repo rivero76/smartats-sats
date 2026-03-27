@@ -6,6 +6,16 @@ All notable changes to this project should be documented in this file.
 
 ### Added
 
+- P19 S3-1 — axe-core a11y tests: 5 Vitest test files in `tests/unit/a11y/` (Dashboard, Resumes, JobDescriptions, ATSAnalyses, Settings). All pass with zero violations. Blocking in CI via `npm run test` step in `quality-gates.yml`. Setup utilities: `tests/unit/a11y/setup.tsx` (QueryClient + MemoryRouter wrapper) and `tests/unit/a11y/setup-dom.ts` (DOMMatrix stub for jsdom/pdfjs-dist compat).
+- P19 S3-2 — Visual regression baselines: 5 PNG snapshots committed for Dashboard, Resumes, ATS Analyses, Enriched Experiences, Settings (`tests/e2e/visual/pages.spec.ts-snapshots/`). All 6 visual tests pass (auth setup + 5 pages). CI `visual-regression` job (non-blocking) already wired. Fixed `auth.setup.ts` ESM `__dirname` bug (`import.meta.url` + `fileURLToPath`).
+- Functional Playwright E2E test suite: 6 new spec files (51 tests total) under `tests/e2e/` covering: Help Hub `/help` (10 tests), Opportunities `/opportunities` (8), ATS Analyses auto-refresh + CV opt panel (7), Roadmaps `/roadmaps` milestone toggle + persistence (8), Persona Manager CRUD in Settings (7), Admin LogViewer time-window filter (9). All skip gracefully without credentials. `playwright.config.ts` updated with `functional` project matching `e2e/*.spec.ts`.
+- RLS cross-tenant denial test script `scripts/ops/test-rls-cross-tenant.ts`: programmatic test for P15 S1 roadmap isolation (User A creates → User B reads → expects 0 rows) and BUG-2026-03-17 locations INSERT path. Run with `npx tsx scripts/ops/test-rls-cross-tenant.ts`.
+- `tests/unit/utils/linkedinImportMerge.test.ts` expanded from 3 → 11 tests: asymmetry-fix regression, provenance on experience inserts, empty baseline, within-payload duplicate skills/experiences, synonym canonicalization, below-threshold fuzzy, exact-match reason text. All pass.
+
+### Fixed
+
+- `tests/e2e/visual/auth.setup.ts`: replaced `__dirname` with `fileURLToPath(import.meta.url)` to fix ESM incompatibility (`package.json` `"type":"module"` caused ReferenceError blocking all Playwright test listing).
+
 - P21 S1 — Universal audit trigger function `set_audit_fields()` (SECURITY DEFINER). Auto-stamps `created_by`/`updated_by`/`version` on INSERT/UPDATE across all application tables. Migration: `20260327000000_p21_s1_universal_audit_trigger.sql`.
 - P21 S1 — Added `created_by` and `updated_by` UUID columns to 19 tables with attached `trg_audit_<table>` triggers for automatic user tracking on mutations. Migration: `20260327100000_p21_s1_add_created_by_updated_by.sql`.
 - P21 S1 — Added `deleted_by` UUID column to 13 soft-delete tables; patched `soft_delete_enriched_experience()` RPC to update `deleted_by` on record deletion. Migration: `20260327110000_p21_s1_add_deleted_by.sql`.
@@ -43,6 +53,9 @@ All notable changes to this project should be documented in this file.
 - P21 S1 — Updated 10 application files to reference renamed tables: `useEnrichedExperiences.ts` (enriched_experiences → sats_enriched_experiences), `useLogSettings.ts` (log_settings/log_entries renamed), `LogViewer.tsx`, `LoggingControlPanel.tsx`, `LogCleanupManager.tsx`, `ObservabilityPanel.tsx`, `JobDescriptionLoggingPanel.tsx`, `centralized-logging/index.ts`, `delete-account/index.ts`, `cancel-account-deletion/index.ts`, and `ats-analysis-direct/index.ts` (enriched_experiences → sats_enriched_experiences, FK alias updated).
 
 ### Fixed
+
+- 2026-03-27: Fixed infinite React re-render loop (`Warning: Maximum update depth exceeded`) on the `/analyses` page in `src/components/EnrichExperienceModal.tsx`. The `useEffect` dependency array included `generate` (the entire `useMutation` result object, which is a new reference on every render). Changed to `generate.reset` (destructured as `resetGenerate`) which is a stable method reference. This stopped the effect from firing on every render and calling multiple `setState` functions in a loop.
+- 2026-03-27: Fixed the `has_role()` PostgreSQL function which was broken by the P21 Tier 1 table rename (`user_roles` → `sats_user_roles`). The function referenced the old table name, causing `42P01 undefined_table` errors when checking admin role and making the `/admin` route completely inaccessible. Migration: `20260327231000_fix_has_role_sats_user_roles_rename.sql`. The new function checks both `sats_user_roles` (legacy path) and `sats_user_role_assignments` joined with `sats_roles` (new RBAC path from P21 S2).
 
 - 2026-03-26: Merged dual-changelog into single source of truth. Migrated unique early-history entries (SDLC P0–P4 hardening, lint cleanup, P5 enrichment lifecycle) from `SATS_CHANGES.txt` into a [Pre-v1 Development History] section. Archived `SATS_CHANGES.txt` with a stub pointing to `CHANGELOG.md`. Updated `changelog-keeper` agent, `CLAUDE.md`, `README.md`, `llm-model-governance.md`, and `docs/audits/code-review-prompt.md` to remove all dual-changelog requirements.
 
@@ -165,3 +178,4 @@ All notable changes to this project should be documented in this file.
 - Phase A lint cleanup: fixed `no-empty-object-type`, `no-case-declarations`, `ban-ts-comment`, and `no-require-imports` violations in `command.tsx`, `textarea.tsx`, `documentProcessor.ts`, `ats-analysis-direct/index.ts`, `tailwind.config.ts`.
 - Phase B lint reduction: replaced `any` with typed/unknown metadata in all logger modules (`authLogger`, `documentLogger`, `jobDescriptionLogger`, `devLogger`, `localLogger`); added error-shape normalization helpers. Reduced global lint issues from 107 to 69.
 - Hardened enrichment failure handling in `enrich-experiences`: mapped OpenAI provider failures (401/429/5xx) to safe client messages via `mapProviderError()`; removed raw provider payload logging; improved invoke diagnostics with error name/context/status and top-level `request_id` propagation.
+

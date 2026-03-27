@@ -1,6 +1,9 @@
 /**
  * UPDATE LOG
  * 2026-03-26 | P19 S3-2: Playwright visual regression config — setup + visual projects (P19-S3-2)
+ * 2026-03-27 | Added functional project for Help Hub E2E tests (help-hub.spec.ts)
+ * 2026-03-27 | Expanded functional project to cover all e2e/*.spec.ts files (opportunities,
+ *              ats-analyses, roadmaps, persona-manager, log-viewer)
  */
 import { defineConfig, devices } from '@playwright/test'
 
@@ -48,6 +51,22 @@ export default defineConfig({
       },
       dependencies: ['setup'],
       testMatch: /pages\.spec\.ts/,
+    },
+
+    /**
+     * Functional E2E — behaviour and navigation tests (no screenshot comparison).
+     * Uses the same auth state as the visual project.
+     */
+    {
+      name: 'functional',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        storageState: 'tests/e2e/.auth/user.json',
+      },
+      dependencies: ['setup'],
+      // Matches all *.spec.ts directly under tests/e2e/ (excludes the visual/ subdirectory)
+      testMatch: /e2e\/[^/]+\.spec\.ts/,
     },
   ],
 

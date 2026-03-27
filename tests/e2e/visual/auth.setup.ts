@@ -1,10 +1,15 @@
 /**
  * UPDATE LOG
  * 2026-03-26 | P19 S3-2: global auth setup for visual regression tests (P19-S3-2)
+ * 2026-03-27 | Fix: replace __dirname with import.meta.url (ESM compat — package.json "type":"module")
  */
 import { test as setup, expect } from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const AUTH_FILE = path.join(__dirname, '../.auth/user.json')
 
