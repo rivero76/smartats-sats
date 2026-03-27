@@ -49,6 +49,9 @@ supabase/.temp/
 # Build/temp artifacts
 node_modules.zip
 vite.config.ts.timestamp-*
+storybook-static/
+.lighthouseci/
+.playwright-mcp/
 
 # Playwright
 test-results/
