@@ -19,7 +19,7 @@
 
 ## BUG-2026-02-24-ENRICH-SCROLL · Enrichment modal has no effective vertical scroll
 
-**Status:** OPEN
+**Status:** FIXED — commit `23b1582` (2026-03-17)
 **Severity:** High — blocks core UX for reviewing/saving all suggestions
 **Priority:** P1 (next UI bugfix batch)
 

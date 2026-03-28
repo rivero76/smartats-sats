@@ -3,6 +3,8 @@
  * 2026-03-27 00:00:00 | Help Hub functional E2E tests — validates /help page load, sidebar entry,
  *                        search/filter behaviour, empty state, and topic deep-link navigation.
  *                        Closes UNTESTED_IMPLEMENTATIONS.md item #17 (Help Hub page).
+ * 2026-03-28 00:00:00 | Fix: navigation tests use heading-scoped xpath (../.. from h3) to avoid
+ *                        strict mode violations from over-broad div.filter().first().
  */
 import { test, expect } from '@playwright/test'
 
@@ -99,9 +101,11 @@ test.describe('Help Hub — /help', () => {
   // ── 5. Deep-link navigation ───────────────────────────────────────────────
 
   test('"Open Related Page" on Dashboard Overview navigates to /', async ({ page }) => {
-    // Find the Dashboard Overview card and click its action button
-    const dashboardCard = page.locator('div').filter({ hasText: 'Dashboard Overview' }).first()
-    const button = dashboardCard.getByRole('button', { name: /open related page/i })
+    // Scope from the h3 heading up 2 levels to the card root, then find the button within it
+    const button = page
+      .getByRole('heading', { name: 'Dashboard Overview', level: 3 })
+      .locator('xpath=../..')
+      .getByRole('button', { name: /open related page/i })
     await expect(button).toBeVisible()
     await button.click()
 
@@ -109,8 +113,10 @@ test.describe('Help Hub — /help', () => {
   })
 
   test('"Open Related Page" on Resume Management navigates to /resumes', async ({ page }) => {
-    const resumeCard = page.locator('div').filter({ hasText: 'Resume Management' }).first()
-    const button = resumeCard.getByRole('button', { name: /open related page/i })
+    const button = page
+      .getByRole('heading', { name: 'Resume Management', level: 3 })
+      .locator('xpath=../..')
+      .getByRole('button', { name: /open related page/i })
     await expect(button).toBeVisible()
     await button.click()
 
@@ -118,16 +124,15 @@ test.describe('Help Hub — /help', () => {
   })
 
   test('"Open Related Page" on ATS Analysis navigates to /analyses', async ({ page }) => {
-    // Use search to surface the ATS topic easily
+    // Use search to surface the ATS topic card
     const input = page.getByPlaceholder(/search help topics/i)
     await input.fill('ats')
     await page.waitForTimeout(150)
 
-    const atsCard = page
-      .locator('div')
-      .filter({ hasText: /ats analysis/i })
-      .first()
-    const button = atsCard.getByRole('button', { name: /open related page/i })
+    const button = page
+      .getByRole('heading', { name: 'ATS Analysis', level: 3 })
+      .locator('xpath=../..')
+      .getByRole('button', { name: /open related page/i })
     await expect(button).toBeVisible()
     await button.click()
 

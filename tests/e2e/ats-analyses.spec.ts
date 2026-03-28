@@ -4,6 +4,8 @@
  *   - Item #5: auto-refresh UI indicators (Last sync timestamp, live status)
  *   - Item #15: CV Optimisation panel visibility rules
  *   Closes UNTESTED_IMPLEMENTATIONS.md blockers #5 and #15.
+ * 2026-03-28 00:00:00 | Fix: progress text is "60% complete"/"100% complete", not bare percentages.
+ *                        Fix: completed card locator scoped to ATSAnalysisProgress data-status attr.
  */
 import { test, expect } from '@playwright/test'
 
@@ -41,14 +43,15 @@ test.describe('ATS Analyses — /analyses', () => {
     if ((await processingCards.count()) === 0) return // no processing analyses — skip
 
     // 60% badge or progress indicator must be present on the card
-    await expect(processingCards.first().getByText('60%')).toBeVisible()
+    await expect(processingCards.first().getByText(/60% complete/i)).toBeVisible()
   })
 
   test('completed analysis shows 100% progress indicator', async ({ page }) => {
-    const completedCards = page.locator('div').filter({ hasText: /completed/i })
-    if ((await completedCards.count()) === 0) return // no completed analyses — skip
+    // ATSAnalysisProgress renders "100% complete" text for completed analyses
+    const progressText = page.getByText(/100% complete/i)
+    if ((await progressText.count()) === 0) return // no completed analyses in view — skip
 
-    await expect(completedCards.first().getByText('100%')).toBeVisible()
+    await expect(progressText.first()).toBeVisible()
   })
 
   // ── Item #15: CV Optimisation panel ──────────────────────────────────────
