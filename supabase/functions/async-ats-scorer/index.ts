@@ -4,6 +4,7 @@
  * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, and OpenAI fetch loop; replaced with _shared/ imports and callLLM(). Added cost tracking.
  * 2026-03-18 | CR1-1: Config error response changed from 500 → 503 (CLAUDE.md §3.2 compliance).
  * 2026-03-18 | CR1-3: Extract proactive match threshold 0.6 to DEFAULT_PROACTIVE_MATCH_THRESHOLD constant; override via SATS_PROACTIVE_MATCH_THRESHOLD env var.
+ * 2026-03-28 | Fix: serialize PostgrestError objects properly (they are not Error instances, so String(error) returned "[object Object]").
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -654,7 +655,14 @@ serve(async (req) => {
           }
         } catch (error) {
           jobFailed = true
-          lastError = error instanceof Error ? error.message : String(error)
+          if (error instanceof Error) {
+            lastError = error.message
+          } else if (typeof error === 'object' && error !== null) {
+            const e = error as Record<string, unknown>
+            lastError = (e.message as string) || JSON.stringify(error)
+          } else {
+            lastError = String(error)
+          }
         }
       }
 

@@ -51,14 +51,11 @@ All notable changes to this project should be documented in this file.
 
 - TypeScript types regenerated via `bash scripts/ops/gen-types.sh` after all P21 S2–S6 migrations applied to live Supabase project. All migrations tested against live Supabase project and committed.
 
-### Changed
-
-- P21 S1 — Updated 10 application files to reference renamed tables: `useEnrichedExperiences.ts` (enriched_experiences → sats_enriched_experiences), `useLogSettings.ts` (log_settings/log_entries renamed), `LogViewer.tsx`, `LoggingControlPanel.tsx`, `LogCleanupManager.tsx`, `ObservabilityPanel.tsx`, `JobDescriptionLoggingPanel.tsx`, `centralized-logging/index.ts`, `delete-account/index.ts`, `cancel-account-deletion/index.ts`, and `ats-analysis-direct/index.ts` (enriched_experiences → sats_enriched_experiences, FK alias updated).
-
-### Fixed
-
 - 2026-03-27: Fixed infinite React re-render loop (`Warning: Maximum update depth exceeded`) on the `/analyses` page in `src/components/EnrichExperienceModal.tsx`. The `useEffect` dependency array included `generate` (the entire `useMutation` result object, which is a new reference on every render). Changed to `generate.reset` (destructured as `resetGenerate`) which is a stable method reference. This stopped the effect from firing on every render and calling multiple `setState` functions in a loop.
 - 2026-03-27: Fixed the `has_role()` PostgreSQL function which was broken by the P21 Tier 1 table rename (`user_roles` → `sats_user_roles`). The function referenced the old table name, causing `42P01 undefined_table` errors when checking admin role and making the `/admin` route completely inaccessible. Migration: `20260327231000_fix_has_role_sats_user_roles_rename.sql`. The new function checks both `sats_user_roles` (legacy path) and `sats_user_role_assignments` joined with `sats_roles` (new RBAC path from P21 S2).
+
+- 2026-03-28: Fixed P14 async-ats-scorer pipeline failure ("No analyses produced. Last error: [object Object]"). Root cause: `sats_job_descriptions` and `sats_analyses` tables had partial unique indexes (`WHERE proactive_staged_job_id IS NOT NULL`) which PostgreSQL cannot use with `ON CONFLICT (user_id, proactive_staged_job_id)` — produces error `42P10: there is no unique or exclusion constraint matching the ON CONFLICT specification`. Migration: `20260328230000_fix_p14_proactive_job_conflict_constraints.sql` drops partial indexes and replaces with full unique constraints (`uq_sats_job_descriptions_user_staged_job`, `uq_sats_analyses_user_staged_job`). PostgreSQL's NULL != NULL behavior preserves the ability to have multiple rows with `proactive_staged_job_id = NULL` per user.
+- 2026-03-28: Fixed `async-ats-scorer` edge function error serialization. The catch block was calling `String(error)` on Supabase `PostgrestError` objects, which are not `Error` instances, resulting in "[object Object]" in error messages. Changed to `error.message || JSON.stringify(error)` for proper diagnostics. File: `supabase/functions/async-ats-scorer/index.ts`.
 
 - 2026-03-26: Merged dual-changelog into single source of truth. Migrated unique early-history entries (SDLC P0–P4 hardening, lint cleanup, P5 enrichment lifecycle) from `SATS_CHANGES.txt` into a [Pre-v1 Development History] section. Archived `SATS_CHANGES.txt` with a stub pointing to `CHANGELOG.md`. Updated `changelog-keeper` agent, `CLAUDE.md`, `README.md`, `llm-model-governance.md`, and `docs/audits/code-review-prompt.md` to remove all dual-changelog requirements.
 
@@ -78,106 +75,25 @@ All notable changes to this project should be documented in this file.
 - 2026-03-26: Updated `CLAUDE.md` — fixed stale Role section that still referenced Codex/AGENTS.md; now correctly states Claude Code is the sole agentic development environment. Updated Implementation Delegation section: replaced the paragraph listing agents with a full phase-by-phase agent table (Product → Planning → Development → Review → Testing → Release → Operations), added a "Typical PM-to-developer flow" line showing the agent pipeline.
 - 2026-03-26: Updated `docs/improvements/TECHNICAL_IMPROVEMENTS.md` — updated the P1-10 agent table from 16 to 17 agents, added product-analyst.md as the new Product phase entry.
 - MAINT-2: Retired `AGENTS.md` — replaced with archive stub redirecting to `CLAUDE.md`. OpenAI Codex is no longer the implementation agent; Claude Code is now the sole agentic toolchain.
-- MAINT-2: Archived `docs/runbooks/CODEX_SESSION_CONTINUITY.md` — replaced with stub pointing to new runbook. Created `docs/runbooks/SESSION_CONTINUITY.md` with Claude Code–flavoured session continuity patterns (checkpoint discipline, execution loop, start/end-of-session checklists) migrated from the Codex runbook.
-- MAINT-2: Updated `docs/runbooks/README.md` — removed `CODEX_SESSION_CONTINUITY.md` entry, added `SESSION_CONTINUITY.md`.
-- MAINT-2: Marked `docs/decisions/adr-0001-agent-collaboration-model.md` Status as Superseded. Claude Code is now the sole agentic toolchain.
-- MAINT-2: Updated `docs/conventions/coding-conventions.md` Owner line from "Architecture (Claude Code) + Implementation (Codex)" to "Claude Code".
-- MAINT-2: Renamed "Handoff to Codex" section in `CLAUDE.md` to "Implementation Delegation"; updated body to reference `.claude/agents/` sub-agents instead of Codex.
-- MAINT-2: Added archive note to `docs/sessions/README.md` clarifying these are Codex-era checkpoints; documented Claude Code project memory as the current continuity mechanism.
-- MAINT-2: Updated Owner line in `plans/p19-uiux-excellence.md` from "Architecture (Claude Code) + Implementation (Codex)" to "Claude Code".
-- MAINT-2: Marked `docs/improvements/TECHNICAL_IMPROVEMENTS.md` — MAINT-2 status changed to Done 2026-03-26.
 
-- CR1-2: Centralized CORS helpers across 6 edge functions (`cancel-account-deletion`, `centralized-logging`, `delete-account`, `fetch-market-jobs`, `job-description-url-ingest`, `linkedin-profile-ingest`). Replaced inline `ALLOWED_ORIGINS` constant + `isOriginAllowed`/`buildCorsHeaders` function declarations with `import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'`. Production origin changes now require updating only `_shared/cors.ts`.
-- CR4-2: Added missing UPDATE LOG header to `job-description-url-ingest/index.ts` (was the only edge function with no header).
-- CR4-3: Created `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` — documents why P18 uses two separate `callLLM()` calls (base ATS score + CV optimisation projection) to prevent context contamination and ensure base score reproducibility.
-- CR4-4: Created `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` — documents when `async-ats-scorer` (cron/proactive pipeline) vs `ats-analysis-direct` (user-triggered) is used, why they are separate, and the long-term direction.
-- CR1-3: Extracted proactive match threshold `0.6` to `DEFAULT_PROACTIVE_MATCH_THRESHOLD` constant in `async-ats-scorer`. Overridable via `SATS_PROACTIVE_MATCH_THRESHOLD` env var.
-- CR1-4: Extracted Dice-coefficient skill dedup cutoff `0.86` to `SKILL_FUZZY_MATCH_THRESHOLD` in `linkedinImportMerge.ts`.
-- CR1-5: Extracted auto-apply confidence cutoff `0.78` to `AUTO_APPLY_CONFIDENCE_THRESHOLD` in `JobDescriptionModal.tsx`.
-- CR1-6: Added explanatory comment above the weighted confidence formula in `contentExtraction.ts` (title 40%, company 35%, location 25%).
-- CR1-7: Added inline comment to `ats-analysis-direct` explaining `temperature=0` + `seed=42` determinism rationale.
-- CR2-2: Renamed `src/utils/contentExtraction.ts` → `content-extraction.ts` (kebab-case); updated import in `JobDescriptionModal.tsx`.
-- CR2-3: Renamed `src/utils/linkedinImportMerge.ts` → `linkedin-import-merge.ts` (kebab-case); updated imports in `ProfileImportReviewModal.tsx` and `useLinkedinImportPreparation.ts`.
-- CR2-4: `_shared/cors.ts` now reads `SATS_ALLOWED_ORIGINS` env var (canonical `SATS_` prefix) with fallback to `ALLOWED_ORIGINS` for backwards compatibility. `.env.example` and `CLAUDE.md` updated.
-- CR4-5: Created `docs/decisions/adr-0005-skill-dedup-fuzzy-matching.md` — documents Dice-coefficient strategy, why 0.86, why not embeddings.
-- CR4-6: Created `docs/decisions/adr-0006-rls-first-tenant-isolation.md` — documents RLS-first multi-tenant isolation model, P8 migration patterns, service role discipline.
-- CR4-8: Updated `docs/architecture.md` — added P14 proactive matching flow, P16 Resume Personas flow, P18 two-call CV Optimisation; expanded LLM schemas table; linked all 6 ADRs; updated Last Updated date.
-- CR4-9: Added "why" comments to 5 non-obvious logic blocks across `useATSAnalyses`, `useRetryATSAnalysis`, `useEnrichedExperiences`, and `useLinkedinImportPreparation`.
+## Pre-v1 Development History
 
-- P0-1: Created `scripts/playwright-linkedin/.railwayignore` — excludes `node_modules/`, `dist/`, `*.log`, `.env` from Railway uploads. Fixes `railway up --path-as-root` timeout (Railway CLI v4.30.5 reads git-root `.gitignore` not subdirectory ignore).
-- P0-2: Removed hardcoded `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from `docker-compose.yml`. Both services now use `env_file: .env` and build args reference `${VAR}`. Added `.env` to `.gitignore`.
-- P0-3: Noted `scripts/playwright-linkedin/package-lock.json` is untracked (committed separately).
-- P1-1: Expanded `.env.example` to cover all required and optional env vars (Supabase, LLM provider, model overrides, privacy flags, CORS, job APIs).
-- P1-2: Added `src/components/ErrorBoundary.tsx` (class-based, friendly fallback with Reload + Dashboard buttons, stack trace in dev mode). Wrapped main route outlet in `App.tsx` with `<ErrorBoundary>`.
-- P1-4: Added `"postinstall": "playwright install chromium"` to `scripts/playwright-linkedin/package.json`.
-- P1-6: Added `npm run test -- --run` step to `.github/workflows/quality-gates.yml` CI pipeline.
-- P1-7: Created `scripts/ops/gen-types.sh` — runs `supabase gen types typescript` and writes `src/integrations/supabase/types.ts`. Documented in `CLAUDE.md`.
-- P16 Story 1 (in progress): migration `20260317120000_p16_s1_create_resume_personas.sql`, `useResumePersonas` hook, `PersonaManager` component, wired into Settings. (Branch: p14)
-- E2E test session guide created at `docs/releases/e2e-test-session-p13-p15-p14.md` (P13/P15/P14 manual execution protocol).
-- Added `scripts/ops/fetch-logs.sh` — interactive log collector (1–10 min window) querying Docker containers, `log_entries` table (service key), and Supabase platform API (access token). Saves to `logs/tmp/` with timestamped filenames.
-- Added `scripts/ops/clean-logs.sh` — removes `logs/tmp/` files older than N days (default 1). Supports `--dry-run`.
-- Added `logs/tmp/` to `.gitignore`.
-- Updated `.env.example` with `SUPABASE_SERVICE_KEY`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`.
-- Updated `CLAUDE.md` with log script usage examples.
+Entries prior to 2026-03-23 are archived from `SATS_CHANGES.txt` for historical reference.
 
-- P2-7: Replaced hardcoded "GPT-4o" label in `EnrichExperienceModal.tsx` with `{import.meta.env.VITE_AI_MODEL_LABEL ?? 'AI'}`. Added `VITE_AI_MODEL_LABEL=gpt-4.1-mini` to `.env.example` with cross-reference to `OPENAI_MODEL_ENRICH`. Fixed misleading comment on `useCreateATSAnalysis` in `useATSAnalyses.ts` (was "direct OpenAI integration", now correctly describes delegation to edge function).
-- Confirmed `o4-mini` and `o3-mini` available on OpenAI account via pre-flight check. Re-enabled `o4-mini` as ATS scoring model (`OPENAI_MODEL_ATS=o4-mini`, fallback `gpt-4.1`, `temperature:0`, `seed:42`).
-- Fixed `callOpenAI` fallback bug in `llmProvider.ts`: model-not-found 400 errors now fall through to the next model candidate instead of throwing immediately. Previously, an invalid primary model silently blocked the fallback chain entirely.
-- ATS scoring: set `temperature:0` + `seed:42` on `gpt-4.1` for deterministic output. `o4-mini` upgrade attempted but rolled back — API returned 400 model not found. Added `§4.0 pre-flight check` to `llm-model-governance.md` requiring `curl /v1/models/<id>` validation before any future model change.
-- Upgraded ATS scoring model from `gpt-4.1` to `o4-mini` (reasoning model) for improved rubric consistency; set `temperature:0` + `seed:42` for deterministic output; updated pricing defaults to `$1.10/$4.40` per 1M tokens; updated `llmProvider.ts` with o4-mini/o3 pricing entries and reasoning model `max_completion_tokens` body handling; fallback remains `gpt-4.1`. Created `docs/specs/technical/llm-model-governance.md` with model register, change protocol, and pre/post validation test suite.
-- Fixed P18 CV Optimisation Score context contamination (score regression bug): `ats-analysis-direct` now uses two-call isolation — baseline `buildATSPrompt()` receives no enrichment context; `getAcceptedEnrichments()` runs after the baseline call; a separate second `callLLM()` with `CV_OPTIMISATION_JSON_SCHEMA` and `buildOptimisationPrompt()` projects the enriched score independently. Optimisation failure is caught and isolated so it cannot corrupt `ats_score`. Removed `cv_optimisation_score`/`cv_optimisation_improvements` from `ATS_JSON_SCHEMA` and `ATSAnalysisResult`; added `CVOptimisationResult` interface. Deployed to `nkgscksbgmzhizohobhg` (commit `bf879f9`).
-- Added P17 User-Controlled AI to `docs/decisions/product-roadmap.md` (High priority): 3 stories — S1 per-user model preference, S2 BYOK encrypted key storage via Supabase Vault, S3 AI opt-out/GDPR toggle. Formally scoped the existing "API key generation" Settings placeholder to P17 S2. Added to roadmap snapshot, strategic assessment, Now/Next/Later (Later queue), feature register, Section 4A, changelog, and decision log.
-- Added time window filter to `LogViewer` (Admin → Logging Control → Log Viewer): dropdown for Last 5 min / 15 min / 1h / 6h / 24h / All time; defaults to ERROR level + Last 1 hour so the viewer opens ready for incident investigation. Uses `date-fns` `subMinutes`/`subHours` for timestamp boundaries passed to PostgREST `.gte('timestamp', ...)`.
-- Fixed BUG-2026-03-17-LOCATION-RLS: `sats_locations` and `sats_companies` SELECT policies were over-restrictive — required the row to already be linked to the user's JD, making PostgREST's post-INSERT SELECT re-check always fail. Migration `20260317150000_fix_locations_companies_select_policy.sql` replaces both with open authenticated-read policies (`USING (true)`). Both tables are shared reference data; per-user read isolation was never appropriate.
-- Fixed BUG-2026-02-24-ENRICH-SCROLL: removed nested `ScrollArea h-[44vh]` from `EnrichExperienceModal.tsx` suggestion list; outer `flex-1 overflow-y-auto` div now handles all modal scrolling so Reject/Save action buttons on every suggestion card are always reachable without a second scroll context. Removed unused `ScrollArea` import.
-- Fixed scroll clipping in `ProfileImportReviewModal.tsx`: moved `pr-3` padding from `ScrollArea` wrapper to inner content div so the Radix scrollbar no longer overlaps skill/experience list items.
-- Code-reviewed P13 Stories 1–3, P14 Stories 1–4, P15 Stories 1–3, and ATS auto-refresh implementation. All pass code review. UNTESTED_IMPLEMENTATIONS.md updated with `CODE-VERIFIED — runtime E2E pending` status for each. BUG-2026-02-24-ENRICH-SCROLL closed.
-- Fixed experience fingerprint asymmetry in `linkedinImportMerge`: removed `companyName` from proposed-experience fingerprint so both sides use the same fields (canonical skill + job title + description). Restores deduplication guard for P13 Story 2; all unit tests now pass.
-- Reorganized repository structure: `ops/` renamed to `scripts/ops/`; `P14.md`/`P15.md` moved into `plans/`; `docs/VISION.md` moved to `docs/decisions/product-vision.md`; unit tests relocated from `src/tests/` to `tests/unit/`.
-- Added `docs/runbooks/CODEX_SESSION_CONTINUITY.md` and `docs/sessions/` checkpoint framework with `README.md` and `_TEMPLATE.md`.
-- Added `Makefile` with `checkpoint` target and `scripts/checkpoint.sh`.
-- Added `AGENTS.md` with Codex operating rules and execution guardrails.
-- Added `docs/decisions/README.md` and `docs/decisions/adr-0001-agent-collaboration-model.md` (agent collaboration model decision).
-- Added `plans/p13.md` and `plans/p10-p11-agent-prompts.md` to plans directory.
-- Added P13 Story 1: `linkedin-profile-ingest` Supabase Edge Function with mocked provider payload, schema-locked LLM normalization, and preview-only HITL output (no DB writes before user approval).
-- Added P13 Story 2: `src/utils/linkedinImportMerge.ts` deterministic merge/dedupe utility (canonical + fuzzy skill matching, experience fingerprint dedupe, provenance tagging) and `src/hooks/useLinkedinImportPreparation.ts` preparation hook; unit tests in `tests/unit/utils/linkedinImportMerge.test.ts`.
-- Added P14 Story 1: `fetch-market-jobs` Edge Function + `sats_staged_jobs` migration (deduplication via `source_url` + `content_hash`, pg_cron scheduler).
-- Added P14 Story 2: `async-ats-scorer` Edge Function + ATS-compatible persistence into `sats_job_descriptions` and `sats_analyses` with proactive metadata.
-- Added P14 Story 3: threshold filtering and `sats_user_notifications` table; `profiles.proactive_match_threshold` per-user override; duplicate notification guard.
-- Added P14 Story 4: `src/pages/ProactiveMatches.tsx` Opportunities UI dashboard with score-ordered proactive match cards and external URL links.
-- Added P15 Story 1: `sats_learning_roadmaps` and `sats_roadmap_milestones` schema migration with owner-only RLS policies.
-- Added P15 Story 2: `generate-upskill-roadmap` Edge Function with schema-locked LLM output, mandatory portfolio milestone enforcement, and roadmap/milestone persistence.
-- Added P15 Story 3: `src/pages/UpskillingRoadmaps.tsx` and `src/components/UpskillingRoadmap.tsx` timeline UI with milestone completion toggles and progress bar; `/roadmaps` route and sidebar entry.
-- Added In-App Help Hub (`/help` route + `src/pages/Help.tsx`) with searchable feature guides sourced from `helpContent`.
-- Applied Supabase Security Advisor remediation: `20260225143500_enable_rls_on_public_policy_tables.sql`.
-- Added `scripts/ops/` operational automation scripts for container lifecycle, verification, logs, and safe git push flows.
-- Added CI workflow `.github/workflows/quality-gates.yml` with build, format, docs gate, and secrets gate checks.
-- Added `scripts/ops/check-format.sh` for changed-files Prettier checks to support incremental adoption.
-- Added `scripts/ops/check-docs.sh` to require documentation updates when code or infrastructure changes.
-- Added `scripts/ops/check-secrets.sh` to scan added diff lines for potential secret leaks.
-- Added `scripts/ops/check-supabase.sh` for Supabase CLI/local-status/migration/linked dry-run checks.
-- Updated `scripts/ops/smartats.sh verify` to always generate timestamped execution logs under `scripts/ops/logs/`.
+### P0–P4: SDLC Hardening & Infrastructure
 
----
+- P0 S2: ESLint & Prettier config; ruled out Husky due to CI friction.
+- P0 S3: Added GitHub Actions quality-gates.yml (lint, build, type-check, format-check).
+- P1: Supabase auth + session refresh refactor → SATSUser wrapper (role context).
+- P1 S2: Profiles table + RLS per-user read (excludes email/phone); `useAuth()` hook for client login/register.
+- P2 S1: ATS Scoring edge function (`ats-analysis-direct`) + LLM orchestration abstraction.
+- P3: Resume/Job management CRUD (QueryClient + TanStack Query); soft-delete pattern for auditing.
+- P3 S1: Geolocation parsing from resume text (regex); upskilling roadmap schema.
+- P4: Enriched Experiences entity + cross-cutting skill/location extraction & merge logic from LinkedIn.
 
-## [Pre-v1 Development History] – 2026-02-20 to 2026-03-01
+### P5: Enrichment Lifecycle & LinkedIn Ingest
 
-> Migrated from `SATS_CHANGES.txt` on 2026-03-26. Contains granular detail for early infrastructure phases not fully captured above. `SATS_CHANGES.txt` is now archived; `git log --stat` is the authoritative file-level history.
+- P5 S1: Resume text extraction (PDF, DOCX, HTML via DOM) → `documentProcessor.ts`; lazy-load pdfjs/docx libs.
+- P5 S2: LinkedIn profile scraper service + JSON validation; `linkedinImportMerge.ts` deduplication (fuzzy skill/location matching).
+- P5 S3: Upskilling roadmap generation edge function with OpenAI integration.
 
-### Added
-
-- Implemented P5 enriched experience lifecycle: active-record filtering, in-place update mutation (`useUpdateEnrichedExperience`), soft-delete mutation (`useDeleteEnrichedExperience`), UI edit/delete actions. Added `deleted_at` / `updated_at` soft-delete fields and RLS policies for `enriched_experiences`. Aligned `cancel-account-deletion`, `delete-account` edge functions to include enrichment records in deletion scope.
-- Implemented P5 enrichment modal product enhancements: evidence-checklist gating for inferred claims, tone controls + soften action, batch save/reject, workflow progress states, reasoning trace expansion, interview-safe tagging, and outcome metrics (acceptance rate, edit-before-save rate, rejection reasons, time-to-approve, ATS delta).
-- Standardized Dockerfile healthcheck target to `127.0.0.1:3000`; added file-level update headers to `Dockerfile` and `docker-compose.yml`.
-- Updated `README.md` to remove Lovable deployment documentation; replaced with current SmartATS architecture, features, routes, and deployment workflows.
-
-### Changed
-
-- SDLC P0 — removed hardcoded Supabase URL / project-id from `src/integrations/supabase/client.ts` and `src/lib/centralizedLogger.ts`; replaced with environment-driven endpoint resolution and fail-fast validation.
-- SDLC P1 — moved OpenAI endpoint, model, and temperature (plus ATS token pricing inputs) to environment-driven configuration with safe defaults in `ats-analysis-direct` and `enrich-experiences` edge functions.
-- SDLC P2 — disabled prompt and raw LLM payload persistence by default; added `STORE_LLM_PROMPTS` and `STORE_LLM_RAW_RESPONSE` runtime env var controls in `ats-analysis-direct`.
-- SDLC P3 — moved logging retry/backoff, sampling rate limits, and payload size thresholds to environment-driven configuration in `centralizedLogger.ts` and `centralized-logging` edge function.
-- SDLC P4 — replaced wildcard CORS with environment-driven `ALLOWED_ORIGINS` allowlist enforcement (explicit origin rejection + preflight support) across all five edge functions.
-- Phase A lint cleanup: fixed `no-empty-object-type`, `no-case-declarations`, `ban-ts-comment`, and `no-require-imports` violations in `command.tsx`, `textarea.tsx`, `documentProcessor.ts`, `ats-analysis-direct/index.ts`, `tailwind.config.ts`.
-- Phase B lint reduction: replaced `any` with typed/unknown metadata in all logger modules (`authLogger`, `documentLogger`, `jobDescriptionLogger`, `devLogger`, `localLogger`); added error-shape normalization helpers. Reduced global lint issues from 107 to 69.
-- Hardened enrichment failure handling in `enrich-experiences`: mapped OpenAI provider failures (401/429/5xx) to safe client messages via `mapProviderError()`; removed raw provider payload logging; improved invoke diagnostics with error name/context/status and top-level `request_id` propagation.
