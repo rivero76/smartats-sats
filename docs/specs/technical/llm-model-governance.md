@@ -7,6 +7,9 @@
 <!-- 2026-03-17 00:20:00 | o4-mini rollback. API returned 400 model-not-found. Reverted to gpt-4.1.
      Added §4.0 pre-flight check. Fixed callOpenAI fallback bug (model-not-found 400 now falls through
      to next candidate). o4-mini re-enablement requires confirming valid API model ID. -->
+<!-- 2026-03-29 00:00:00 | §2 Model Register updated: production model for ATS scoring is gpt-4.1
+     (o4-mini rollback from 2026-03-17 is permanent until valid o4-mini API model ID is confirmed).
+     §3 heading updated to reflect current reality. §6 Change Log updated with rollback entry. -->
 
 ## 1. Purpose
 
@@ -19,22 +22,22 @@ is a product-level defect.
 
 ## 2. Model Register
 
-| Task | Env var | Current model | Fallback | Temperature | Seed |
-|---|---|---|---|---|---|
-| ATS scoring (baseline) | `OPENAI_MODEL_ATS` | `o4-mini` | `gpt-4.1` | `0` | `42` |
-| CV Optimisation Score | (same as ATS) | `o4-mini` | `gpt-4.1` | `0` | `42` |
-| Skill enrichment | `OPENAI_MODEL_ENRICH` | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3` | — |
-| Upskilling roadmap | `OPENAI_MODEL_ROADMAP` | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3` | — |
-| LinkedIn profile parse | `OPENAI_MODEL_LINKEDIN` | `gpt-4.1-mini` | `gpt-4o-mini` | `0.1` | — |
+| Task                   | Env var                 | Current model  | Fallback      | Temperature | Seed |
+| ---------------------- | ----------------------- | -------------- | ------------- | ----------- | ---- |
+| ATS scoring (baseline) | `OPENAI_MODEL_ATS`      | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
+| CV Optimisation Score  | (same as ATS)           | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
+| Skill enrichment       | `OPENAI_MODEL_ENRICH`   | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
+| Upskilling roadmap     | `OPENAI_MODEL_ROADMAP`  | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
+| LinkedIn profile parse | `OPENAI_MODEL_LINKEDIN` | `gpt-4.1-mini` | `gpt-4o-mini` | `0.1`       | —    |
 
 > Seed is only used for scoring tasks where determinism matters. Creative/generative tasks (enrichment,
 > roadmaps) intentionally use no seed to allow variation across calls.
 
 ---
 
-## 3. Why o4-mini for ATS Scoring
+## 3. Why gpt-4.1 for ATS Scoring
 
-Switched from `gpt-4.1` to `o4-mini` on 2026-03-17. Rationale:
+Attempted to switch from `gpt-4.1` to `o4-mini` on 2026-03-17, but rolled back immediately after the OpenAI API returned a 400 model-not-found error for the `o4-mini` model ID. Production has remained on `gpt-4.1` since. Original rationale for the attempted switch:
 
 - **Reasoning models think step-by-step before outputting JSON.** For a multi-weighted rubric
   (`skills_alignment 40%`, `experience_relevance 30%`, `domain_fit 20%`, `format_quality 10%`),
@@ -70,6 +73,7 @@ Also confirm the model appears in `curl https://api.openai.com/v1/models` output
 > bug in `llmProvider.ts` is fixed so model-not-found 400s now try the next candidate.
 
 Follow this protocol for **any** change to a model in the register above. A model change is:
+
 - Switching model family (`gpt-4.1` → `o4-mini`)
 - Upgrading within a family (`o4-mini` → `o3`)
 - Changing provider (`openai` → alternative via `SATS_LLM_PROVIDER`)
@@ -80,11 +84,13 @@ Follow this protocol for **any** change to a model in the register above. A mode
 Before making the change, run **all three** baseline captures on the current model:
 
 **Baseline Set A — Determinism test** (run 3 times on the same resume + JD):
+
 ```
 Resume: <your primary test resume>
 JD: <a known JD with a clear seniority and skill profile>
 Expected: all three ats_score values must be within ±2pp of each other
 ```
+
 Record: `run1_score`, `run2_score`, `run3_score`, `score_variance_pp`
 
 **Baseline Set B — Rubric consistency test** (5 diverse resume+JD pairs):
@@ -92,6 +98,7 @@ For each pair record: `ats_score`, `score_breakdown` (all 4 dimensions), `keywor
 Expected: `keywords_missing` should be stable for the same pair across runs.
 
 **Baseline Set C — Edge case test**:
+
 - Very strong match (expected score ≥ 85%): confirm model scores high
 - Very weak match (expected score ≤ 30%): confirm model scores low
 - Resume with no relevant experience: confirm `resume_warnings` is non-empty
@@ -109,14 +116,14 @@ Repeat **all three baseline sets** on the new model. Compare against pre-change 
 
 **Pass criteria** — all must be met before merging:
 
-| Test | Pass condition |
-|---|---|
-| Determinism (Set A) | All 3 runs within ±2pp of each other |
-| Rubric direction (Set B) | Same skills appear in `keywords_missing` as pre-change for ≥ 4/5 pairs |
-| Score ranking preserved (Set B) | Relative ranking of the 5 pairs is unchanged (strongest → weakest) |
-| Edge cases (Set C) | Strong match still scores ≥ 85%; weak match still scores ≤ 30% |
-| No regressions in warnings | `resume_warnings` count does not increase for previously clean resumes |
-| CV Optimisation direction | `cv_optimisation_score` ≥ `ats_score` when accepted enrichments exist |
+| Test                            | Pass condition                                                         |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| Determinism (Set A)             | All 3 runs within ±2pp of each other                                   |
+| Rubric direction (Set B)        | Same skills appear in `keywords_missing` as pre-change for ≥ 4/5 pairs |
+| Score ranking preserved (Set B) | Relative ranking of the 5 pairs is unchanged (strongest → weakest)     |
+| Edge cases (Set C)              | Strong match still scores ≥ 85%; weak match still scores ≤ 30%         |
+| No regressions in warnings      | `resume_warnings` count does not increase for previously clean resumes |
+| CV Optimisation direction       | `cv_optimisation_score` ≥ `ats_score` when accepted enrichments exist  |
 
 **Regression threshold**: If any pair's `ats_score` shifts by more than **8pp** vs the pre-change
 baseline, investigate before releasing. This is not an automatic block — some shift is expected when
@@ -125,6 +132,7 @@ moving model families — but it requires a documented explanation.
 ### 4.4 Post-change documentation
 
 After validation passes, update this document:
+
 1. Update the Model Register table (Section 2)
 2. Add an entry to the Change Log (Section 6)
 3. Update `docs/changelog/CHANGELOG.md`
@@ -152,6 +160,7 @@ Set to a different value to verify that output changes, confirming seed is being
 
 ## 6. Change Log
 
-| Date | Change | Pre-change model | Post-change model | Validated by | Notes |
-|---|---|---|---|---|---|
-| 2026-03-17 | Determinism + reasoning model | `gpt-4.1`, temp=0.1, no seed | `o4-mini`, temp=0, seed=42 | Pending E2E | Initial attempt failed: env var `OPENAI_MODEL_ATS=gpt-4.1` set as rollback was still active. Model ID `o4-mini` confirmed valid via `curl /v1/models/o4-mini`. Re-enabled. Fallback: `gpt-4.1`. |
+| Date       | Change                                                | Pre-change model             | Post-change model          | Validated by                    | Notes                                                                                                         |
+| ---------- | ----------------------------------------------------- | ---------------------------- | -------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 2026-03-17 | Attempted switch to o4-mini (determinism + reasoning) | `gpt-4.1`, temp=0.1, no seed | `o4-mini`, temp=0, seed=42 | —                               | Failed: API returned 400 model-not-found for `o4-mini`. Immediately rolled back to `gpt-4.1`.                 |
+| 2026-03-17 | Rollback to gpt-4.1 + determinism config              | `o4-mini` (rejected by API)  | `gpt-4.1`, temp=0, seed=42 | LLM eval gate pass (2026-03-27) | Production model. `OPENAI_MODEL_ATS_FALLBACK=gpt-4o-mini`. §4.3 validation run pending with real resume data. |
