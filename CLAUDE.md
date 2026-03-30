@@ -114,7 +114,7 @@ bash scripts/ops/clean-logs.sh --days 3 --dry-run            # Preview before de
 - **Frontend:** React 18 + TypeScript + Vite, React Router v6, TanStack Query, shadcn/ui + Tailwind
 - **Backend:** Supabase (Postgres + RLS, Edge Functions in Deno, Storage, Auth)
 - **AI:** OpenAI via `callLLM()` abstraction in `supabase/functions/_shared/llmProvider.ts`
-- **Deploy:** Docker multi-stage build (nginx); Playwright LinkedIn scraper on Railway
+- **Deploy:** Docker multi-stage build (nginx); Playwright LinkedIn scraper on Fly.io (MVP-TEMPORARY — see INFRA-1 in `docs/improvements/TECHNICAL_IMPROVEMENTS.md`)
 
 ### Frontend Patterns
 
@@ -248,7 +248,7 @@ After any code change, update `docs/changelog/CHANGELOG.md`. (`SATS_CHANGES.txt`
 - `supabase/migrations/`: database migrations
 - `tests/`: top-level test suites
 - `scripts/`: automation and operational scripts
-  - `scripts/playwright-linkedin/`: LinkedIn scraper (standalone Node.js service, deployed on Railway)
+  - `scripts/playwright-linkedin/`: LinkedIn scraper (standalone Node.js service, deployed on Fly.io — MVP-TEMPORARY, see INFRA-1)
   - `scripts/ops/`: operational scripts (smoke tests, type generation, etc.)
 - `plans/`: active feature and implementation plans — mark completed plans with `<!-- Status: COMPLETED -->` and move to `plans/archive/`
 - `plans/archive/`: completed plans

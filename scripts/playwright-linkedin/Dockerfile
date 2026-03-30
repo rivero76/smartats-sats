@@ -1,7 +1,8 @@
 # Created: 2026-03-01 00:00:00 - Dockerfile for SmartATS LinkedIn scraper service.
+# Updated: 2026-03-31 00:00:00 - Migrated from Railway to Fly.io (MVP-TEMPORARY — see INFRA-1).
 # Uses the official Microsoft Playwright image which ships Chromium, Firefox,
 # and WebKit with all OS-level dependencies pre-installed.
-# Deploy to Railway as a Docker-based service.
+# Deploy with: fly deploy --config fly.toml (from scripts/playwright-linkedin/)
 
 FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 

@@ -279,7 +279,7 @@ export class LinkedInScraper {
         'VERIFICATION_REQUIRED: LinkedIn requires email/phone verification. ' +
           'Log in manually in a browser once, export the session cookies using ' +
           '"Copy cookies as JSON" (e.g. via EditThisCookie extension), base64-encode them, ' +
-          'and set LINKEDIN_COOKIES in Railway.'
+          'and set LINKEDIN_COOKIES as an environment variable in the Fly.io dashboard.'
       )
     }
 

@@ -6,6 +6,11 @@ All notable changes to this project should be documented in this file.
 
 ### Added
 
+- 2026-03-31: INFRA-1 — LinkedIn scraper migrated from Railway to Fly.io. Added `scripts/playwright-linkedin/fly.toml` (shared-cpu-1x, 1 GB RAM, auto-stop, health check at `/health`). Removed `railway.json`. Updated `Dockerfile`, `package.json`, `.env.example`, and `scraper.ts` to remove Railway references. Flagged as MVP-temporary in `docs/improvements/TECHNICAL_IMPROVEMENTS.md` — hosting strategy must be reviewed before scaling beyond MVP.
+- 2026-03-31: AWS Well-Architected Framework review completed. Full report saved to `docs/improvements/CODE-REVIEW-2026-03-31.md`. WAF-1 through WAF-18 added to backlog. Verdict: BLOCKED on SEC-1 (direct OpenAI call in `linkedin-profile-ingest` bypassing `callLLM()`). Review prompt saved to `docs/audits/aws-waf-review-prompt.md` for future use.
+
+### Added (continued)
+
 - 2026-03-30: PROD-9 — Resume Format Audit intelligence. `ats-analysis-direct` edge function now calls LLM with INTELLIGENCE_JSON_SCHEMA to detect ATS-breaking patterns (tables, emojis, vague bullets, missing URL, length mismatch) with severity levels. Results stored as `format_audit` in `analysis_data` JSONB. New `OPENAI_MODEL_INTELLIGENCE` environment variable (default: `gpt-4.1-mini`) added to `docs/specs/technical/llm-model-governance.md`.
 - 2026-03-30: PROD-10 — Resume Geography Mode intelligence. Added `target_country` parameter to `CreateATSAnalysisRequest`. User can select from 8 countries or use auto-detect. Detects target country from job description text or user override; produces per-country format checklist (photo, length, personal details, date format). Results stored as `geography_passport` in `analysis_data` JSONB. UI component `ATSAnalysisModal.tsx` now includes optional "Target Market" Select field.
 - 2026-03-30: PROD-11 — Resume Industry Lens intelligence. Classifies job description by vertical (Tech, Finance, Healthcare, Legal, Creative, Academic, Startup, Operations); flags missing industry-expected resume sections. Results stored as `industry_lens` in `analysis_data` JSONB.
