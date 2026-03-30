@@ -30,17 +30,22 @@ When delegating implementation to a sub-agent or starting a new implementation s
 
 Sub-agents available in `.claude/agents/` cover the full development lifecycle:
 
-| Phase       | Agents                                                                                       |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| Product     | `product-analyst` — raw PM/user input → user stories + handoff brief                         |
-| Planning    | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions |
-| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper`         |
-| Review      | `arch-reviewer`, `convention-auditor`, `security-auditor`                                    |
-| Testing     | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner`                             |
-| Release     | `release-gatekeeper`                                                                         |
-| Operations  | `incident-responder`, `railway-deployer`, `dev-env-doctor`                                   |
+| Phase       | Agents                                                                                                                                                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product     | `product-analyst` — raw PM/user input → user stories + handoff brief                                                                                                                                              |
+| Planning    | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions                                                                                                                      |
+| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper`                                                                                                                              |
+| Review      | `arch-reviewer`, `convention-auditor`, `security-auditor`                                                                                                                                                         |
+| Testing     | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner`                                                                                                                                                  |
+| Release     | `release-gatekeeper`                                                                                                                                                                                              |
+| Operations  | `incident-responder`, `railway-deployer`, `dev-env-doctor`                                                                                                                                                        |
+| Marketing   | `landing-page-writer` — public marketing pages (`/pricing`, `/features`, home) and `investor.html` + `landing.html` at repo root; `help-content-writer` — keep `/help` page content in sync with shipped features |
 
 **Typical PM-to-developer flow:** `product-analyst` → `plan-decomposer` → `arch-reviewer` → implement → `test-runner` → `release-gatekeeper`
+
+**After every feature ships:** `help-content-writer` — update `/help` content to match the new workflow. This is part of the Definition of Done for every user-facing feature.
+
+**When adding or updating marketing pages:** `landing-page-writer` — ensures copy reflects the current tier structure and only markets RUNTIME-VERIFIED features. This includes `investor.html` (investor pitch) and `landing.html` (end-user landing page) at the repo root — both must be kept in sync with shipped features and current pricing tiers.
 
 ## Key Commands
 

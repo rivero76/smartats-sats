@@ -22,13 +22,15 @@ is a product-level defect.
 
 ## 2. Model Register
 
-| Task                   | Env var                 | Current model  | Fallback      | Temperature | Seed |
-| ---------------------- | ----------------------- | -------------- | ------------- | ----------- | ---- |
-| ATS scoring (baseline) | `OPENAI_MODEL_ATS`      | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
-| CV Optimisation Score  | (same as ATS)           | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
-| Skill enrichment       | `OPENAI_MODEL_ENRICH`   | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
-| Upskilling roadmap     | `OPENAI_MODEL_ROADMAP`  | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
-| LinkedIn profile parse | `OPENAI_MODEL_LINKEDIN` | `gpt-4.1-mini` | `gpt-4o-mini` | `0.1`       | —    |
+| Task                   | Env var                       | Current model  | Fallback      | Temperature | Seed |
+| ---------------------- | ----------------------------- | -------------- | ------------- | ----------- | ---- |
+| ATS scoring (baseline) | `OPENAI_MODEL_ATS`            | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
+| CV Optimisation Score  | (same as ATS)                 | `gpt-4.1`      | `gpt-4o-mini` | `0`         | `42` |
+| Skill enrichment       | `OPENAI_MODEL_ENRICH`         | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
+| Upskilling roadmap     | `OPENAI_MODEL_ROADMAP`        | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
+| LinkedIn profile parse | `OPENAI_MODEL_LINKEDIN`       | `gpt-4.1-mini` | `gpt-4o-mini` | `0.1`       | —    |
+| Skill classification   | `OPENAI_MODEL_SKILL_CLASSIFY` | `gpt-4.1-mini` | `gpt-4o-mini` | `0`         | `42` |
+| Resume Intelligence    | `OPENAI_MODEL_INTELLIGENCE`   | `gpt-4.1-mini` | `gpt-4o-mini` | `0`         | `42` |
 
 > Seed is only used for scoring tasks where determinism matters. Creative/generative tasks (enrichment,
 > roadmaps) intentionally use no seed to allow variation across calls.

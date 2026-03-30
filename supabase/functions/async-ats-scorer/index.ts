@@ -6,6 +6,12 @@
  * 2026-03-18 | CR1-3: Extract proactive match threshold 0.6 to DEFAULT_PROACTIVE_MATCH_THRESHOLD constant; override via SATS_PROACTIVE_MATCH_THRESHOLD env var.
  * 2026-03-28 | Fix: serialize PostgrestError objects properly (they are not Error instances, so String(error) returned "[object Object]").
  * 2026-03-29 | Fix: getUserThresholdMap only populates map for users with explicit per-user threshold. Previously it stored DEFAULT_PROACTIVE_MATCH_THRESHOLD (0.6) for null-threshold users, making globalThreshold from sats_runtime_settings unreachable.
+ * 2026-03-30 10:00:00 | P25 S5 — Weighted skill context injection. Batch-reads sats_skill_profiles +
+ *   sats_skill_decay_config once per scorer run. Per-user weighted text block appended to buildPrompt()
+ *   via weightedSkillContext param. Falls back silently when no profile exists for a user.
+ * 2026-03-30 11:00:00 | PROD-9–12 note: Resume Intelligence (Call 3) runs only in ats-analysis-direct
+ *   (interactive flow). Batch-scored analyses intentionally store null for format_audit,
+ *   geography_passport, industry_lens, and cultural_tone to preserve batch throughput.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -13,6 +19,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isOriginAllowed, buildCorsHeaders } from '../_shared/cors.ts'
 import { getEnvNumber } from '../_shared/env.ts'
 import { callLLM } from '../_shared/llmProvider.ts'
+import {
+  buildWeightedSkillText,
+  type SkillProfileRow,
+  type DecayConfigRow,
+} from '../_shared/skillDecay.ts'
 
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
@@ -165,7 +176,12 @@ async function logEvent(
   }
 }
 
-function buildPrompt(jobTitle: string, jobText: string, baselineText: string): string {
+function buildPrompt(
+  jobTitle: string,
+  jobText: string,
+  baselineText: string,
+  weightedSkillContext?: string
+): string {
   return `Task: Compare candidate baseline against job description using deterministic ATS rubric.
 
 Scoring rubric (0.0-1.0):
@@ -185,7 +201,7 @@ Job:
 ${jobText}
 
 Candidate baseline profile:
-${baselineText}`.trim()
+${baselineText}${weightedSkillContext ? `\n\n${weightedSkillContext}` : ''}`.trim()
 }
 
 function buildSkillsProfileBaseline(
@@ -417,6 +433,53 @@ async function buildUserBaseline(
   }
 }
 
+async function fetchSkillDecayConfig(
+  supabase: ReturnType<typeof createClient>
+): Promise<DecayConfigRow[]> {
+  const { data, error } = await supabase
+    .from('sats_skill_decay_config')
+    .select('category,decay_rate_pct,grace_years,floor_weight')
+  if (error) {
+    console.warn(
+      '[async-ats-scorer] Failed to fetch skill decay config, falling back to no decay:',
+      String(error)
+    )
+    return []
+  }
+  return (data ?? []) as DecayConfigRow[]
+}
+
+async function fetchSkillProfilesByUser(
+  supabase: ReturnType<typeof createClient>,
+  userIds: string[]
+): Promise<Map<string, SkillProfileRow[]>> {
+  const map = new Map<string, SkillProfileRow[]>()
+  if (userIds.length === 0) return map
+
+  const { data, error } = await supabase
+    .from('sats_skill_profiles')
+    .select(
+      'user_id,skill_name,category,depth,ai_last_used_year,user_confirmed_last_used_year,transferable_to,career_chapter,user_context'
+    )
+    .in('user_id', userIds)
+
+  if (error) {
+    console.warn(
+      '[async-ats-scorer] Failed to fetch skill profiles, weighted context will be skipped:',
+      String(error)
+    )
+    return map
+  }
+
+  for (const row of (data ?? []) as Array<SkillProfileRow & { user_id: string }>) {
+    const existing = map.get(row.user_id) ?? []
+    existing.push(row)
+    map.set(row.user_id, existing)
+  }
+
+  return map
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin')
   const corsHeaders = buildCorsHeaders(origin)
@@ -501,11 +564,15 @@ serve(async (req) => {
     }
 
     const latestResumes = await getLatestResumesByUser(supabase)
-    const globalThreshold = await getGlobalThresholdDefault(supabase)
-    const userThresholdMap = await getUserThresholdMap(
-      supabase,
-      Array.from(new Set(latestResumes.map((resume) => resume.user_id)))
-    )
+    const [globalThreshold, skillDecayConfigs] = await Promise.all([
+      getGlobalThresholdDefault(supabase),
+      fetchSkillDecayConfig(supabase),
+    ])
+    const userIds = Array.from(new Set(latestResumes.map((resume) => resume.user_id)))
+    const [userThresholdMap, skillProfilesByUser] = await Promise.all([
+      getUserThresholdMap(supabase, userIds),
+      fetchSkillProfilesByUser(supabase, userIds),
+    ])
 
     for (const job of jobs) {
       let jobScoreCount = 0
@@ -572,9 +639,17 @@ serve(async (req) => {
 
           if (analysisSeedError) throw analysisSeedError
 
+          const userSkillProfiles = skillProfilesByUser.get(resume.user_id) ?? []
+          const weightedSkillContext = buildWeightedSkillText(userSkillProfiles, skillDecayConfigs)
+
           const systemPrompt =
             'You are a deterministic ATS evaluator. Return JSON matching schema exactly. Never invent candidate evidence.'
-          const userPrompt = buildPrompt(jobName, job.description_raw, baseline.baselineText)
+          const userPrompt = buildPrompt(
+            jobName,
+            job.description_raw,
+            baseline.baselineText,
+            weightedSkillContext || undefined
+          )
           const {
             analysisResult: result,
             modelUsed,
@@ -601,6 +676,12 @@ serve(async (req) => {
                 resume_warnings: result.resume_warnings,
                 model_used: modelUsed,
                 cost_estimate_usd: costEstimateUsd,
+                // Resume Intelligence keys (PROD-9–12) are null for batch analyses.
+                // Call 3 only runs in the interactive ats-analysis-direct flow.
+                format_audit: null,
+                geography_passport: null,
+                industry_lens: null,
+                cultural_tone: null,
               },
             })
             .eq('id', analysisSeed.id)

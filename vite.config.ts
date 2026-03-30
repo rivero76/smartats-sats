@@ -1,22 +1,21 @@
 /**
  * UPDATE LOG
  * 2026-03-27 00:00:00 | P19 S4-1: Added rollup-plugin-visualizer to generate dist/stats.html bundle treemap on build.
+ * 2026-03-30 | MAINT-1: Removed lovable-tagger import and componentTagger() plugin — Lovable.dev platform artifact, no-op outside Lovable IDE.
  */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
-import { componentTagger } from 'lovable-tagger'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode: _mode }) => ({
   server: {
     host: '::',
     port: 8080,
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
     visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
   ].filter(Boolean),
   resolve: {

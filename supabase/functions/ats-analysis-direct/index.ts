@@ -22,6 +22,14 @@
  * 2026-03-18 00:00:00 | CR1-7: Add explanatory comment for temperature=0 + seed=42 determinism.
  * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table enriched_experiences → sats_enriched_experiences.
  *   Also updated FK alias in PostgREST select to match new table name.
+ * 2026-03-30 10:00:00 | P25 S4 — Weighted skill profile injection. When a sats_skill_profiles record
+ *   exists for the requesting user, buildWeightedSkillBlock() reads the profile + sats_skill_decay_config,
+ *   computes effective weights at call time (never stored), and injects the result as additive context
+ *   into Call 1 (baseline ATS prompt). Falls back to flat extraction silently on any error.
+ * 2026-03-30 11:00:00 | PROD-9–12 — Resume Intelligence (Call 3): added INTELLIGENCE_JSON_SCHEMA,
+ *   IntelligenceResult type, buildIntelligencePrompt(), parseIntelligenceOrNull(), and target_country
+ *   request field. Call 2 (CV Optimisation) and new Call 3 now run in parallel via Promise.allSettled().
+ *   Results stored as format_audit, geography_passport, industry_lens, cultural_tone in analysis_data.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -44,6 +52,7 @@ const OPENAI_SCHEMA_RETRY_ATTEMPTS_ATS = Math.max(
 )
 const OPENAI_PRICE_INPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_INPUT_PER_MILLION', 2.0)
 const OPENAI_PRICE_OUTPUT_PER_MILLION = getEnvNumber('OPENAI_PRICE_OUTPUT_PER_MILLION', 8.0)
+const OPENAI_MODEL_INTELLIGENCE = Deno.env.get('OPENAI_MODEL_INTELLIGENCE') || 'gpt-4.1-mini'
 const STORE_LLM_PROMPTS = getEnvBoolean('STORE_LLM_PROMPTS', false)
 const STORE_LLM_RAW_RESPONSE = getEnvBoolean('STORE_LLM_RAW_RESPONSE', false)
 
@@ -122,6 +131,7 @@ interface ATSAnalysisRequest {
   resume_id: string
   jd_id: string
   request_id?: string
+  target_country?: string
 }
 
 interface ATSAnalysisResult {
@@ -152,6 +162,160 @@ interface CVOptimisationResult {
     impact: string
     score_area: string
   }>
+}
+
+// Resume Intelligence — PROD-9 through PROD-12
+const INTELLIGENCE_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['format_audit', 'geography_passport', 'industry_lens', 'cultural_tone'],
+  properties: {
+    format_audit: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['overall_health', 'pass', 'issues'],
+      properties: {
+        overall_health: { type: 'string', enum: ['good', 'fair', 'poor'] },
+        pass: { type: 'boolean' },
+        issues: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['category', 'severity', 'description'],
+            properties: {
+              category: {
+                type: 'string',
+                enum: [
+                  'table_column',
+                  'emoji_graphic',
+                  'section_heading',
+                  'missing_url',
+                  'vague_bullet',
+                  'length_mismatch',
+                ],
+              },
+              severity: { type: 'string', enum: ['critical', 'warning', 'info'] },
+              description: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    geography_passport: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['detected_country', 'country_code', 'detection_method', 'checklist'],
+      properties: {
+        detected_country: { type: 'string' },
+        country_code: {
+          type: 'string',
+          enum: ['US', 'UK', 'DE', 'FR', 'BR', 'AU', 'NZ', 'JP', 'IN', 'OTHER'],
+        },
+        detection_method: {
+          type: 'string',
+          enum: ['user_override', 'jd_explicit', 'jd_inferred', 'hq_signal', 'unknown'],
+        },
+        checklist: {
+          type: 'object',
+          additionalProperties: false,
+          required: [
+            'photo_expected',
+            'typical_page_length',
+            'personal_details_norm',
+            'date_format',
+            'notes',
+          ],
+          properties: {
+            photo_expected: { type: 'boolean' },
+            typical_page_length: { type: 'string' },
+            personal_details_norm: { type: 'string' },
+            date_format: { type: 'string' },
+            notes: { type: 'string' },
+          },
+        },
+      },
+    },
+    industry_lens: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['vertical', 'confidence', 'expected_sections', 'missing_sections', 'notes'],
+      properties: {
+        vertical: {
+          type: 'string',
+          enum: [
+            'Tech',
+            'Finance',
+            'Healthcare',
+            'Legal',
+            'Creative',
+            'Academic',
+            'Startup',
+            'Operations',
+            'Other',
+          ],
+        },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
+        expected_sections: { type: 'array', items: { type: 'string' } },
+        missing_sections: { type: 'array', items: { type: 'string' } },
+        notes: { type: 'string' },
+      },
+    },
+    cultural_tone: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['detected_register', 'target_norm', 'mismatches', 'overall_alignment'],
+      properties: {
+        detected_register: {
+          type: 'string',
+          enum: ['first_person', 'third_person', 'functional', 'narrative', 'mixed'],
+        },
+        target_norm: { type: 'string' },
+        mismatches: { type: 'array', items: { type: 'string' } },
+        overall_alignment: {
+          type: 'string',
+          enum: ['aligned', 'minor_mismatch', 'significant_mismatch'],
+        },
+      },
+    },
+  },
+}
+
+interface IntelligenceResult {
+  format_audit: {
+    overall_health: 'good' | 'fair' | 'poor'
+    pass: boolean
+    issues: Array<{
+      category: string
+      severity: 'critical' | 'warning' | 'info'
+      description: string
+    }>
+  }
+  geography_passport: {
+    detected_country: string
+    country_code: string
+    detection_method: string
+    checklist: {
+      photo_expected: boolean
+      typical_page_length: string
+      personal_details_norm: string
+      date_format: string
+      notes: string
+    }
+  }
+  industry_lens: {
+    vertical: string
+    confidence: number
+    expected_sections: string[]
+    missing_sections: string[]
+    notes: string
+  }
+  cultural_tone: {
+    detected_register: string
+    target_norm: string
+    mismatches: string[]
+    overall_alignment: string
+  }
 }
 
 interface AcceptedEnrichment {
@@ -231,7 +395,7 @@ serve(async (req) => {
     })
   }
 
-  const { analysis_id, resume_id, jd_id, request_id } = requestBody
+  const { analysis_id, resume_id, jd_id, request_id, target_country } = requestBody
 
   if (!analysis_id || !resume_id || !jd_id) {
     return new Response(
@@ -293,7 +457,8 @@ serve(async (req) => {
       supabase,
       supabaseUrl,
       supabaseServiceKey,
-      request_id
+      request_id,
+      target_country
     )
   )
 
@@ -314,7 +479,8 @@ async function processAnalysis(
   supabase: ReturnType<typeof createClient>,
   supabaseUrl: string,
   supabaseServiceKey: string,
-  requestId?: string
+  requestId?: string,
+  targetCountry?: string
 ): Promise<void> {
   console.log(`[processAnalysis] Starting async processing: ${analysis_id}`)
   await logEvent(
@@ -372,8 +538,17 @@ async function processAnalysis(
     const resumeContent = await getResumeContent(resume, supabase)
     const jobContent = jobDescription.pasted_text || ''
 
+    // Fetch weighted skill context (P25 S4) — falls back silently if no profile exists
+    const weightedSkillBlock = await buildWeightedSkillBlock(resume.user_id, supabase)
+
     // Build baseline prompt — NO enrichments; baseline must be pure
-    const prompt = buildATSPrompt(jobDescription.name, jobContent, resume.name, resumeContent)
+    const prompt = buildATSPrompt(
+      jobDescription.name,
+      jobContent,
+      resume.name,
+      resumeContent,
+      weightedSkillBlock
+    )
     const systemPrompt =
       'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Never invent resume evidence. If evidence is weak, lower confidence and explain with resume_warnings.'
     const promptsMetadata = {
@@ -433,44 +608,78 @@ async function processAnalysis(
       `[processAnalysis] Accepted enrichments for CV optimisation: ${acceptedEnrichments.length}`
     )
 
-    // Second call: CV Optimisation Score (isolated — runs only when enrichments exist)
+    // Call 2 (CV Optimisation) + Call 3 (Resume Intelligence) — run in parallel, isolated.
+    // Neither failure corrupts the baseline result.
     let optimisationResult: CVOptimisationResult | null = null
-    if (acceptedEnrichments.length > 0) {
-      try {
-        const optPrompt = buildOptimisationPrompt(
-          jobDescription.name,
-          jobContent,
-          analysisResult.match_score,
-          acceptedEnrichments
-        )
-        const optSystemPrompt =
-          'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Project only realistic, evidence-grounded score improvements.'
-        const optLlmResult = await callLLM({
-          systemPrompt: optSystemPrompt,
-          userPrompt: optPrompt,
-          modelCandidates,
-          jsonSchema: CV_OPTIMISATION_JSON_SCHEMA,
-          schemaName: 'cv_optimisation_response',
-          temperature: OPENAI_TEMPERATURE_ATS,
-          seed: OPENAI_ATS_SEED,
-          maxTokens: 800,
-          retryAttempts: 1,
-          taskLabel: 'cv-optimisation-score',
-          pricingOverride: {
-            input: OPENAI_PRICE_INPUT_PER_MILLION,
-            output: OPENAI_PRICE_OUTPUT_PER_MILLION,
-          },
-        })
-        optimisationResult = parseCVOptimisationOrNull(optLlmResult.rawContent)
-        console.log(
-          '[processAnalysis] CV Optimisation Score:',
-          optimisationResult?.cv_optimisation_score
-        )
-      } catch (optError) {
-        // Optimisation failure must never corrupt the baseline result
-        console.warn('[processAnalysis] CV Optimisation call failed — skipping:', optError)
-      }
-    }
+    let intelligenceResult: IntelligenceResult | null = null
+
+    const call2Promise: Promise<void> =
+      acceptedEnrichments.length > 0
+        ? (async () => {
+            const optPrompt = buildOptimisationPrompt(
+              jobDescription.name,
+              jobContent,
+              analysisResult.match_score,
+              acceptedEnrichments
+            )
+            const optSystemPrompt =
+              'You are a deterministic ATS evaluator. Return JSON that matches the provided schema exactly. Project only realistic, evidence-grounded score improvements.'
+            const optLlmResult = await callLLM({
+              systemPrompt: optSystemPrompt,
+              userPrompt: optPrompt,
+              modelCandidates,
+              jsonSchema: CV_OPTIMISATION_JSON_SCHEMA,
+              schemaName: 'cv_optimisation_response',
+              temperature: OPENAI_TEMPERATURE_ATS,
+              seed: OPENAI_ATS_SEED,
+              maxTokens: 800,
+              retryAttempts: 1,
+              taskLabel: 'cv-optimisation-score',
+              pricingOverride: {
+                input: OPENAI_PRICE_INPUT_PER_MILLION,
+                output: OPENAI_PRICE_OUTPUT_PER_MILLION,
+              },
+            })
+            optimisationResult = parseCVOptimisationOrNull(optLlmResult.rawContent)
+            console.log(
+              '[processAnalysis] CV Optimisation Score:',
+              optimisationResult?.cv_optimisation_score
+            )
+          })().catch((optError) => {
+            console.warn('[processAnalysis] CV Optimisation call failed — skipping:', optError)
+          })
+        : Promise.resolve()
+
+    const call3Promise: Promise<void> = (async () => {
+      const intPrompt = buildIntelligencePrompt(
+        jobDescription.name,
+        jobContent,
+        resumeContent,
+        targetCountry ?? null
+      )
+      const intLlmResult = await callLLM({
+        systemPrompt:
+          'You are a résumé intelligence analyst. Return JSON matching the provided schema exactly.',
+        userPrompt: intPrompt,
+        modelCandidates: [OPENAI_MODEL_INTELLIGENCE, OPENAI_MODEL_ATS_FALLBACK],
+        jsonSchema: INTELLIGENCE_JSON_SCHEMA,
+        schemaName: 'intelligence_response',
+        temperature: OPENAI_TEMPERATURE_ATS,
+        seed: OPENAI_ATS_SEED,
+        maxTokens: 1200,
+        retryAttempts: 1,
+        taskLabel: 'resume-intelligence',
+      })
+      intelligenceResult = parseIntelligenceOrNull(intLlmResult.rawContent)
+      console.log(
+        '[processAnalysis] Intelligence vertical:',
+        intelligenceResult?.industry_lens?.vertical
+      )
+    })().catch((intError) => {
+      console.warn('[processAnalysis] Resume Intelligence call failed — skipping:', intError)
+    })
+
+    await Promise.allSettled([call2Promise, call3Promise])
 
     // Store results in database
     const updateData = {
@@ -491,10 +700,16 @@ async function processAnalysis(
         resume_warnings: analysisResult.resume_warnings,
         score_breakdown: analysisResult.score_breakdown,
         evidence_count: analysisResult.evidence.length,
-        // CV Optimisation Score (P18) — from isolated second call
+        // CV Optimisation Score (P18) — from isolated Call 2
         cv_optimisation_score: optimisationResult?.cv_optimisation_score ?? null,
         cv_optimisation_improvements: optimisationResult?.cv_optimisation_improvements ?? [],
         enrichments_used_count: acceptedEnrichments.length,
+        // Resume Intelligence (PROD-9–12) — from isolated Call 3; null for pre-feature analyses
+        format_audit: intelligenceResult?.format_audit ?? null,
+        geography_passport: intelligenceResult?.geography_passport ?? null,
+        industry_lens: intelligenceResult?.industry_lens ?? null,
+        cultural_tone: intelligenceResult?.cultural_tone ?? null,
+        target_country_input: targetCountry ?? null,
         schema_retry_attempts_used: llmResult.retryAttemptsUsed,
         ...llmStorageFlags,
         ...(STORE_LLM_PROMPTS ? { prompts: promptsMetadata } : {}),
@@ -597,6 +812,98 @@ async function processAnalysis(
 }
 
 // ---------------------------------------------------------------------------
+// P25 S4 — Weighted skill profile block
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the user's sats_skill_profiles and sats_skill_decay_config, computes
+ * effective skill weights at call time (never persisted), and returns a
+ * plain-text block for injection into the ATS prompt as additive context.
+ *
+ * Weight formula:
+ *   effective_year = user_confirmed_last_used_year ?? ai_last_used_year
+ *   weight = max(floor_weight, 1.0 - (decay_rate_pct/100) * max(0, (currentYear - effective_year - grace_years)))
+ *
+ * Transferable skills (from transferable_to[]) are injected at weight 1.0
+ * regardless of the parent skill's decay.
+ *
+ * Returns empty string (silently) if the user has no profile or any error occurs.
+ */
+async function buildWeightedSkillBlock(
+  userId: string,
+  supabase: ReturnType<typeof createClient>
+): Promise<string> {
+  try {
+    const [profilesResult, decayResult] = await Promise.all([
+      supabase
+        .from('sats_skill_profiles')
+        .select(
+          'skill_name,category,depth,ai_last_used_year,user_confirmed_last_used_year,transferable_to,career_chapter,user_context'
+        )
+        .eq('user_id', userId),
+      supabase
+        .from('sats_skill_decay_config')
+        .select('category,decay_rate_pct,grace_years,floor_weight'),
+    ])
+
+    if (profilesResult.error || decayResult.error) return ''
+    const profiles = profilesResult.data ?? []
+    if (profiles.length === 0) return ''
+
+    // Index decay config by category
+    const decayMap: Record<
+      string,
+      { decay_rate_pct: number; grace_years: number; floor_weight: number }
+    > = {}
+    for (const row of decayResult.data ?? []) {
+      decayMap[row.category] = {
+        decay_rate_pct: row.decay_rate_pct,
+        grace_years: row.grace_years,
+        floor_weight: row.floor_weight,
+      }
+    }
+
+    const currentYear = new Date().getFullYear()
+    const lines: string[] = []
+    const transferableAccum: Set<string> = new Set()
+
+    for (const skill of profiles) {
+      const config = decayMap[skill.category] ?? {
+        decay_rate_pct: 0,
+        grace_years: 0,
+        floor_weight: 1.0,
+      }
+      const effectiveYear =
+        skill.user_confirmed_last_used_year ?? skill.ai_last_used_year ?? currentYear
+      const yearsDecayed = Math.max(0, currentYear - effectiveYear - config.grace_years)
+      const rawWeight = 1.0 - (config.decay_rate_pct / 100) * yearsDecayed
+      const weight = Math.max(config.floor_weight, Math.min(1.0, rawWeight))
+
+      lines.push(
+        `- ${skill.skill_name} [${skill.category}/${skill.depth}, weight=${weight.toFixed(2)}${skill.career_chapter ? `, chapter=${skill.career_chapter}` : ''}${skill.user_context ? `, note: ${skill.user_context}` : ''}]`
+      )
+
+      // Transferable skills always at full weight
+      for (const t of skill.transferable_to ?? []) {
+        transferableAccum.add(t)
+      }
+    }
+
+    const transferableLines = [...transferableAccum].map(
+      (t) => `- ${t} [transferable, weight=1.00]`
+    )
+
+    return [
+      'Candidate skill profile (AI-classified; use as additive context — do not override resume evidence):',
+      ...lines,
+      ...(transferableLines.length > 0 ? ['Transferable capabilities:', ...transferableLines] : []),
+    ].join('\n')
+  } catch {
+    return ''
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers (unchanged from v2)
 // ---------------------------------------------------------------------------
 
@@ -604,7 +911,8 @@ function buildATSPrompt(
   jdTitle: string,
   jdText: string,
   resumeTitle: string,
-  resumeText: string
+  resumeText: string,
+  weightedSkillContext?: string
 ): string {
   const preparedJobText = buildSectionAwareContext(jdText, {
     maxChars: 12000,
@@ -658,7 +966,7 @@ ${preparedJobText}
 Resume:
 - title: ${resumeTitle}
 - content:
-${preparedResumeText}`.trim()
+${preparedResumeText}${weightedSkillContext ? `\n\n${weightedSkillContext}` : ''}`.trim()
 }
 
 function buildOptimisationPrompt(
@@ -737,6 +1045,116 @@ function parseCVOptimisationOrNull(rawResponse: string): CVOptimisationResult | 
             .filter((item: any) => item.skill && item.impact && item.score_area)
         : [],
     }
+  } catch {
+    return null
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Resume Intelligence helpers (PROD-9–12)
+// ---------------------------------------------------------------------------
+
+function buildIntelligencePrompt(
+  jdTitle: string,
+  jdText: string,
+  resumeText: string,
+  targetCountry: string | null
+): string {
+  const preparedJob = buildSectionAwareContext(jdText, {
+    maxChars: 6000,
+    headingKeywords: [
+      'responsibilities',
+      'requirements',
+      'required',
+      'preferred',
+      'qualifications',
+      'skills',
+      'experience',
+    ],
+    priorityRegex: /(must|required|responsib|qualif|skill|experience|certif|years|tool|stack)/i,
+  })
+  const preparedResume = buildSectionAwareContext(resumeText, {
+    maxChars: 6000,
+    headingKeywords: [
+      'summary',
+      'experience',
+      'work history',
+      'projects',
+      'skills',
+      'certifications',
+      'education',
+      'publications',
+    ],
+    priorityRegex:
+      /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
+  })
+
+  const geoInstruction = targetCountry
+    ? `Target country (user-specified): ${targetCountry}. Set country_code accordingly and detection_method to "user_override".`
+    : `Detect the target country from the JD text. Look for phrases like "authorised to work in X", explicit location mentions, or company HQ signals. Use country_code "OTHER" and detection_method "unknown" if undetectable.`
+
+  return `Task: Analyse the resume and job description and return all four intelligence objects.
+
+=== GEOGRAPHY CONTEXT ===
+${geoInstruction}
+
+=== COUNTRY FORMAT NORMS REFERENCE ===
+US: photo=false, length="1p junior / 2p senior", personal_details="no DOB or address", date_format="Month YYYY"
+UK: photo=false, length="2 pages standard", personal_details="no DOB expected", date_format="Month YYYY"
+DE: photo=true (required), length="2 pages", personal_details="DOB and nationality common", date_format="MM.YYYY"
+FR: photo=optional, length="1–2 pages", personal_details="DOB optional", date_format="MM/YYYY"
+BR: photo=optional, length="1–2 pages", personal_details="standard personal details", date_format="MM/YYYY"
+AU/NZ: photo=false, length="2–3 pages", personal_details="no DOB", date_format="Month YYYY"
+JP: photo=true (required), length="1-sheet rirekisho or 2-page CV", personal_details="DOB and gender common on rirekisho", date_format="YYYY/MM"
+IN: photo=optional, length="2–3 pages", personal_details="DOB sometimes included", date_format="Month YYYY"
+
+=== FORMAT AUDIT (analyse resume text only) ===
+Flag each issue found with its category, severity, and a one-sentence description.
+- table_column: resume uses tables or multi-column layout that ATS parsers misread
+- emoji_graphic: emojis or decorative graphics appear in the body text
+- section_heading: non-standard headings (e.g. "My Story" instead of "Experience")
+- missing_url: no LinkedIn URL or professional portfolio link present
+- vague_bullet: bullet points describe duties without metrics or outcomes
+- length_mismatch: resume length is inappropriate for the apparent years of experience
+overall_health: "good" = 0 critical + ≤2 warnings; "fair" = 1 critical or 3–5 warnings; "poor" = 2+ critical or 6+ warnings.
+pass = true when overall_health is "good".
+
+=== INDUSTRY LENS (analyse JD text only) ===
+Classify the JD by industry vertical. List the sections typically expected for that vertical.
+Compare against sections present in the resume to identify missing_sections.
+
+=== CULTURAL TONE (analyse resume text, compared against target country norm) ===
+Classify the resume's writing register. Compare against the expected norm for the target country.
+List specific mismatches as concise strings. Set overall_alignment based on mismatch count.
+
+Job: ${jdTitle}
+Job Description:
+${preparedJob}
+
+Resume:
+${preparedResume}`.trim()
+}
+
+function parseIntelligenceOrNull(rawResponse: string): IntelligenceResult | null {
+  let text = rawResponse.trim()
+  if (text.startsWith('```')) {
+    text = text
+      .replace(/^```(?:json)?\s*/, '')
+      .replace(/```\s*$/, '')
+      .trim()
+  }
+  try {
+    const data = JSON.parse(text)
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !data.format_audit ||
+      !data.geography_passport ||
+      !data.industry_lens ||
+      !data.cultural_tone
+    )
+      return null
+    return data as IntelligenceResult
   } catch {
     return null
   }

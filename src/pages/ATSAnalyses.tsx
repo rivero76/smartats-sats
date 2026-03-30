@@ -6,6 +6,7 @@
  *   the ATS score when enrichments were applied.
  * 2026-03-26 19:00:00 | P19 S2-3: add stagger animation to analysis list cards (P19-S2-3)
  * 2026-03-26 | S3-1: fix heading hierarchy — stat CardTitle → p, section CardTitle → h2, empty-state h3 → h2 (P19-S3-1)
+ * 2026-03-30 11:00:00 | PROD-9–12: Import and render ResumeIntelligencePanel after CV Optimisation panel.
  */
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
@@ -42,6 +43,7 @@ import {
 } from '@/hooks/useATSAnalyses'
 import { useRetryATSAnalysis } from '@/hooks/useRetryATSAnalysis'
 import ATSAnalysisModal from '@/components/ATSAnalysisModal'
+import ResumeIntelligencePanel from '@/components/ResumeIntelligencePanel'
 import { EnrichExperienceModal } from '@/components/EnrichExperienceModal'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
@@ -586,6 +588,9 @@ const ATSAnalyses = () => {
                           </div>
                         )
                       })()}
+
+                      {/* Resume Intelligence (PROD-9–12) */}
+                      <ResumeIntelligencePanel analysisData={analysis.analysis_data ?? {}} />
 
                       {/* Action Button */}
                       <Button

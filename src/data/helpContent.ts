@@ -1,6 +1,8 @@
 /**
  * UPDATE LOG
  * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion help topics.
+ * 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
+ * 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
  */
 
 export interface HelpStep {
@@ -267,6 +269,10 @@ export const helpContentData: Record<string, HelpContent> = {
       'AI-powered improvement suggestions',
       'Progress tracking for ongoing analyses',
       'Detailed results interpretation',
+      'Format Audit — detects ATS-breaking resume patterns',
+      'Geography Mode — country-specific format checklist for 8 markets',
+      'Industry Lens — vertical classification with missing-section detection',
+      'Cultural Tone Advisor — detects register mismatches for target market',
     ],
     steps: [
       {
@@ -311,6 +317,13 @@ export const helpContentData: Record<string, HelpContent> = {
           'Read and implement the AI-generated suggestions to improve your resume for better compatibility.',
         tip: 'Suggestions often include specific wording changes and skills to emphasize more prominently.',
       },
+      {
+        step: 7,
+        title: 'Review Resume Intelligence Panels',
+        description:
+          'After the CV Optimisation panel, four Resume Intelligence sub-sections appear: Format Audit flags patterns that silently disqualify your résumé; Geography Mode gives country-specific format guidance; Industry Lens identifies missing sections for your target vertical; and Cultural Tone Advisor catches tone mismatches.',
+        tip: 'Select your target country using the "Target Market" dropdown when starting an analysis to get the most accurate Geography Mode guidance.',
+      },
     ],
     bestPractices: [
       'Run analyses for every job application to optimize your resume for each position',
@@ -342,7 +355,83 @@ export const helpContentData: Record<string, HelpContent> = {
           'Use the retry button to reprocess the analysis. If errors persist, check that your resume and job description contain sufficient text content.',
       },
     ],
-    relatedTopics: ['Resume Management', 'Job Descriptions', 'Dashboard Overview'],
+    relatedTopics: [
+      'Resume Management',
+      'Job Descriptions',
+      'Dashboard Overview',
+      'Resume Intelligence',
+    ],
+  },
+
+  resumeIntelligence: {
+    id: 'resumeIntelligence',
+    title: 'Resume Intelligence',
+    description:
+      'Four AI-powered analysis panels that diagnose the hidden resume issues that cause silent ATS rejection.',
+    overview:
+      'Resume Intelligence runs in parallel with your ATS score and surfaces four categories of insights: formatting problems that break ATS parsers, country-specific format requirements, missing sections expected by your target industry, and cultural tone mismatches. Every panel is null-safe — analyses run before this feature shipped show a graceful "not available" state.',
+    keyFeatures: [
+      'Format Audit — detects ATS-breaking patterns (tables, emojis, vague bullets, missing URL, length mismatch) with critical/warning/info severity',
+      'Geography Mode — user selects from 8 target markets or uses auto-detect; produces per-country format checklist for photo, length, personal details, and date format',
+      'Industry Lens — classifies the job description by vertical (Tech, Finance, Healthcare, Legal, Creative, Academic, Startup, Operations) and flags missing expected sections',
+      'Cultural Tone Advisor — detects writing register and flags mismatches against the cultural norms of the target market',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Select target market',
+        description:
+          "When starting a new analysis, optionally select your target country from the 'Target Market' dropdown. If left blank, SmartATS auto-detects from the job description text.",
+        tip: 'Auto-detect works well for most English-language JDs. For multilingual or ambiguous postings, choose manually.',
+      },
+      {
+        step: 2,
+        title: 'Read Format Audit',
+        description:
+          'Look for critical (red) and warning (amber) severity items under Format Audit. Critical items can cause your résumé to be rejected by parsers before a human sees it.',
+        tip: 'Tables and graphics are the most common critical issues — replace them with plain text equivalents.',
+      },
+      {
+        step: 3,
+        title: 'Apply Geography Checklist',
+        description:
+          'Under Geography Mode, review the per-country format checklist. Items marked as required vary by country — a photo is expected in Germany but can harm you in the US.',
+        tip: "If you're applying to multiple countries, run separate analyses with different target markets.",
+      },
+      {
+        step: 4,
+        title: 'Check Industry Lens',
+        description:
+          'Industry Lens classifies the job and lists sections commonly expected in that vertical. A Healthcare role may expect certifications and compliance experience that are not on your résumé.',
+        tip: 'Missing sections are suggestions, not hard requirements — use your judgment about relevance.',
+      },
+      {
+        step: 5,
+        title: 'Review Cultural Tone',
+        description:
+          'Cultural Tone Advisor flags register mismatches. An overly casual tone on a German finance application, or an overly formal tone for a US startup, can signal poor cultural fit.',
+        tip: 'The advisor focuses on language patterns, not just formal/informal — directness, confidence markers, and pronoun usage all factor in.',
+      },
+    ],
+    bestPractices: [
+      'Run analyses with a specific target country selected whenever you know where the company is based',
+      'Fix critical Format Audit issues before re-running — they affect your ATS score directly',
+      'Use Industry Lens to discover what sections experienced candidates in that vertical include that you might be missing',
+      'Cultural Tone feedback applies to your résumé text — use it as input when editing your experience bullets',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Resume Intelligence panels show "not available"',
+        solution:
+          'This means the analysis was run before Resume Intelligence shipped. Re-run the analysis to get the four panels populated.',
+      },
+      {
+        problem: 'Geography Mode shows incorrect country',
+        solution:
+          'Auto-detect reads the job description text for location signals. If it is wrong, re-run the analysis with a manual country selection from the Target Market dropdown.',
+      },
+    ],
+    relatedTopics: ['ATS Analysis', 'Skill Profile', 'Resume Management'],
   },
 
   profileSettings: {
@@ -1028,11 +1117,68 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['Profile & Settings Management', 'Dashboard Overview'],
   },
+  skillProfile: {
+    id: 'skillProfile',
+    title: 'Skill Profile',
+    description: 'Understand how your AI-classified skill profile improves your ATS match scores.',
+    overview:
+      'Smart ATS builds a personal skill profile from your work experience using AI. Each skill is classified by category, depth, and recency — and used to weight your ATS analyses so that actively-used skills score higher than skills from early in your career.',
+    keyFeatures: [
+      'AI classifies skills into technical, soft, leadership, domain, certification, and methodology categories',
+      'Skills decay in weight over time based on how recently you used them',
+      'Transferable skills extracted from technical roles are preserved at full weight',
+      'Career chapters group your skills into distinct phases of your career',
+      'Review and correct classifications before they are saved',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Trigger Classification',
+        description:
+          'Add your work experience on the Experiences page, then upload or re-analyze a resume. The AI classifies your skills and shows you a review screen before saving.',
+        tip: 'The more detailed your experience descriptions, the more accurate the skill classification.',
+      },
+      {
+        step: 2,
+        title: 'Review and Confirm',
+        description:
+          "For each skill, choose whether you still actively use it, treat it as a foundation only, or add context explaining why it's more relevant than it looks (Pro/Max plan).",
+        tip: 'Marking a skill as "still active" updates its last-used year to now, giving it full weight in analyses.',
+      },
+      {
+        step: 3,
+        title: 'Manage Your Profile',
+        description:
+          'Go to Settings → Skill Profile to see all your skills grouped by career chapter. Remove any skills that are no longer accurate.',
+        tip: 'Deleted skills are removed from future ATS analyses but your experience records are unchanged.',
+      },
+    ],
+    bestPractices: [
+      'Review the classification before confirming — the AI is accurate but your judgment matters',
+      'Use the "let me explain" option for skills that sound outdated but are still relevant to your target role',
+      'Keep your experience descriptions current so re-classification improves over time',
+    ],
+    troubleshooting: [
+      {
+        problem: 'No skill profile appears in Settings',
+        solution:
+          'Skill classification runs when you upload a resume or trigger analysis. Make sure you have at least one experience added in the Experiences page.',
+      },
+      {
+        problem: 'My score did not improve after saving my skill profile',
+        solution:
+          'Skill context is injected into new analyses. Re-run ATS Analysis on an existing resume-job pair to see the updated score.',
+      },
+    ],
+    relatedTopics: ['Enriched Experiences', 'ATS Analysis', 'Profile & Settings Management'],
+  },
 }
 
 // UPDATE LOG
 // 2026-03-01 00:00:00 | Added help content for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
 // 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics
+// 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
+// 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

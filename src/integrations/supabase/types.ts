@@ -1,16 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: '13.0.5'
   }
   public: {
     Tables: {
@@ -50,11 +44,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_derivatives_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'ats_derivatives_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "ats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -88,11 +82,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_findings_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: 'ats_findings_run_id_fkey'
+            columns: ['run_id']
             isOneToOne: false
-            referencedRelation: "ats_runs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_runs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -138,11 +132,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_job_documents_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'ats_job_documents_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "ats_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -317,25 +311,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_runs_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'ats_runs_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "ats_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ats_runs_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'ats_runs_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "ats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_resumes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ats_runs_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'ats_runs_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -366,11 +360,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ats_scores_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: 'ats_scores_run_id_fkey'
+            columns: ['run_id']
             isOneToOne: true
-            referencedRelation: "ats_runs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_runs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -452,11 +446,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "document_extractions_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'document_extractions_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: true
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -613,18 +607,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_preferred_currency_fkey"
-            columns: ["preferred_currency"]
+            foreignKeyName: 'profiles_preferred_currency_fkey'
+            columns: ['preferred_currency']
             isOneToOne: false
-            referencedRelation: "sats_currencies"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_currencies'
+            referencedColumns: ['code']
           },
           {
-            foreignKeyName: "profiles_preferred_locale_fkey"
-            columns: ["preferred_locale"]
+            foreignKeyName: 'profiles_preferred_locale_fkey'
+            columns: ['preferred_locale']
             isOneToOne: false
-            referencedRelation: "sats_locales"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_locales'
+            referencedColumns: ['code']
           },
         ]
       }
@@ -769,18 +763,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rjh_job_skills_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'rjh_job_skills_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "rjh_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'rjh_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "rjh_job_skills_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'rjh_job_skills_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "rjh_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'rjh_skills'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -850,11 +844,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rjh_jobs_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'rjh_jobs_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "rjh_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'rjh_companies'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -891,11 +885,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rjh_pipeline_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'rjh_pipeline_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: true
-            referencedRelation: "rjh_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'rjh_jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1073,32 +1067,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_agent_handoffs_from_agent_id_fkey"
-            columns: ["from_agent_id"]
+            foreignKeyName: 'sats_agent_handoffs_from_agent_id_fkey'
+            columns: ['from_agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_handoffs_task_id_fkey"
-            columns: ["task_id"]
+            foreignKeyName: 'sats_agent_handoffs_task_id_fkey'
+            columns: ['task_id']
             isOneToOne: false
-            referencedRelation: "sats_agent_tasks"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_agent_tasks'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_handoffs_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_agent_handoffs_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_handoffs_to_agent_id_fkey"
-            columns: ["to_agent_id"]
+            foreignKeyName: 'sats_agent_handoffs_to_agent_id_fkey'
+            columns: ['to_agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1144,18 +1138,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_agent_memory_agent_id_fkey"
-            columns: ["agent_id"]
+            foreignKeyName: 'sats_agent_memory_agent_id_fkey'
+            columns: ['agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_memory_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_agent_memory_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1231,32 +1225,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_agent_tasks_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
+            foreignKeyName: 'sats_agent_tasks_assigned_agent_id_fkey'
+            columns: ['assigned_agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
+            foreignKeyName: 'sats_agent_tasks_parent_task_id_fkey'
+            columns: ['parent_task_id']
             isOneToOne: false
-            referencedRelation: "sats_agent_tasks"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_agent_tasks'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_tasks_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: 'sats_agent_tasks_session_id_fkey'
+            columns: ['session_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_sessions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_sessions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_agent_tasks_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_agent_tasks_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1323,11 +1317,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_ai_agents_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_ai_agents_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1370,18 +1364,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_ai_evaluations_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'sats_ai_evaluations_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_ai_evaluations_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_ai_evaluations_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1442,18 +1436,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_ai_messages_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: 'sats_ai_messages_session_id_fkey'
+            columns: ['session_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_sessions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_sessions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_ai_messages_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_ai_messages_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1505,18 +1499,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_ai_sessions_agent_id_fkey"
-            columns: ["agent_id"]
+            foreignKeyName: 'sats_ai_sessions_agent_id_fkey'
+            columns: ['agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_ai_sessions_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_ai_sessions_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1589,32 +1583,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_analyses_jd_id_fkey"
-            columns: ["jd_id"]
+            foreignKeyName: 'sats_analyses_jd_id_fkey'
+            columns: ['jd_id']
             isOneToOne: false
-            referencedRelation: "sats_job_descriptions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_analyses_proactive_staged_job_id_fkey"
-            columns: ["proactive_staged_job_id"]
+            foreignKeyName: 'sats_analyses_proactive_staged_job_id_fkey'
+            columns: ['proactive_staged_job_id']
             isOneToOne: false
-            referencedRelation: "sats_staged_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_staged_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_analyses_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'sats_analyses_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_analyses_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_analyses_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1723,11 +1717,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_audit_logs_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_audit_logs_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1833,18 +1827,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_document_chunks_source_id_fkey"
-            columns: ["source_id"]
+            foreignKeyName: 'sats_document_chunks_source_id_fkey'
+            columns: ['source_id']
             isOneToOne: false
-            referencedRelation: "sats_knowledge_sources"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_knowledge_sources'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_document_chunks_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_document_chunks_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1929,39 +1923,39 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "enriched_experiences_analysis_id_fkey"
-            columns: ["analysis_id"]
+            foreignKeyName: 'enriched_experiences_analysis_id_fkey'
+            columns: ['analysis_id']
             isOneToOne: false
-            referencedRelation: "sats_analyses"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "enriched_experiences_jd_id_fkey"
-            columns: ["jd_id"]
+            foreignKeyName: 'enriched_experiences_jd_id_fkey'
+            columns: ['jd_id']
             isOneToOne: false
-            referencedRelation: "sats_job_descriptions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "enriched_experiences_resume_id_fkey"
-            columns: ["resume_id"]
+            foreignKeyName: 'enriched_experiences_resume_id_fkey'
+            columns: ['resume_id']
             isOneToOne: false
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "enriched_experiences_skill_experience_id_fkey"
-            columns: ["skill_experience_id"]
+            foreignKeyName: 'enriched_experiences_skill_experience_id_fkey'
+            columns: ['skill_experience_id']
             isOneToOne: false
-            referencedRelation: "sats_skill_experiences"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skill_experiences'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_enriched_experiences_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_enriched_experiences_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1995,18 +1989,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_exchange_rates_from_currency_fkey"
-            columns: ["from_currency"]
+            foreignKeyName: 'sats_exchange_rates_from_currency_fkey'
+            columns: ['from_currency']
             isOneToOne: false
-            referencedRelation: "sats_currencies"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_currencies'
+            referencedColumns: ['code']
           },
           {
-            foreignKeyName: "sats_exchange_rates_to_currency_fkey"
-            columns: ["to_currency"]
+            foreignKeyName: 'sats_exchange_rates_to_currency_fkey'
+            columns: ['to_currency']
             isOneToOne: false
-            referencedRelation: "sats_currencies"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_currencies'
+            referencedColumns: ['code']
           },
         ]
       }
@@ -2079,11 +2073,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_idempotency_keys_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_idempotency_keys_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2150,32 +2144,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_job_descriptions_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'sats_job_descriptions_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "sats_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_companies'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_descriptions_location_id_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'sats_job_descriptions_location_id_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "sats_locations"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_locations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_descriptions_proactive_staged_job_id_fkey"
-            columns: ["proactive_staged_job_id"]
+            foreignKeyName: 'sats_job_descriptions_proactive_staged_job_id_fkey'
+            columns: ['proactive_staged_job_id']
             isOneToOne: false
-            referencedRelation: "sats_staged_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_staged_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_descriptions_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_job_descriptions_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2200,18 +2194,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_job_skills_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'sats_job_skills_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "sats_job_descriptions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_job_descriptions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_job_skills_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_job_skills_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2281,11 +2275,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_knowledge_sources_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_knowledge_sources_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2337,18 +2331,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_learning_roadmaps_source_ats_analysis_id_fkey"
-            columns: ["source_ats_analysis_id"]
+            foreignKeyName: 'sats_learning_roadmaps_source_ats_analysis_id_fkey'
+            columns: ['source_ats_analysis_id']
             isOneToOne: false
-            referencedRelation: "sats_analyses"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_learning_roadmaps_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_learning_roadmaps_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2424,39 +2418,39 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_llm_call_logs_analysis_id_fkey"
-            columns: ["analysis_id"]
+            foreignKeyName: 'sats_llm_call_logs_analysis_id_fkey'
+            columns: ['analysis_id']
             isOneToOne: false
-            referencedRelation: "sats_analyses"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_llm_call_logs_currency_code_fkey"
-            columns: ["currency_code"]
+            foreignKeyName: 'sats_llm_call_logs_currency_code_fkey'
+            columns: ['currency_code']
             isOneToOne: false
-            referencedRelation: "sats_currencies"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_currencies'
+            referencedColumns: ['code']
           },
           {
-            foreignKeyName: "sats_llm_call_logs_prompt_template_id_fkey"
-            columns: ["prompt_template_id"]
+            foreignKeyName: 'sats_llm_call_logs_prompt_template_id_fkey'
+            columns: ['prompt_template_id']
             isOneToOne: false
-            referencedRelation: "sats_prompt_templates"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_prompt_templates'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_llm_call_logs_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: 'sats_llm_call_logs_run_id_fkey'
+            columns: ['run_id']
             isOneToOne: false
-            referencedRelation: "ats_runs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ats_runs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_llm_call_logs_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_llm_call_logs_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2664,11 +2658,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_outbox_events_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_outbox_events_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2738,11 +2732,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_plans_currency_code_fkey"
-            columns: ["currency_code"]
+            foreignKeyName: 'sats_plans_currency_code_fkey'
+            columns: ['currency_code']
             isOneToOne: false
-            referencedRelation: "sats_currencies"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_currencies'
+            referencedColumns: ['code']
           },
         ]
       }
@@ -2797,18 +2791,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_prompt_templates_agent_id_fkey"
-            columns: ["agent_id"]
+            foreignKeyName: 'sats_prompt_templates_agent_id_fkey'
+            columns: ['agent_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_agents"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_agents'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_prompt_templates_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_prompt_templates_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2860,18 +2854,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_sats_rag_queries_session"
-            columns: ["session_id"]
+            foreignKeyName: 'fk_sats_rag_queries_session'
+            columns: ['session_id']
             isOneToOne: false
-            referencedRelation: "sats_ai_sessions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_ai_sessions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_rag_queries_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_rag_queries_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2911,11 +2905,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_rate_limit_counters_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_rate_limit_counters_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2979,18 +2973,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_resume_personas_linked_resume_id_fkey"
-            columns: ["linked_resume_id"]
+            foreignKeyName: 'sats_resume_personas_linked_resume_id_fkey'
+            columns: ['linked_resume_id']
             isOneToOne: false
-            referencedRelation: "sats_resumes"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_resumes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_resume_personas_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_resume_personas_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3039,11 +3033,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_resumes_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_resumes_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3095,11 +3089,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_roadmap_milestones_roadmap_id_fkey"
-            columns: ["roadmap_id"]
+            foreignKeyName: 'sats_roadmap_milestones_roadmap_id_fkey'
+            columns: ['roadmap_id']
             isOneToOne: false
-            referencedRelation: "sats_learning_roadmaps"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_learning_roadmaps'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3127,18 +3121,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_role_permissions_permission_id_fkey"
-            columns: ["permission_id"]
+            foreignKeyName: 'sats_role_permissions_permission_id_fkey'
+            columns: ['permission_id']
             isOneToOne: false
-            referencedRelation: "sats_permissions"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_permissions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_role_permissions_role_id_fkey"
-            columns: ["role_id"]
+            foreignKeyName: 'sats_role_permissions_role_id_fkey'
+            columns: ['role_id']
             isOneToOne: false
-            referencedRelation: "sats_roles"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_roles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3202,6 +3196,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sats_skill_decay_config: {
+        Row: {
+          category: string
+          created_at: string
+          decay_rate_pct: number
+          floor_weight: number
+          grace_years: number
+          id: string
+          no_decay: boolean
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          decay_rate_pct?: number
+          floor_weight?: number
+          grace_years?: number
+          id?: string
+          no_decay?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          decay_rate_pct?: number
+          floor_weight?: number
+          grace_years?: number
+          id?: string
+          no_decay?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sats_skill_experiences: {
         Row: {
           added_manually: boolean
@@ -3262,34 +3289,85 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_skill_experiences_analysis_id_fkey"
-            columns: ["analysis_id"]
+            foreignKeyName: 'sats_skill_experiences_analysis_id_fkey'
+            columns: ['analysis_id']
             isOneToOne: false
-            referencedRelation: "sats_analyses"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_skill_experiences_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'sats_skill_experiences_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "sats_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_companies'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_skill_experiences_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_skill_experiences_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_skill_experiences_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_skill_experiences_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
+      }
+      sats_skill_profiles: {
+        Row: {
+          ai_classification_version: string | null
+          ai_last_used_year: number | null
+          career_chapter: string | null
+          category: string
+          created_at: string
+          depth: string
+          id: string
+          skill_name: string
+          source_experience_ids: string[]
+          transferable_to: string[]
+          updated_at: string
+          user_confirmed_last_used_year: number | null
+          user_context: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_classification_version?: string | null
+          ai_last_used_year?: number | null
+          career_chapter?: string | null
+          category: string
+          created_at?: string
+          depth: string
+          id?: string
+          skill_name: string
+          source_experience_ids?: string[]
+          transferable_to?: string[]
+          updated_at?: string
+          user_confirmed_last_used_year?: number | null
+          user_context?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_classification_version?: string | null
+          ai_last_used_year?: number | null
+          career_chapter?: string | null
+          category?: string
+          created_at?: string
+          depth?: string
+          id?: string
+          skill_name?: string
+          source_experience_ids?: string[]
+          transferable_to?: string[]
+          updated_at?: string
+          user_confirmed_last_used_year?: number | null
+          user_context?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       sats_skills: {
         Row: {
@@ -3390,18 +3468,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_tenant_features_feature_id_fkey"
-            columns: ["feature_id"]
+            foreignKeyName: 'sats_tenant_features_feature_id_fkey'
+            columns: ['feature_id']
             isOneToOne: false
-            referencedRelation: "sats_features"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_features'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_tenant_features_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_tenant_features_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3486,11 +3564,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_translations_locale_fkey"
-            columns: ["locale"]
+            foreignKeyName: 'sats_translations_locale_fkey'
+            columns: ['locale']
             isOneToOne: false
-            referencedRelation: "sats_locales"
-            referencedColumns: ["code"]
+            referencedRelation: 'sats_locales'
+            referencedColumns: ['code']
           },
         ]
       }
@@ -3575,11 +3653,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_user_role_assignments_role_id_fkey"
-            columns: ["role_id"]
+            foreignKeyName: 'sats_user_role_assignments_role_id_fkey'
+            columns: ['role_id']
             isOneToOne: false
-            referencedRelation: "sats_roles"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_roles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3587,19 +3665,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database['public']['Enums']['app_role']
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database['public']['Enums']['app_role']
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database['public']['Enums']['app_role']
           user_id?: string
         }
         Relationships: []
@@ -3658,18 +3736,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sats_user_skills_skill_id_fkey"
-            columns: ["skill_id"]
+            foreignKeyName: 'sats_user_skills_skill_id_fkey'
+            columns: ['skill_id']
             isOneToOne: false
-            referencedRelation: "sats_skills"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_skills'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sats_user_skills_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'sats_user_skills_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3928,11 +4006,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "work_experiences_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: 'work_experiences_tenant_id_fkey'
+            columns: ['tenant_id']
             isOneToOne: false
-            referencedRelation: "sats_tenants"
-            referencedColumns: ["id"]
+            referencedRelation: 'sats_tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3994,7 +4072,7 @@ export type Database = {
       get_techstack_overview: { Args: never; Returns: Json }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database['public']['Enums']['app_role']
           _user_id: string
         }
         Returns: boolean
@@ -4061,7 +4139,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "admin"
+      app_role: 'user' | 'admin'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4069,33 +4147,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -4104,23 +4180,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -4129,23 +4205,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -4154,42 +4230,42 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "admin"],
+      app_role: ['user', 'admin'],
     },
   },
 } as const

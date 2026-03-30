@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-03-30 11:00:00 | PROD-10: Added optional Target Market select field; passes target_country to mutation.
+ */
 import { useState } from 'react'
 import {
   Dialog,
@@ -29,6 +33,7 @@ interface ATSAnalysisModalProps {
 const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
   const [selectedResume, setSelectedResume] = useState<string>('')
   const [selectedJobDescription, setSelectedJobDescription] = useState<string>('')
+  const [targetCountry, setTargetCountry] = useState<string>('')
 
   const { data: resumes, isLoading: resumesLoading } = useResumes()
   const { data: jobDescriptions, isLoading: jobDescriptionsLoading } = useJobDescriptions()
@@ -45,11 +50,13 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
       {
         resume_id: selectedResume,
         jd_id: selectedJobDescription,
+        target_country: targetCountry || undefined,
       },
       {
         onSuccess: () => {
           setSelectedResume('')
           setSelectedJobDescription('')
+          setTargetCountry('')
           onOpenChange(false)
         },
       }
@@ -120,6 +127,29 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
                 No job descriptions found. Create a job description first.
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="country-select">
+              Target Market{' '}
+              <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+            </Label>
+            <Select value={targetCountry} onValueChange={setTargetCountry} disabled={isLoading}>
+              <SelectTrigger id="country-select">
+                <SelectValue placeholder="Auto-detect from job description" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Auto-detect from job description</SelectItem>
+                <SelectItem value="US">United States</SelectItem>
+                <SelectItem value="UK">United Kingdom</SelectItem>
+                <SelectItem value="DE">Germany</SelectItem>
+                <SelectItem value="FR">France</SelectItem>
+                <SelectItem value="BR">Brazil</SelectItem>
+                <SelectItem value="AU">Australia / New Zealand</SelectItem>
+                <SelectItem value="JP">Japan</SelectItem>
+                <SelectItem value="IN">India</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>

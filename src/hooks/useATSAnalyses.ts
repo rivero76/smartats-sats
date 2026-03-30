@@ -3,6 +3,7 @@
  * 2026-02-20 22:19:11 | Reviewed ATS analysis hook updates and added timestamped file header tracking.
  * 2026-03-17 12:00:00 | Fix misleading comment on useCreateATSAnalysis export — delegates to edge function, not direct OpenAI.
  * 2026-03-18 00:00:00 | CR4-9: Add explanatory comments for real-time + polling dual strategy and N+1 user fetch.
+ * 2026-03-30 11:00:00 | PROD-10: Added target_country to CreateATSAnalysisData interface.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
@@ -49,6 +50,7 @@ export interface ATSAnalysis {
 export interface CreateATSAnalysisData {
   resume_id: string
   jd_id: string
+  target_country?: string
 }
 
 export interface ATSAnalysisStats {

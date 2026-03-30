@@ -2,6 +2,7 @@
  * UPDATE LOG
  * 2026-02-20 22:19:11 | Reviewed direct ATS analysis trigger updates and added timestamped file header tracking.
  * 2026-02-20 23:29:40 | P2: Added request_id propagation and duration tracking for ATS analysis trigger.
+ * 2026-03-30 11:00:00 | PROD-10: Added target_country to CreateATSAnalysisData; passed to edge function body.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -13,6 +14,7 @@ import { createRequestId, getDurationMs } from '@/lib/requestContext'
 export interface CreateATSAnalysisData {
   resume_id: string
   jd_id: string
+  target_country?: string
 }
 
 export const useDirectATSAnalysis = () => {
@@ -65,6 +67,7 @@ export const useDirectATSAnalysis = () => {
           resume_id: data.resume_id,
           jd_id: data.jd_id,
           request_id: requestId,
+          target_country: data.target_country,
         },
       })
 

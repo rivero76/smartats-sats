@@ -1,6 +1,7 @@
 // UPDATE LOG
 // 2026-03-17 12:00:00 | P16 Story 1: added PersonaManager (My Resume Profiles) section
 // 2026-03-26 | S3-1: fix heading hierarchy (section CardTitle → h2, h4 → h3); add aria-label to Switch components (P19-S3-1)
+// 2026-03-30 10:00:00 | P25 S6 — Added SkillProfileManager section before Data Management card.
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,7 @@ import { useProfile, type ProfileFormData } from '@/hooks/useProfile'
 import { useAccountDeletion } from '@/hooks/useAccountDeletion'
 import { DeleteAccountModal } from '@/components/DeleteAccountModal'
 import { PersonaManager } from '@/components/PersonaManager'
+import { SkillProfileManager } from '@/components/skill-profile/SkillProfileManager'
 import { useEffect, useState } from 'react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
@@ -371,6 +373,9 @@ const Settings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Skill Profile */}
+      <SkillProfileManager />
 
       {/* Data & Export */}
       <Card>
