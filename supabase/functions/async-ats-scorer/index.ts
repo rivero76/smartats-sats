@@ -5,6 +5,7 @@
  * 2026-03-18 | CR1-1: Config error response changed from 500 → 503 (CLAUDE.md §3.2 compliance).
  * 2026-03-18 | CR1-3: Extract proactive match threshold 0.6 to DEFAULT_PROACTIVE_MATCH_THRESHOLD constant; override via SATS_PROACTIVE_MATCH_THRESHOLD env var.
  * 2026-03-28 | Fix: serialize PostgrestError objects properly (they are not Error instances, so String(error) returned "[object Object]").
+ * 2026-03-29 | Fix: getUserThresholdMap only populates map for users with explicit per-user threshold. Previously it stored DEFAULT_PROACTIVE_MATCH_THRESHOLD (0.6) for null-threshold users, making globalThreshold from sats_runtime_settings unreachable.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -331,11 +332,15 @@ async function getUserThresholdMap(
   if (error) throw error
 
   for (const row of data || []) {
-    const threshold = parseThreshold(
-      (row as { proactive_match_threshold: number | null }).proactive_match_threshold,
-      DEFAULT_PROACTIVE_MATCH_THRESHOLD
-    )
-    map.set((row as { user_id: string }).user_id, threshold)
+    const raw = (row as { proactive_match_threshold: number | null }).proactive_match_threshold
+    // Only populate map for users with an explicit per-user threshold.
+    // Users without one fall back to globalThreshold via the ?? operator in the caller.
+    if (raw !== null && raw !== undefined) {
+      map.set(
+        (row as { user_id: string }).user_id,
+        parseThreshold(raw, DEFAULT_PROACTIVE_MATCH_THRESHOLD)
+      )
+    }
   }
 
   return map

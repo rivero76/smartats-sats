@@ -6,6 +6,24 @@ All notable changes to this project should be documented in this file.
 
 ### Added
 
+- 2026-03-28: Created `plans/p-career-aspirations-tracker.md` — Career Aspirations Tracker feature plan. 6 stories: S1 (ATS routing rule, low-score results to /aspirations), S2 (gap report MVP with two time horizons, readiness %, coach nudge), S3 (sats_jd_signals foundational JD signal extraction infrastructure — starts first), S4 (living tracker with score drift), S5 (trend layer, future), S6 (trend alerts, future). MVP sprint scope: S3 + S1 + S2. New tables: sats_aspiration_reports, sats_aspiration_score_history, sats_jd_signals. New edge functions: career-gap-analysis, extract-jd-signals, recalculate-aspiration. Tier gating: Free (routing only), Pro/Max (gap report + living tracker), Max/C-Level (trend layer + alerts).
+- P14 S4 / P15 S3 / P16 S1 / P18 S3 — Functional Playwright E2E test suite runtime verification (2026-03-29): 50/51 tests passing across 6 spec files. Items now RUNTIME-VERIFIED: P14 Story 4 opportunities UI, ATS auto-refresh UX, P15 Story 3 roadmaps UI with milestone toggle, Help Hub (/help), P16 S1 persona manager CRUD (6/7 tests—has_role migration pending), P18 S3 CV Optimisation UI panel (absent-case confirmed), Admin LogViewer (all 9 tests pass).
+- RLS cross-tenant denial test script validation (2026-03-29): `scripts/ops/test-rls-cross-tenant.ts` confirms sats_locations INSERT path (BUG-2026-03-17-LOCATION-RLS) working correctly (3/3 PASS).
+
+### Fixed
+
+- 2026-03-30: P14 S3 — Fixed `async-ats-scorer` notification threshold bug in `supabase/functions/async-ats-scorer/index.ts`. The `getUserThresholdMap()` function was using `DEFAULT_PROACTIVE_MATCH_THRESHOLD` (0.6 hardcoded) as fallback for users with null `proactive_match_threshold` in their profiles, causing the user threshold map to return 0.6 for all users. This prevented the `globalThreshold` from `sats_runtime_settings` (set to 0.40 for testing) from ever being reached. Fixed by removing the hardcoded fallback — `getUserThresholdMap()` now only inserts entries for users with an explicit non-null threshold. Users without one now correctly fall through to `globalThreshold` via the `??` operator. Code fix committed; function redeployment pending SUPABASE_ACCESS_TOKEN renewal.
+- 2026-03-29: Added `@testing-library/dom` as direct dev dependency. The package was imported by axe-core tests but not declared, causing "Cannot find module" errors that failed 5 a11y tests. npm run verify now exits 0.
+- 2026-03-29: Corrected `docs/specs/technical/llm-model-governance.md` — §2 Model Register production model is `gpt-4.1` (not stale `o4-mini` from 2026-03-17 rollback). §6 Change Log updated with rollback entry for historical accuracy.
+- 2026-03-29: Fixed RLS cross-tenant test script bug in `scripts/ops/test-rls-cross-tenant.ts`: removed reference to non-existent `region` column in `sats_locations` table (table only contains city, state, country, created_at, updated_at).
+- 2026-03-29: BUG-2026-03-17-LOCATION-RLS closed — cross-tenant RLS isolation on sats_locations confirmed working via runtime test (3/3 PASS).
+
+### Changed
+
+- 2026-03-29: Updated `docs/releases/UNTESTED_IMPLEMENTATIONS.md` — 8 items promoted from CODE-VERIFIED to RUNTIME-VERIFIED after Playwright functional test suite run. P16 S1 partial verification documented (6/7 persona manager tests pass, 1 skipped pending has_role migration). BUG-2026-03-17-LOCATION-RLS marked closed.
+
+### Added
+
 - P19 S4-1 — Bundle analyser: `rollup-plugin-visualizer` added to `vite.config.ts`; generates `dist/stats.html` treemap on every production build (gzip + brotli sizes). Lighthouse CI added as non-blocking `lighthouse` job in `quality-gates.yml` with category assertions (perf ≥ 0.7 warn, a11y ≥ 0.85 error, bp ≥ 0.8 warn). `lighthouserc.json` committed.
 - P19 S5-1 — Storybook bootstrap: installed Storybook 8 (`@storybook/react-vite` + `addon-essentials` + `addon-a11y`). Config at `.storybook/main.ts` and `.storybook/preview.ts` (imports `src/index.css`, light/dark backgrounds). Six component story files: `Button` (10 stories), `Badge` (6), `Card` (4), `Input` (7), `Dialog` (3 — rendered open), `Table` (3). `storybook-static` and `.lighthouseci` added to `.prettierignore`.
 - P19 S3-1 — axe-core a11y tests: 5 Vitest test files in `tests/unit/a11y/` (Dashboard, Resumes, JobDescriptions, ATSAnalyses, Settings). All pass with zero violations. Blocking in CI via `npm run test` step in `quality-gates.yml`. Setup utilities: `tests/unit/a11y/setup.tsx` (QueryClient + MemoryRouter wrapper) and `tests/unit/a11y/setup-dom.ts` (DOMMatrix stub for jsdom/pdfjs-dist compat).
@@ -96,4 +114,3 @@ Entries prior to 2026-03-23 are archived from `SATS_CHANGES.txt` for historical 
 - P5 S1: Resume text extraction (PDF, DOCX, HTML via DOM) → `documentProcessor.ts`; lazy-load pdfjs/docx libs.
 - P5 S2: LinkedIn profile scraper service + JSON validation; `linkedinImportMerge.ts` deduplication (fuzzy skill/location matching).
 - P5 S3: Upskilling roadmap generation edge function with OpenAI integration.
-

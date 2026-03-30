@@ -4,6 +4,8 @@
  *                        Tests items #6 (P15 S1 sats_learning_roadmaps RLS) and
  *                        #13 (BUG locations RLS INSERT path).
  *                        Closes UNTESTED_IMPLEMENTATIONS.md blockers #6 and #13.
+ * 2026-03-29 00:00:00 | Fix: sats_locations table has no 'region' column (city, state, country,
+ *                        created_at, updated_at). Removed region from INSERT payload.
  *
  * Usage:
  *   npx tsx scripts/ops/test-rls-cross-tenant.ts
@@ -171,7 +173,7 @@ async function testLocationsInsertPath() {
   // Insert a new location
   const { data: insertData, error: insertError } = await client
     .from('sats_locations')
-    .insert({ city: testCity, country: 'Test Country', region: 'Test Region' })
+    .insert({ city: testCity, state: 'Test State', country: 'Test Country' })
     .select('id, city')
     .single()
 
