@@ -10,6 +10,7 @@ This file records all structured audits performed on the SmartATS codebase — s
 |---|---|---|---|---|
 | 2026-03-27 | Database Architecture Diagnostic | Claude Code (product-analyst session) | Enterprise-readiness baseline: identify gaps across audit trail, RLS, soft-delete, RBAC, RAG, and LLM observability layers. Triggered by P20 Data Safety & Contamination Recovery planning and future enterprise phases (P8, P12, P17). | [2026-03-27_db-architecture-diagnostic.md](../../claude-audit-reports/2026-03-27_db-architecture-diagnostic.md) |
 | 2026-03-31 | AWS Well-Architected Framework Prompt | Claude Code | Reusable prompt for arch-reviewer + security-auditor agents covering all 6 WAF pillars. Run before major releases or quarterly. | [aws-waf-review-prompt.md](aws-waf-review-prompt.md) |
+| 2026-04-01 | LinkedIn Scraper Hosting Comparison | Claude Code (arch-reviewer) | Fly.io vs Railway comparison across MVP/Growth/Enterprise phases. Triggered by failed Fly.io migration. Decision: Railway for MVP, Fly.io at >200 MAU, retire scraper at Enterprise. | [linkedin-scraper-hosting-comparison-2026-04-01.md](linkedin-scraper-hosting-comparison-2026-04-01.md) |
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "smartats-linkedin-scraper",
   "version": "1.0.0",
-  "description": "Playwright-based LinkedIn profile scraper service for SmartATS. Deployed to Fly.io (MVP-TEMPORARY — see INFRA-1 in docs/improvements/TECHNICAL_IMPROVEMENTS.md).",
+  "description": "Playwright-based LinkedIn profile scraper service for SmartATS. Deployed to Railway (MVP). Migrate to Fly.io at >200 MAU — see INFRA-1 in docs/improvements/TECHNICAL_IMPROVEMENTS.md.",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

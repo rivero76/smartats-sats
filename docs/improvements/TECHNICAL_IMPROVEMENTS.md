@@ -967,8 +967,10 @@ Track email notification as a proper P1 in this backlog.
 **Priority:** BACKLOG (review trigger: >100 MAU or first enterprise customer)
 
 **Current state (MVP):** The LinkedIn profile scraper (`scripts/playwright-linkedin/`) is
-deployed on **Fly.io** (free tier, shared-cpu-1x, 1 GB RAM, auto-stop when idle).
-This replaced Railway on 2026-03-31 to eliminate the Railway subscription cost.
+deployed on **Railway** (Hobby plan, $5 credit/month — covers all MVP scrape volume).
+Fly.io was attempted on 2026-03-31 but blocked (requires payment method; Docker auth callback
+broken). Decision reversed on 2026-04-01: Railway for MVP, Fly.io at Growth stage.
+See full comparison: `docs/audits/linkedin-scraper-hosting-comparison-2026-04-01.md`.
 
 **Why this is flagged temporary:**
 Fly.io free tier has hard limits (160 GB-hours/month, no SLA, auto-stop cold starts of ~30s).
