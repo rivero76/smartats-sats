@@ -20,6 +20,7 @@
 **The #1 thing that is actually working well:** The `UNTESTED_IMPLEMENTATIONS.md` release-blocker tracker is genuinely excellent. Every unvalidated feature has a row with exact acceptance criteria, reproduction commands, current verification status, and the timestamp when it was closed. This is the most mature single artifact in the entire PM system and is a direct reason the codebase has not shipped regressions.
 
 **Supporting observations:**
+
 1. The roadmap (`docs/decisions/product-roadmap.md`) is one of the best artifacts here — phased, versioned, with a Now/Next/Later structure and a decision log. Rare for a solo project.
 2. Seven ADRs covering the most consequential architectural decisions, all with alternatives considered.
 3. The PM Dashboard (`/pm` route) is a clever read-only aggregator — it surfaces the right documents in one screen but cannot be edited in-app.
@@ -33,90 +34,90 @@
 
 ### 1A — Full Artifact Inventory
 
-| File path | Type | Format | Scope |
-|-----------|------|--------|-------|
-| `docs/changelog/CHANGELOG.md` | CHANGELOG | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/product-roadmap.md` | ROADMAP | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/product-vision.md` | ROADMAP | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/product-docs-index.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/README.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/adr-0001-agent-collaboration-model.md` | DECISION_RECORD | MARKDOWN | PROJECT_WIDE |
-| `docs/decisions/adr-0002-llm-provider-abstraction.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/decisions/adr-0005-skill-dedup-fuzzy-matching.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/decisions/adr-0006-rls-first-tenant-isolation.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/decisions/adr-0007-2026-04-02-email-inbound-job-ingestion.md` | DECISION_RECORD | MARKDOWN | FEATURE_SPECIFIC |
-| `docs/releases/UNTESTED_IMPLEMENTATIONS.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/releases/MANUAL_TEST_PROCEDURES.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/releases/e2e-test-session-p13-p15-p14.md` | STATUS_TRACKER | MARKDOWN | PHASE_SPECIFIC |
-| `docs/improvements/TECHNICAL_IMPROVEMENTS.md` | BACKLOG | MARKDOWN | PROJECT_WIDE |
-| `docs/improvements/ARCH-REVIEW-2026-03-31.md` | IMPROVEMENT_LOG | MARKDOWN | PROJECT_WIDE |
-| `docs/improvements/CODE-REVIEW-2026-03-18.md` | IMPROVEMENT_LOG | MARKDOWN | PROJECT_WIDE |
-| `docs/improvements/CODE-REVIEW-2026-03-31.md` | IMPROVEMENT_LOG | MARKDOWN | PROJECT_WIDE |
-| `docs/improvements/technical_review_2026-03-18.md` | IMPROVEMENT_LOG | MARKDOWN | PROJECT_WIDE |
-| `docs/bugs/BACKLOG.md` | BUG_REPORT | MARKDOWN | PROJECT_WIDE |
-| `docs/incidents/INCIDENTS.md` | INCIDENT | MARKDOWN | PROJECT_WIDE |
-| `docs/incidents/incident-2026-03-03-railway-deploy-timeout.md` | INCIDENT | MARKDOWN | ONE-OFF |
-| `docs/incidents/incident-2026-03-26-dev-server-outage.md` | INCIDENT | MARKDOWN | ONE-OFF |
-| `docs/incidents/incident-2026-03-26-onedrive-fileproviderd-overload.md` | INCIDENT | MARKDOWN | ONE-OFF |
-| `docs/incidents/incident-2026-04-01-ats-analyses-select-empty-value.md` | INCIDENT | MARKDOWN | ONE-OFF |
-| `docs/specs/product/p11-job-description-etl-market-intelligence.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/product/p12-globalization-cloud-enterprise-readiness.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/product/p16-career-fit-live-job-discovery.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/technical/llm-model-governance.md` | DECISION_RECORD | MARKDOWN | PROJECT_WIDE |
-| `docs/specs/technical/cloud/p12-cloud-global-enterprise-architecture.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/technical/database/` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/technical/edge-functions/` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/specs/technical/frontend/` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `docs/product/competitive-comparison.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/product/competitor-analysis.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/product/features-inventory.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/product/competitive-intelligence-playbook.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/product/runs/2026-03-27_competitive-comparison.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/product/runs/2026-03-27_competitor-analysis.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/product/runs/2026-03-27_features-inventory.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/compliance/data-retention-policy.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/compliance/data-deletion-policy.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/compliance/audit-trail-policy.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/deployment.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/rollback.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/incident-response.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/data-deletion-operations.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/llm-runtime-quality.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/runbooks/SESSION_CONTINUITY.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/security/P8_RLS_EXPECTED_VS_ACTUAL_REPORT_2026-02-24.md` | IMPROVEMENT_LOG | MARKDOWN | PHASE_SPECIFIC |
-| `docs/security/RLS_BASELINE_CHECKLIST.md` | STATUS_TRACKER | MARKDOWN | PROJECT_WIDE |
-| `docs/sessions/2026-02-25_16-12-28.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/sessions/2026-03-17_21-11-02.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/sessions/opportunities-email-ingestion-2026-04-05.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/sessions/_TEMPLATE.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/sessions/README.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/PM-PGM-AUDIT.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/ARCHITECTURE-DECISION-AUDIT.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/AUDIT_LOG.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/product-strategy-audit-2026-03-27.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/job-seeker-gap-analysis-2026-03-27.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/docs-structure-analysis-2026-03-18.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/linkedin-scraper-hosting-comparison-2026-04-01.md` | OTHER | MARKDOWN | ONE-OFF |
-| `docs/audits/aws-waf-review-prompt.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/audits/code-review-prompt.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/templates/PRODUCT_SPEC_TEMPLATE.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/templates/RELEASE_NOTES_TEMPLATE.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/templates/DOCS_DEFINITION_OF_DONE.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `docs/templates/HELP_CENTER_STRUCTURE.md` | OTHER | MARKDOWN | PROJECT_WIDE |
-| `plans/p14.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/p19-uiux-excellence.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/p25-skill-profile-engine.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/p-career-aspirations-tracker.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/sats_migration_plan.md` | FEATURE_SPEC | MARKDOWN | PROJECT_WIDE |
-| `plans/archive/p13.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/archive/p15.md` | FEATURE_SPEC | MARKDOWN | PHASE_SPECIFIC |
-| `plans/archive/p10-p11-agent-prompts.md` | OTHER | MARKDOWN | PHASE_SPECIFIC |
-| `plans/archive/product-improvements-history.md` | BACKLOG | MARKDOWN | PROJECT_WIDE |
-| `docs/architecture.md` | DECISION_RECORD | MARKDOWN | PROJECT_WIDE |
-| `.github/workflows/quality-gates.yml` | STATUS_TRACKER | YAML | PROJECT_WIDE |
-| `src/pages/PMDashboard.tsx` | STATUS_TRACKER | UI_COMPONENT | PROJECT_WIDE |
+| File path                                                                | Type            | Format       | Scope            |
+| ------------------------------------------------------------------------ | --------------- | ------------ | ---------------- |
+| `docs/changelog/CHANGELOG.md`                                            | CHANGELOG       | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/product-roadmap.md`                                      | ROADMAP         | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/product-vision.md`                                       | ROADMAP         | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/product-docs-index.md`                                   | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/README.md`                                               | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/adr-0001-agent-collaboration-model.md`                   | DECISION_RECORD | MARKDOWN     | PROJECT_WIDE     |
+| `docs/decisions/adr-0002-llm-provider-abstraction.md`                    | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/decisions/adr-0003-two-call-ats-cv-optimisation-isolation.md`      | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/decisions/adr-0004-async-vs-direct-ats-scoring.md`                 | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/decisions/adr-0005-skill-dedup-fuzzy-matching.md`                  | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/decisions/adr-0006-rls-first-tenant-isolation.md`                  | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/decisions/adr-0007-2026-04-02-email-inbound-job-ingestion.md`      | DECISION_RECORD | MARKDOWN     | FEATURE_SPECIFIC |
+| `docs/releases/UNTESTED_IMPLEMENTATIONS.md`                              | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/releases/MANUAL_TEST_PROCEDURES.md`                                | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/releases/e2e-test-session-p13-p15-p14.md`                          | STATUS_TRACKER  | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/improvements/TECHNICAL_IMPROVEMENTS.md`                            | BACKLOG         | MARKDOWN     | PROJECT_WIDE     |
+| `docs/improvements/ARCH-REVIEW-2026-03-31.md`                            | IMPROVEMENT_LOG | MARKDOWN     | PROJECT_WIDE     |
+| `docs/improvements/CODE-REVIEW-2026-03-18.md`                            | IMPROVEMENT_LOG | MARKDOWN     | PROJECT_WIDE     |
+| `docs/improvements/CODE-REVIEW-2026-03-31.md`                            | IMPROVEMENT_LOG | MARKDOWN     | PROJECT_WIDE     |
+| `docs/improvements/technical_review_2026-03-18.md`                       | IMPROVEMENT_LOG | MARKDOWN     | PROJECT_WIDE     |
+| `docs/bugs/BACKLOG.md`                                                   | BUG_REPORT      | MARKDOWN     | PROJECT_WIDE     |
+| `docs/incidents/INCIDENTS.md`                                            | INCIDENT        | MARKDOWN     | PROJECT_WIDE     |
+| `docs/incidents/incident-2026-03-03-railway-deploy-timeout.md`           | INCIDENT        | MARKDOWN     | ONE-OFF          |
+| `docs/incidents/incident-2026-03-26-dev-server-outage.md`                | INCIDENT        | MARKDOWN     | ONE-OFF          |
+| `docs/incidents/incident-2026-03-26-onedrive-fileproviderd-overload.md`  | INCIDENT        | MARKDOWN     | ONE-OFF          |
+| `docs/incidents/incident-2026-04-01-ats-analyses-select-empty-value.md`  | INCIDENT        | MARKDOWN     | ONE-OFF          |
+| `docs/specs/product/p11-job-description-etl-market-intelligence.md`      | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/product/p12-globalization-cloud-enterprise-readiness.md`     | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/product/p16-career-fit-live-job-discovery.md`                | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/technical/llm-model-governance.md`                           | DECISION_RECORD | MARKDOWN     | PROJECT_WIDE     |
+| `docs/specs/technical/cloud/p12-cloud-global-enterprise-architecture.md` | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/technical/database/`                                         | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/technical/edge-functions/`                                   | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/specs/technical/frontend/`                                         | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/product/competitive-comparison.md`                                 | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/product/competitor-analysis.md`                                    | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/product/features-inventory.md`                                     | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/product/competitive-intelligence-playbook.md`                      | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/product/runs/2026-03-27_competitive-comparison.md`                 | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/product/runs/2026-03-27_competitor-analysis.md`                    | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/product/runs/2026-03-27_features-inventory.md`                     | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/compliance/data-retention-policy.md`                               | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/compliance/data-deletion-policy.md`                                | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/compliance/audit-trail-policy.md`                                  | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/deployment.md`                                            | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/rollback.md`                                              | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/incident-response.md`                                     | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/data-deletion-operations.md`                              | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/llm-runtime-quality.md`                                   | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/runbooks/SESSION_CONTINUITY.md`                                    | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/security/P8_RLS_EXPECTED_VS_ACTUAL_REPORT_2026-02-24.md`           | IMPROVEMENT_LOG | MARKDOWN     | PHASE_SPECIFIC   |
+| `docs/security/RLS_BASELINE_CHECKLIST.md`                                | STATUS_TRACKER  | MARKDOWN     | PROJECT_WIDE     |
+| `docs/sessions/2026-02-25_16-12-28.md`                                   | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/sessions/2026-03-17_21-11-02.md`                                   | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/sessions/opportunities-email-ingestion-2026-04-05.md`              | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/sessions/_TEMPLATE.md`                                             | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/sessions/README.md`                                                | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/PM-PGM-AUDIT.md`                                            | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/ARCHITECTURE-DECISION-AUDIT.md`                             | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/AUDIT_LOG.md`                                               | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/product-strategy-audit-2026-03-27.md`                       | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/job-seeker-gap-analysis-2026-03-27.md`                      | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/docs-structure-analysis-2026-03-18.md`                      | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/linkedin-scraper-hosting-comparison-2026-04-01.md`          | OTHER           | MARKDOWN     | ONE-OFF          |
+| `docs/audits/aws-waf-review-prompt.md`                                   | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/audits/code-review-prompt.md`                                      | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/templates/PRODUCT_SPEC_TEMPLATE.md`                                | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/templates/RELEASE_NOTES_TEMPLATE.md`                               | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/templates/DOCS_DEFINITION_OF_DONE.md`                              | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `docs/templates/HELP_CENTER_STRUCTURE.md`                                | OTHER           | MARKDOWN     | PROJECT_WIDE     |
+| `plans/p14.md`                                                           | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/p19-uiux-excellence.md`                                           | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/p25-skill-profile-engine.md`                                      | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/p-career-aspirations-tracker.md`                                  | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/sats_migration_plan.md`                                           | FEATURE_SPEC    | MARKDOWN     | PROJECT_WIDE     |
+| `plans/archive/p13.md`                                                   | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/archive/p15.md`                                                   | FEATURE_SPEC    | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/archive/p10-p11-agent-prompts.md`                                 | OTHER           | MARKDOWN     | PHASE_SPECIFIC   |
+| `plans/archive/product-improvements-history.md`                          | BACKLOG         | MARKDOWN     | PROJECT_WIDE     |
+| `docs/architecture.md`                                                   | DECISION_RECORD | MARKDOWN     | PROJECT_WIDE     |
+| `.github/workflows/quality-gates.yml`                                    | STATUS_TRACKER  | YAML         | PROJECT_WIDE     |
+| `src/pages/PMDashboard.tsx`                                              | STATUS_TRACKER  | UI_COMPONENT | PROJECT_WIDE     |
 
 **Total artifact count:** 73 PM/PgM-relevant files (not counting sub-spec files inside technical spec directories)
 
@@ -191,12 +192,14 @@ Both should be added to `docs/bugs/BACKLOG.md` or the technical improvements bac
 - Section 7: KPI tracking table
 
 **Strengths:**
+
 - There is ONE roadmap. No competing versions found.
 - Phases have explicit IN vs. OUT scope.
 - The Now/Next/Later structure is tied to a business event (6-week soft launch path, last updated 2026-03-30).
 - A versioned change log within the roadmap itself is unusually rigorous for a solo project.
 
 **Weaknesses:**
+
 - KPI table (Section 7) has four metrics defined but every "Current" and "Target" value is "TBD." The KPI section exists structurally but carries no operational data.
 - "Owner" field in the feature register is "TBD" for every feature — in a solo project this is not fatal, but it means the column is decoration.
 - `plans/README.md` is stale — does not list P25 and P-CAT as active plans.
@@ -210,6 +213,7 @@ A consistent lifecycle is observable in practice:
 `Product-analyst agent input → plan file in plans/ → roadmap entry → UNTESTED_IMPLEMENTATIONS.md entry → CODE-VERIFIED state → RUNTIME-VERIFIED state → closure`
 
 Evidence:
+
 - P13, P14, P15 all followed this pattern (archived plans reference linked edge functions and test commands)
 - `UNTESTED_IMPLEMENTATIONS.md` explicitly distinguishes CODE-VERIFIED from RUNTIME-VERIFIED — a meaningful distinction most projects collapse
 - Features in-progress are visible in the roadmap with a clear "release-blocked on E2E validation" note where applicable
@@ -231,6 +235,7 @@ User stories appear in plan files (`plans/p14.md`, `plans/p-career-aspirations-t
 `src/pages/PMDashboard.tsx` is a React page with seven tabs: Roadmap, Release Blockers, Tech Backlog (with search + filter by priority), Bugs, Incidents, Plans, and Changelog. It reads seven markdown files via Vite `?raw` imports and renders them with custom parsing logic.
 
 **What it displays:**
+
 - Summary stat cards (document counts per category)
 - Parsed tables from roadmap, UNTESTED_IMPLEMENTATIONS, bugs, and incidents
 - Full markdown text for changelog and plans
@@ -251,6 +256,7 @@ User stories appear in plan files (`plans/p14.md`, `plans/p-career-aspirations-t
 **Rating: INFORMAL (but functional)**
 
 Work is tracked via:
+
 1. `docs/decisions/product-roadmap.md` — phase-level planning
 2. `plans/` — epic-level decomposition (one file per active phase)
 3. `docs/releases/UNTESTED_IMPLEMENTATIONS.md` — execution-level tracking (what's done vs what still needs testing)
@@ -264,6 +270,7 @@ There are no sprints, no velocity tracking, no burn-down charts, no weekly stand
 **Rating: SYSTEMATIC**
 
 `docs/incidents/INCIDENTS.md` is a proper incident register with:
+
 - Sequential INC-NNN IDs
 - Severity levels (Critical/High/Medium/Low)
 - Active vs. Resolved tables
@@ -282,6 +289,7 @@ Four incidents are tracked (INC-001 through INC-003 resolved; INC-002 still open
 **Rating: MANAGED**
 
 `docs/improvements/TECHNICAL_IMPROVEMENTS.md` is a well-maintained backlog with:
+
 - Priority levels (P0/P1/P2) with clear definitions
 - Named items (P0-1 through P2-10, PROD-1 through PROD-12, WAF-1 through WAF-18, UIUX-1 through UIUX-7, MAINT-1/MAINT-2, INFRA-1, UX-FILE-1)
 - Area, effort estimate, and affected files per item
@@ -392,12 +400,14 @@ docs/
 ### 4B — Naming Conventions
 
 Files are mostly well-named. Conventions observed:
+
 - Incident files: `incident-YYYY-MM-DD-<slug>.md` — consistent
 - ADRs: `adr-NNNN-<slug>.md` — consistent
 - Code reviews: `CODE-REVIEW-YYYY-MM-DD.md` — consistent
 - Session notes: `YYYY-MM-DD_HH-MM-SS.md` — consistent
 
 **Inconsistencies found:**
+
 - `docs/improvements/technical_review_2026-03-18.md` uses snake_case while all other files in the same directory use UPPER-KEBAB or KEBAB-case
 - `docs/product/runs/` stores agent session output files that look like `2026-03-27_competitive-comparison.md` — not obviously distinguishable from session notes in `docs/sessions/`
 - `plans/README.md` lists only 2 active plans but 4+ plan files exist in `plans/`
@@ -405,6 +415,7 @@ Files are mostly well-named. Conventions observed:
 ### 4C — Cross-Referencing
 
 Cross-referencing is above average for a solo project:
+
 - `plans/README.md` links to canonical roadmap and backlog
 - `docs/decisions/product-docs-index.md` redirects to the two canonical product docs
 - `docs/incidents/INCIDENTS.md` links individual incident files
@@ -426,23 +437,23 @@ The folder structure is logical. CLAUDE.md serves as the entry point. The main d
 
 ### 5A — Essential Artifacts Checklist
 
-| Artifact | Exists? | Critical Now? | Notes |
-|----------|---------|---------------|-------|
-| Product vision / mission statement | YES | Yes | `docs/decisions/product-vision.md` — detailed, current |
-| Target user personas | PARTIAL | Yes | Implicit in competitive analysis + job-seeker gap analysis docs, but no formal persona cards |
-| Competitive analysis | YES | Yes | `docs/product/competitor-analysis.md` + comparison doc — well researched |
-| Pricing strategy document | NO | **CRITICAL** | P22/P23/P24 describe tiers (Free/Pro/Max/C-Level) inline in the roadmap but no standalone pricing doc exists |
-| Success metrics / KPIs definition | PARTIAL | Yes | KPI table in roadmap (Section 7) exists but all values are TBD |
-| User feedback collection process | NO | High | No feedback loop artifact — no survey, no in-app feedback widget spec, no user interview protocol |
-| Onboarding flow documentation | NO | High | P24 S3 post-signup flow is planned but not yet specified in a dedicated doc |
-| Feature flag inventory | PARTIAL | Medium | `usePlanFeature.ts` lists 9 feature keys in code; no standalone feature flag inventory doc |
-| Runbook for common operations | PARTIAL | **CRITICAL** | `deployment.md` and `rollback.md` are empty shells — unusable in a production incident |
-| Rollback / disaster recovery plan | NO | **CRITICAL** | `rollback.md` is empty. No documented rollback procedure for Supabase migrations |
-| Data retention / privacy policy | PARTIAL | **CRITICAL** | Three compliance docs exist as empty shells — regulatory risk if challenged |
-| Terms of service (draft) | NO | High | No ToS draft found anywhere in the repository |
-| Go-to-market plan | PARTIAL | High | GTM strategy discussed inline in roadmap Section 2 but no standalone GTM doc |
-| Beta testing plan | NO | High | No beta testing protocol, no beta user cohort definition |
-| Support / escalation process | NO | Medium | No helpdesk, no SLA definition, no escalation path documented |
+| Artifact                           | Exists? | Critical Now? | Notes                                                                                                        |
+| ---------------------------------- | ------- | ------------- | ------------------------------------------------------------------------------------------------------------ |
+| Product vision / mission statement | YES     | Yes           | `docs/decisions/product-vision.md` — detailed, current                                                       |
+| Target user personas               | PARTIAL | Yes           | Implicit in competitive analysis + job-seeker gap analysis docs, but no formal persona cards                 |
+| Competitive analysis               | YES     | Yes           | `docs/product/competitor-analysis.md` + comparison doc — well researched                                     |
+| Pricing strategy document          | NO      | **CRITICAL**  | P22/P23/P24 describe tiers (Free/Pro/Max/C-Level) inline in the roadmap but no standalone pricing doc exists |
+| Success metrics / KPIs definition  | PARTIAL | Yes           | KPI table in roadmap (Section 7) exists but all values are TBD                                               |
+| User feedback collection process   | NO      | High          | No feedback loop artifact — no survey, no in-app feedback widget spec, no user interview protocol            |
+| Onboarding flow documentation      | NO      | High          | P24 S3 post-signup flow is planned but not yet specified in a dedicated doc                                  |
+| Feature flag inventory             | PARTIAL | Medium        | `usePlanFeature.ts` lists 9 feature keys in code; no standalone feature flag inventory doc                   |
+| Runbook for common operations      | PARTIAL | **CRITICAL**  | `deployment.md` and `rollback.md` are empty shells — unusable in a production incident                       |
+| Rollback / disaster recovery plan  | NO      | **CRITICAL**  | `rollback.md` is empty. No documented rollback procedure for Supabase migrations                             |
+| Data retention / privacy policy    | PARTIAL | **CRITICAL**  | Three compliance docs exist as empty shells — regulatory risk if challenged                                  |
+| Terms of service (draft)           | NO      | High          | No ToS draft found anywhere in the repository                                                                |
+| Go-to-market plan                  | PARTIAL | High          | GTM strategy discussed inline in roadmap Section 2 but no standalone GTM doc                                 |
+| Beta testing plan                  | NO      | High          | No beta testing protocol, no beta user cohort definition                                                     |
+| Support / escalation process       | NO      | Medium        | No helpdesk, no SLA definition, no escalation path documented                                                |
 
 ### 5B — Process Gaps
 
@@ -506,13 +517,10 @@ Two TODOs in `delete-account/` and `cancel-account-deletion/` for confirmation e
 5. A changelog with enough detail to reconstruct what shipped (done)
 
 **Ideal setup for this stage:**
-Everything above, plus:
-6. Three user persona cards (20 lines each) — who is this for?
-7. A simple user feedback channel (Typeform, email alias, or in-app widget)
-8. A launch checklist document (15-20 checkboxes per launch milestone)
-9. Semantic version numbers in the changelog
+Everything above, plus: 6. Three user persona cards (20 lines each) — who is this for? 7. A simple user feedback channel (Typeform, email alias, or in-app widget) 8. A launch checklist document (15-20 checkboxes per launch milestone) 9. Semantic version numbers in the changelog
 
 **What NOT to add at this stage:**
+
 - Sprint boards (overhead without a team)
 - Weekly status reports (nobody to send them to)
 - RACI matrices (one person is all roles)
@@ -573,6 +581,7 @@ docs/
 ```
 
 **Key changes from current state:**
+
 - `docs/audits/` split into `prompts/` (reusable) and `outputs/` (one-time)
 - `docs/releases/release-notes/` directory added for versioned release notes
 - `plans/README.md` is the only file that must be kept manually in sync
@@ -584,31 +593,37 @@ docs/
 ```markdown
 # Feature Spec: [Feature Name]
 
-| Field | Value |
-|-------|-------|
-| Phase | P-NN |
+| Field  | Value                                 |
+| ------ | ------------------------------------- |
+| Phase  | P-NN                                  |
 | Status | Draft / Approved / In Progress / Live |
-| Owner | TBD |
-| Date | YYYY-MM-DD |
+| Owner  | TBD                                   |
+| Date   | YYYY-MM-DD                            |
 
 ## Problem
+
 One sentence: what user pain does this solve?
 
 ## Out of scope
+
 List what this does NOT do.
 
 ## User stories
+
 - As a [persona], I want [capability] so that [outcome].
 
 ## Acceptance criteria
+
 - [ ] Criterion 1
 - [ ] Criterion 2
 
 ## Dependencies
+
 - Requires: [list]
 - Blocks: [list]
 
 ## Definition of Done
+
 - [ ] Code complete
 - [ ] UNTESTED_IMPLEMENTATIONS.md row added
 - [ ] RUNTIME-VERIFIED
@@ -621,25 +636,29 @@ List what this does NOT do.
 ```markdown
 # BUG-YYYY-MM-DD-SLUG
 
-| Field | Value |
-|-------|-------|
-| Status | OPEN / IN PROGRESS / FIXED / WONT FIX |
-| Severity | Critical / High / Medium / Low |
-| Affects | [file paths] |
+| Field    | Value                                 |
+| -------- | ------------------------------------- |
+| Status   | OPEN / IN PROGRESS / FIXED / WONT FIX |
+| Severity | Critical / High / Medium / Low        |
+| Affects  | [file paths]                          |
 
 ## Steps to reproduce
+
 1.
 2.
 3.
 
 ## Expected vs. actual
-- Expected: 
+
+- Expected:
 - Actual:
 
 ## Root cause
+
 Brief hypothesis.
 
 ## Fix
+
 PR/commit link when resolved.
 ```
 
@@ -656,19 +675,24 @@ Already exists and is excellent in `docs/incidents/INCIDENTS.md`. Reuse as-is.
 **Status:** Proposed / Accepted / Superseded / Rejected
 
 ## Context
+
 What problem are we solving? What constraints exist?
 
 ## Decision
+
 What did we decide to do?
 
 ## Alternatives considered
+
 | Option | Pros | Cons |
-|--------|------|------|
+| ------ | ---- | ---- |
 
 ## Consequences
+
 What becomes easier? What becomes harder?
 
 ## Revisit trigger
+
 Under what condition should this decision be reopened?
 ```
 
@@ -678,19 +702,24 @@ Under what condition should this decision be reopened?
 # Cycle [N] — [Start date] to [End date]
 
 ## Goal
+
 One sentence: what does done look like for this cycle?
 
 ## Committed work
+
 - [ ] [Feature / task] — [estimated hours]
 - [ ] [Feature / task]
 
 ## Carry-over from last cycle
+
 - [ ] [Item]
 
 ## Blockers going in
+
 -
 
 ## End-of-cycle review
+
 - Completed:
 - Deferred:
 - Learned:
@@ -702,6 +731,7 @@ One sentence: what does done look like for this cycle?
 # Release Checklist — [Version] — [Date]
 
 ## Pre-release
+
 - [ ] All UNTESTED_IMPLEMENTATIONS.md open items resolved or deferred with rationale
 - [ ] `npm run verify` passes (build + test + format + docs + secrets)
 - [ ] No P0 items in TECHNICAL_IMPROVEMENTS.md open
@@ -709,17 +739,20 @@ One sentence: what does done look like for this cycle?
 - [ ] Database migrations tested on staging
 
 ## Deploy
+
 - [ ] Supabase edge functions deployed (`supabase functions deploy <fn>`)
 - [ ] Database migrations applied (`supabase db push`)
 - [ ] Environment variables verified
 - [ ] Frontend deployed
 
 ## Post-deploy verification
+
 - [ ] Smoke test: core user flow (upload resume → add JD → run analysis)
 - [ ] Check log_events for errors
 - [ ] Confirm no new P0 incidents
 
 ## Communication
+
 - [ ] Changelog updated
 - [ ] Release notes published
 - [ ] Help docs updated for any changed UX
@@ -733,15 +766,19 @@ Keep the existing format but add semantic versioning:
 ## [v1.2.0] — 2026-04-DD
 
 ### Added
+
 - YYYY-MM-DD: [Feature description] — [link to spec or plan if applicable]
 
 ### Changed
+
 - YYYY-MM-DD: [What changed and why]
 
 ### Fixed
+
 - YYYY-MM-DD: [Bug description] — [commit or BUG-ID reference]
 
 ### Security
+
 - YYYY-MM-DD: [Security improvement]
 ```
 
@@ -812,34 +849,37 @@ Quarterly:
 
 ### 7D — Recommended Tool Consolidation
 
-| Information type | Source of truth | Why |
-|------------------|----------------|-----|
-| Feature backlog | `docs/decisions/product-roadmap.md` (Sections 1 + 4) | Already the best artifact in the project. One file. |
-| Bug tracking | `docs/bugs/BACKLOG.md` | Low volume, markdown is sufficient. Migrate to GitHub Issues only when team grows. |
-| Roadmap | `docs/decisions/product-roadmap.md` | Do not split. Current structure (phases + Now/Next/Later + feature register + KPIs + decision log) in one file is the right call for a solo project. |
-| Changelogs | `docs/changelog/CHANGELOG.md` | Add semantic version markers. Keep as-is otherwise. |
-| Decisions (ADRs) | `docs/decisions/adr-NNNN-*.md` + README index | Well-managed. Keep. |
-| Tech debt | `docs/improvements/TECHNICAL_IMPROVEMENTS.md` | Working well. Keep. |
-| Incidents | `docs/incidents/INCIDENTS.md` + individual files | Working well. Keep. |
-| Release gate | `docs/releases/UNTESTED_IMPLEMENTATIONS.md` | Best artifact in the repo. Keep as-is. |
-| Active execution plans | `plans/` | Keep. Enforce: `plans/README.md` must be updated when any plan is added or archived. |
-| Execution plans archive | `plans/archive/` | Keep. |
+| Information type        | Source of truth                                      | Why                                                                                                                                                  |
+| ----------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feature backlog         | `docs/decisions/product-roadmap.md` (Sections 1 + 4) | Already the best artifact in the project. One file.                                                                                                  |
+| Bug tracking            | `docs/bugs/BACKLOG.md`                               | Low volume, markdown is sufficient. Migrate to GitHub Issues only when team grows.                                                                   |
+| Roadmap                 | `docs/decisions/product-roadmap.md`                  | Do not split. Current structure (phases + Now/Next/Later + feature register + KPIs + decision log) in one file is the right call for a solo project. |
+| Changelogs              | `docs/changelog/CHANGELOG.md`                        | Add semantic version markers. Keep as-is otherwise.                                                                                                  |
+| Decisions (ADRs)        | `docs/decisions/adr-NNNN-*.md` + README index        | Well-managed. Keep.                                                                                                                                  |
+| Tech debt               | `docs/improvements/TECHNICAL_IMPROVEMENTS.md`        | Working well. Keep.                                                                                                                                  |
+| Incidents               | `docs/incidents/INCIDENTS.md` + individual files     | Working well. Keep.                                                                                                                                  |
+| Release gate            | `docs/releases/UNTESTED_IMPLEMENTATIONS.md`          | Best artifact in the repo. Keep as-is.                                                                                                               |
+| Active execution plans  | `plans/`                                             | Keep. Enforce: `plans/README.md` must be updated when any plan is added or archived.                                                                 |
+| Execution plans archive | `plans/archive/`                                     | Keep.                                                                                                                                                |
 
 **Do NOT add:** Jira, Linear, Notion, Asana, Trello, or any external PM tool until you have at least 3 people. The current markdown system is faster and less overhead for a solo founder.
 
 ### 7E — PM Dashboard Recommendations
 
 **What it should track (current):**
+
 - Release blockers (UNTESTED_IMPLEMENTATIONS.md) — already does this well
 - Tech backlog with priority filter — already does this well
 - Incidents register — already does this well
 - Roadmap snapshot — already does this well
 
 **What to ADD:**
+
 - KPI panel: pull from a database table once KPIs are instrumented (even a simple `sats_kpi_snapshots` table updated weekly)
 - A "stale docs warning" that flags compliance docs or runbook shells that are empty (check file size)
 
 **What to NOT add:**
+
 - Write capabilities. The dashboard should remain a read-only aggregation view. Editing PM artifacts in a custom in-app editor would create a source-of-truth split between the dashboard state and the markdown files that are the actual source of truth.
 
 **Primary interface vs. read-only status view:**
@@ -893,4 +933,4 @@ Read-only status view. Write operations happen in the markdown source files. The
 
 ---
 
-*Report generated: 2026-04-06 | Auditor: Claude Code (claude-sonnet-4-6) | Repo: smartats-sats*
+_Report generated: 2026-04-06 | Auditor: Claude Code (claude-sonnet-4-6) | Repo: smartats-sats_

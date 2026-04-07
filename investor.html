@@ -2,6 +2,7 @@
 <!-- UPDATE LOG
      2026-03-30 00:00:00 | Investor pitch page — standalone HTML
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features; promote four features to Live status
+     2026-04-07 20:00:00 | Product update: score-first ATS analysis UX, tier-gated debug modal, Settings plan management card.
 -->
 <html lang="en">
   <head>
@@ -941,8 +942,11 @@
             <div class="product-card-icon" style="background: rgba(34, 197, 94, 0.1)">🎯</div>
             <h3>ATS Resume Scoring <span class="badge-live">Live</span></h3>
             <p>
-              AI scores any résumé against any job description on a 0–100% scale with skill-by-skill
-              breakdown and missing skills list.
+              AI scores any résumé against any job description on a 0–100% scale. Results are
+              displayed in score-first collapsed cards with colour-coded status borders — green for
+              80%+, amber for 60–79%, red below 60%. Score sub-dimensions (Skills Alignment,
+              Experience Relevance, Domain Fit, Format Quality) are gated to Pro+ to drive upgrade
+              conversion. Model details, prompt inspection, and token usage are gated to Max+.
             </p>
           </div>
           <div class="product-card">
@@ -1002,6 +1006,25 @@
               AI classifies skills from your work history into career chapters with time-decay
               weighting. Skill context is injected into every ATS analysis — so your most recently
               used skills score highest.
+            </p>
+          </div>
+          <div class="product-card">
+            <div class="product-card-icon" style="background: rgba(34, 197, 94, 0.1)">📊</div>
+            <h3>Intelligent Analysis Interface <span class="badge-live">Live</span></h3>
+            <p>
+              Score-first card design with progressive disclosure. Each analysis opens with a large
+              % hero, colour-coded border, and signal badges. Details expand on click. Filter bar
+              for Strong Match / Needs Work / In Progress. Designed to make insight extraction fast
+              at a glance.
+            </p>
+          </div>
+          <div class="product-card">
+            <div class="product-card-icon" style="background: rgba(34, 197, 94, 0.1)">⚙️</div>
+            <h3>In-App Plan Management <span class="badge-live">Live</span></h3>
+            <p>
+              Side-by-side tier comparison built into the Settings page. Users land on a clear
+              upgrade path from any locked-feature "Upgrade" button. Early access request flow
+              included. Billing integration (Stripe) launching in P22.
             </p>
           </div>
         </div>
@@ -1139,7 +1162,7 @@
           <div class="pricing-card">
             <div class="pricing-tier">C-Level</div>
             <div class="pricing-price">$99 <span class="per">/mo</span></div>
-            <div class="pricing-desc">Teams & enterprise</div>
+            <div class="pricing-desc">Teams &amp; enterprise</div>
             <ul class="pricing-list">
               <li>Everything in Max</li>
               <li>RBAC + multi-seat</li>
@@ -1157,7 +1180,7 @@
     <!-- ─── TRACTION ──────────────────────────────── -->
     <section class="section-wrap">
       <div class="container">
-        <div class="section-eyebrow">Traction & Validation</div>
+        <div class="section-eyebrow">Traction &amp; Validation</div>
         <h2>Built with <span class="g">rigor</span>,<br />shipped with evidence</h2>
         <p class="section-lead">
           Every feature ships with a runtime verification gate. No assumptions — only evidence.

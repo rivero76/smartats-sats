@@ -6,7 +6,7 @@
            designed to produce a GO / NO-GO decision on a full rewrite.
   PREREQUISITE: Run BEFORE committing to any rebuild effort.
   HOW TO RUN: Open this repo in Claude Code and paste everything inside the PROMPT START / PROMPT END block.
-  OUTPUT: docs/architecture/ARCHITECTURE-AUDIT-YYYY-MM-DD.md
+  OUTPUT: docs/audits/reports/YYYY-MM-DD_architecture-decision.md
 -->
 
 ---
@@ -16,7 +16,7 @@
 1. Open this repository in Claude Code.
 2. Copy everything inside the `--- PROMPT START ---` / `--- PROMPT END ---` block.
 3. Paste it as a new message in Claude Code.
-4. Save the findings as `docs/architecture/ARCHITECTURE-AUDIT-YYYY-MM-DD.md`.
+4. Save the findings as `docs/audits/reports/YYYY-MM-DD_architecture-decision.md`.
 
 ---
 
@@ -108,6 +108,7 @@ showing all layers and their connections.
   (e.g., defaulting a score to 0 instead of NULL)?
 
 **Verdict for Dimension 2:** Rate the schema as:
+
 - **SOLID** — Needs cleanup but the model is sound. Refactor-safe.
 - **FRAGILE** — Several structural problems but migrateable with effort.
 - **BROKEN** — Fundamental modeling errors that would be cheaper to redesign than migrate.
@@ -150,6 +151,7 @@ showing all layers and their connections.
   - Could a malicious resume or job description alter the system prompt's behavior?
 
 **Verdict for Dimension 3:** Rate as:
+
 - **ACCEPTABLE for beta** — No critical vulnerabilities. Known gaps have mitigations.
 - **NEEDS IMMEDIATE FIXES** — Critical vulnerabilities exist but are fixable without a rebuild.
 - **FUNDAMENTALLY INSECURE** — Auth model or data exposure patterns require redesign.
@@ -161,6 +163,7 @@ showing all layers and their connections.
 **4A — Complete feature census**
 
 Read these sources to build the inventory:
+
 - `docs/changelog/CHANGELOG.md`
 - `docs/releases/UNTESTED_IMPLEMENTATIONS.md`
 - `docs/decisions/product-roadmap.md`
@@ -169,14 +172,15 @@ Read these sources to build the inventory:
 For EVERY feature, record:
 
 | Feature | Status | Core files | Has tests? | Has error handling? | User-visible bugs? |
-|---------|--------|-----------|------------|--------------------|--------------------|
-| ...     | ...    | ...       | ...        | ...                | ...                |
+| ------- | ------ | ---------- | ---------- | ------------------- | ------------------ |
+| ...     | ...    | ...        | ...        | ...                 | ...                |
 
 Status should be one of: WORKING / PARTIAL / BROKEN / DEAD CODE
 
 **4B — Feature coupling assessment**
 
 For each feature rated WORKING:
+
 - Could it be extracted and moved to a new codebase independently?
 - What would break if you removed it? (List the dependencies)
 - Estimate: how many hours to reimplement this feature from scratch in a clean codebase,
@@ -185,6 +189,7 @@ For each feature rated WORKING:
 **4C — What users actually touch**
 
 If analytics or logging exists:
+
 - Which features are actually used?
 - Which features were built but have zero or near-zero usage?
 - This matters: don't rebuild features nobody uses.
@@ -196,6 +201,7 @@ If analytics or logging exists:
 **5A — Consistency index**
 
 Sample 30 files across the codebase and score each on a 1-5 scale for:
+
 - Consistent formatting (indentation, naming, structure)
 - Meaningful variable/function names
 - Separation of concerns (UI logic vs business logic vs data access)
@@ -232,14 +238,14 @@ Using findings from Dimensions 1-5, fill out this decision matrix:
 
 ### 6A — Structural Assessment
 
-| Area                    | Salvageable? | Effort to fix | Effort to rebuild | Verdict         |
-|-------------------------|-------------|---------------|-------------------|-----------------|
-| Database schema         | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
-| Auth & security         | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
-| API layer (edge funcs)  | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
-| Frontend architecture   | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
-| LLM integration         | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
-| CI/CD & DevOps          | YES/NO      | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD   |
+| Area                   | Salvageable? | Effort to fix | Effort to rebuild | Verdict       |
+| ---------------------- | ------------ | ------------- | ----------------- | ------------- |
+| Database schema        | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
+| Auth & security        | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
+| API layer (edge funcs) | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
+| Frontend architecture  | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
+| LLM integration        | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
+| CI/CD & DevOps         | YES/NO       | S/M/L/XL      | S/M/L/XL          | FIX / REBUILD |
 
 (S = under 1 week, M = 1-3 weeks, L = 1-2 months, XL = 2+ months)
 
@@ -271,6 +277,7 @@ Based on all evidence, provide ONE of these recommendations:
 
 **OPTION A — INCREMENTAL REFACTOR**
 If chosen: provide a prioritized 6-phase refactoring roadmap:
+
 1. What to fix first (security, schema, or architecture)
 2. What to fix second
 3. ...and so on
@@ -279,6 +286,7 @@ If chosen: provide a prioritized 6-phase refactoring roadmap:
 
 **OPTION B — STRATEGIC REBUILD (Strangler Fig)**
 If chosen: provide a migration plan:
+
 1. Which component to rebuild first (and why)
 2. How to run old and new systems in parallel
 3. Data migration strategy
@@ -288,6 +296,7 @@ If chosen: provide a migration plan:
 
 **OPTION C — SHIP AS-IS WITH GUARDRAILS**
 If chosen (when the product needs market validation first):
+
 1. Minimum security fixes required before any user exposure
 2. Monitoring and alerting to add immediately
 3. Features to disable/hide until hardened
@@ -298,12 +307,13 @@ If chosen (when the product needs market validation first):
 ## OUTPUT FORMAT
 
 Return the full report with:
+
 1. One section per dimension, with all findings citing file paths and line numbers
 2. Every finding rated: CRITICAL / MAJOR / MINOR
 3. The completed decision matrix from Dimension 6
 4. A clear, single-sentence final recommendation at the top of the document
-  (before all the evidence), so the founder can see the answer immediately
+   (before all the evidence), so the founder can see the answer immediately
 
-Save as: `docs/architecture/ARCHITECTURE-AUDIT-YYYY-MM-DD.md`
+Save as: `docs/audits/reports/YYYY-MM-DD_architecture-decision.md`
 
 --- PROMPT END ---

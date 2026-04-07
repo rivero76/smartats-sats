@@ -77,11 +77,11 @@
 
 **God files** (imported by more than 10 files in `src/`):
 
-| File | Import count | Notes |
-|------|-------------|-------|
-| `src/integrations/supabase/client.ts` | 41 | Expected — single DB client |
-| `src/contexts/AuthContext.tsx` | 33 | Expected — auth context |
-| `src/lib/centralizedLogger.ts` | 10 | Acceptable |
+| File                                  | Import count | Notes                       |
+| ------------------------------------- | ------------ | --------------------------- |
+| `src/integrations/supabase/client.ts` | 41           | Expected — single DB client |
+| `src/contexts/AuthContext.tsx`        | 33           | Expected — auth context     |
+| `src/lib/centralizedLogger.ts`        | 10           | Acceptable                  |
 
 No circular dependencies detected. `useATSAnalyses.ts` imports `useDirectATSAnalysis`, and `useDirectATSAnalysis` does not import back — the chain is one-directional.
 
@@ -92,6 +92,7 @@ No circular dependencies detected. `useATSAnalyses.ts` imports `useDirectATSAnal
 **Backup/churn files:**
 
 The `.gitignore` specifies `*.tsx.[0-9]` but 12 such files are tracked in the repo:
+
 - `src/components/FileUpload.tsx.1`, `FileUpload.tsx.2`
 - `src/components/ResumeModal.tsx.1`
 - `src/hooks/useDocumentExtractions.ts.1`, `useResumeExtractionHandler.ts.1`
@@ -116,14 +117,14 @@ These are editor backup artifacts that should be deleted. **MINOR.**
 
 **Unused/suspicious packages:**
 
-| Package | Status | Evidence |
-|---------|--------|---------|
-| `html-to-text` | LIKELY UNUSED | Not found imported in `src/`. May have been displaced by `documentProcessor.ts` custom extraction. |
-| `embla-carousel-react` | LIKELY UNUSED | No carousel usage found in pages or components. |
-| `react-resizable-panels` | USED | Found in `ui/resizable.tsx` (shadcn component) |
-| `vaul` | USED | Found in `ui/drawer.tsx` |
-| `cmdk` | USED | Command menu component |
-| `input-otp` | USED | OTP input for auth flows |
+| Package                  | Status        | Evidence                                                                                           |
+| ------------------------ | ------------- | -------------------------------------------------------------------------------------------------- |
+| `html-to-text`           | LIKELY UNUSED | Not found imported in `src/`. May have been displaced by `documentProcessor.ts` custom extraction. |
+| `embla-carousel-react`   | LIKELY UNUSED | No carousel usage found in pages or components.                                                    |
+| `react-resizable-panels` | USED          | Found in `ui/resizable.tsx` (shadcn component)                                                     |
+| `vaul`                   | USED          | Found in `ui/drawer.tsx`                                                                           |
+| `cmdk`                   | USED          | Command menu component                                                                             |
+| `input-otp`              | USED          | OTP input for auth flows                                                                           |
 
 **No outdated-by-2-major-versions packages detected.** Versions are current (React 18, Vite 5, TanStack Query 5).
 
@@ -219,33 +220,34 @@ Total tables created: **67** (via `CREATE TABLE` statements)
 
 **Active production tables (with primary purpose):**
 
-| Table | Purpose | FK Relationships |
-|-------|---------|-----------------|
-| `sats_users_public` | User metadata + role | → `auth.users` |
-| `profiles` | Email + soft-delete flag | → `auth.users` |
-| `sats_resumes` | Resume records | → `auth.users` |
-| `document_extractions` | Extracted resume text | → `sats_resumes` |
-| `sats_job_descriptions` | JD records | → `sats_companies`, `sats_locations`, `auth.users` |
-| `sats_analyses` | ATS scoring results | → `sats_resumes`, `sats_job_descriptions` |
-| `sats_enriched_experiences` | AI-enriched experience entries | → `auth.users` |
-| `sats_skill_profiles` | Skill classification results | → `auth.users` |
-| `sats_skill_decay_config` | Decay curve config | none |
-| `sats_learning_roadmaps` | Upskilling roadmaps | → `auth.users` |
-| `sats_roadmap_milestones` | Milestones per roadmap | → `sats_learning_roadmaps` |
-| `sats_staged_jobs` | Job pipeline queue | — |
-| `sats_user_notifications` | Notification records | → `auth.users` |
-| `sats_resume_personas` | Resume persona tags | → `auth.users` |
-| `sats_user_skills` | User skill inventory | → `auth.users`, `sats_skills` |
-| `sats_skill_experiences` | Skill evidence narratives | → `auth.users`, `sats_skills` |
-| `sats_log_entries` / `sats_log_settings` | Logging infrastructure | — |
-| `sats_llm_call_logs` | LLM call audit | → `auth.users` |
-| `sats_market_signals` | Job market frequency data | — |
-| `sats_gap_snapshots` / `sats_gap_items` | Gap analysis results | → `auth.users` |
-| `sats_role_families` | Role taxonomy reference | — |
+| Table                                    | Purpose                        | FK Relationships                                   |
+| ---------------------------------------- | ------------------------------ | -------------------------------------------------- |
+| `sats_users_public`                      | User metadata + role           | → `auth.users`                                     |
+| `profiles`                               | Email + soft-delete flag       | → `auth.users`                                     |
+| `sats_resumes`                           | Resume records                 | → `auth.users`                                     |
+| `document_extractions`                   | Extracted resume text          | → `sats_resumes`                                   |
+| `sats_job_descriptions`                  | JD records                     | → `sats_companies`, `sats_locations`, `auth.users` |
+| `sats_analyses`                          | ATS scoring results            | → `sats_resumes`, `sats_job_descriptions`          |
+| `sats_enriched_experiences`              | AI-enriched experience entries | → `auth.users`                                     |
+| `sats_skill_profiles`                    | Skill classification results   | → `auth.users`                                     |
+| `sats_skill_decay_config`                | Decay curve config             | none                                               |
+| `sats_learning_roadmaps`                 | Upskilling roadmaps            | → `auth.users`                                     |
+| `sats_roadmap_milestones`                | Milestones per roadmap         | → `sats_learning_roadmaps`                         |
+| `sats_staged_jobs`                       | Job pipeline queue             | —                                                  |
+| `sats_user_notifications`                | Notification records           | → `auth.users`                                     |
+| `sats_resume_personas`                   | Resume persona tags            | → `auth.users`                                     |
+| `sats_user_skills`                       | User skill inventory           | → `auth.users`, `sats_skills`                      |
+| `sats_skill_experiences`                 | Skill evidence narratives      | → `auth.users`, `sats_skills`                      |
+| `sats_log_entries` / `sats_log_settings` | Logging infrastructure         | —                                                  |
+| `sats_llm_call_logs`                     | LLM call audit                 | → `auth.users`                                     |
+| `sats_market_signals`                    | Job market frequency data      | —                                                  |
+| `sats_gap_snapshots` / `sats_gap_items`  | Gap analysis results           | → `auth.users`                                     |
+| `sats_role_families`                     | Role taxonomy reference        | —                                                  |
 
 **Legacy Lovable-era tables (still exist, zero application code references):**
 
 The `src/integrations/supabase/types.ts` auto-generated file shows these tables are present in the database schema:
+
 - `ats_derivatives`, `ats_findings`, `ats_runs`, `ats_scores`, `ats_resumes`, `ats_jobs`, `ats_job_documents`, `work_experiences`
 
 These were the scaffolding from the original Lovable-generated project. Migration `20260327100000_p21_s1_add_created_by_updated_by.sql` (lines 75–168) even adds audit triggers to `ats_jobs`, `ats_resumes`, `ats_runs`, `ats_derivatives` — indicating these tables are still alive in the Supabase instance. **No frontend component or edge function queries them.** They represent dead schema that adds confusion and unnecessary RLS surface area.
@@ -268,6 +270,7 @@ These represent premature infrastructure — built for an enterprise scale (mult
 ### 2B — Migration Quality
 
 **Ratio:** 98 migrations total; 5 have "fix" in their filename explicitly. However, examining the early September 2025 cluster (migrations `20250912*`), the pattern reveals:
+
 - 5 migrations in one day (`20250912122512` through `20250912140443`) recreating the same trigger function repeatedly — classic Lovable scaffolding thrash
 - `20250924034010` drops and recreates duplicate triggers introduced by the Lovable platform
 
@@ -276,6 +279,7 @@ These represent premature infrastructure — built for an enterprise scale (mult
 **Idempotency:** Most recent migrations use `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT DO NOTHING` — properly idempotent. Early migrations (Sept 2025) are not idempotent — they will fail on re-run.
 
 **Destructive operations:**
+
 - Migration `20260402020000_cleanup_orphaned_proactive_data.sql` and `20260402030000_cleanup_mock_proactive_data.sql` — hard-delete data rows. No rollback path.
 - Table renames in `20260327150000_p21_tier1_rename_tables.sql` — zero-downtime `ALTER TABLE RENAME`, preserves OIDs and FKs. Well-executed.
 
@@ -289,39 +293,40 @@ These represent premature infrastructure — built for an enterprise scale (mult
 
 **Policy patterns:**
 
-| Table | Policy type | Correctness |
-|-------|------------|-------------|
-| `sats_resumes` | `auth.uid() = user_id` | Correct; WITH CHECK enforced (P8 hardening) |
-| `sats_analyses` | `auth.uid() = user_id AND deleted_at IS NULL` | Correct |
-| `sats_job_descriptions` | `auth.uid() = user_id AND deleted_at IS NULL` | Correct |
-| `sats_enriched_experiences` | `auth.uid() = user_id AND deleted_at IS NULL` | Correct |
-| `document_extractions` | Subquery joins to `sats_resumes.user_id` | Correct; WITH CHECK present |
-| `sats_users_public` | `auth.uid() = auth_user_id` | Correct; WITH CHECK enforced |
-| `sats_llm_call_logs` | Admin select via `sats_user_roles` | Correct post-rename fix |
-| `sats_roles` (P21) | `true` — all authenticated users can read | Intentional (public role registry) |
-| `sats_permissions` (P21) | `true` — all authenticated users can read | Intentional (public permission registry) |
+| Table                       | Policy type                                   | Correctness                                 |
+| --------------------------- | --------------------------------------------- | ------------------------------------------- |
+| `sats_resumes`              | `auth.uid() = user_id`                        | Correct; WITH CHECK enforced (P8 hardening) |
+| `sats_analyses`             | `auth.uid() = user_id AND deleted_at IS NULL` | Correct                                     |
+| `sats_job_descriptions`     | `auth.uid() = user_id AND deleted_at IS NULL` | Correct                                     |
+| `sats_enriched_experiences` | `auth.uid() = user_id AND deleted_at IS NULL` | Correct                                     |
+| `document_extractions`      | Subquery joins to `sats_resumes.user_id`      | Correct; WITH CHECK present                 |
+| `sats_users_public`         | `auth.uid() = auth_user_id`                   | Correct; WITH CHECK enforced                |
+| `sats_llm_call_logs`        | Admin select via `sats_user_roles`            | Correct post-rename fix                     |
+| `sats_roles` (P21)          | `true` — all authenticated users can read     | Intentional (public role registry)          |
+| `sats_permissions` (P21)    | `true` — all authenticated users can read     | Intentional (public permission registry)    |
 
 **Overly permissive policies:**
+
 - `sats_roles` and `sats_permissions` use `USING (true)` for SELECT. This is intentional (they are lookup tables) but documented here for awareness.
 - P21 tables with tenant-scoped policies are not yet enforced since `tenant_id` defaults to a sentinel value and no code sets it per-user.
 
 **Edge functions using `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS):**
 
-| Function | Justification |
-|---------|--------------|
-| `ats-analysis-direct` | Needs to read resume text + write analysis row on behalf of user — justified |
-| `async-ats-scorer` | System cron writing across all user analyses — justified |
-| `enrich-experiences` | Writing enrichment for authenticated user — justified (user JWT validated at entry) |
-| `delete-account` | Hard-deletes auth user + all data — justified |
-| `cancel-account-deletion` | Reactivates soft-deleted account — justified |
-| `fetch-market-jobs` | System cron writing to staged_jobs — justified |
-| `centralized-logging` | Writes log entries from any caller — **RISK: accept any service_role call** |
-| `generate-upskill-roadmap` | Writing roadmap rows for user — partially justified |
-| `reset-profile-data` | Bulk-deletes user career data — justified |
-| `classify-skill-profile` | Writes skill profile — partially justified |
-| `aggregate-market-signals` | System aggregation — justified |
-| `generate-gap-matrix` | Writes gap snapshot — partially justified |
-| `inbound-email-ingest` | Writes staged jobs from Postmark webhook — justified |
+| Function                   | Justification                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `ats-analysis-direct`      | Needs to read resume text + write analysis row on behalf of user — justified        |
+| `async-ats-scorer`         | System cron writing across all user analyses — justified                            |
+| `enrich-experiences`       | Writing enrichment for authenticated user — justified (user JWT validated at entry) |
+| `delete-account`           | Hard-deletes auth user + all data — justified                                       |
+| `cancel-account-deletion`  | Reactivates soft-deleted account — justified                                        |
+| `fetch-market-jobs`        | System cron writing to staged_jobs — justified                                      |
+| `centralized-logging`      | Writes log entries from any caller — **RISK: accept any service_role call**         |
+| `generate-upskill-roadmap` | Writing roadmap rows for user — partially justified                                 |
+| `reset-profile-data`       | Bulk-deletes user career data — justified                                           |
+| `classify-skill-profile`   | Writes skill profile — partially justified                                          |
+| `aggregate-market-signals` | System aggregation — justified                                                      |
+| `generate-gap-matrix`      | Writes gap snapshot — partially justified                                           |
+| `inbound-email-ingest`     | Writes staged jobs from Postmark webhook — justified                                |
 
 **FLAG (MAJOR):** `async-ats-scorer` has `verify_jwt = false` with no supplementary auth check. Any caller who knows the function URL can trigger a batch scoring run against all users' data. The CORS check only blocks browser-based cross-origin calls — it does not stop `curl` or server-to-server requests. The function should validate a shared secret (`CRON_SECRET`) in the Authorization header.
 
@@ -332,6 +337,7 @@ These represent premature infrastructure — built for an enterprise scale (mult
 ### 2D — Data Integrity
 
 **CHECK constraints:**
+
 - `sats_users_public.role IN ('user', 'admin')` — correct
 - `sats_analyses.status IN ('initial','queued','processing','completed','error')` — correct
 - `sats_tenants.status IN ('active','suspended','cancelled','trial')` — correct (P21 tables)
@@ -357,6 +363,7 @@ The active production schema is sound. The fragility comes from two sources: (1)
 **Implementation:** Supabase Auth (JWT-based). The `AuthContext.tsx` (`src/contexts/AuthContext.tsx`) wraps `supabase.auth.onAuthStateChange()` and exposes `user`, `session`, and `satsUser` (from `sats_users_public`).
 
 **Auth flow:**
+
 1. User calls `signIn()` → `supabase.auth.signInWithPassword()` → returns JWT
 2. `onAuthStateChange` fires `SIGNED_IN` → `fetchSATSUser()` loads `sats_users_public` row
 3. JWT is stored in `localStorage` (Supabase default); auto-refreshed via `autoRefreshToken: true`
@@ -366,6 +373,7 @@ The active production schema is sound. The fragility comes from two sources: (1)
 **FLAG (MINOR):** The retry logic in `fetchSATSUser()` (`AuthContext.tsx` lines 110–140) uses a bare `setTimeout(..., 2000)` to retry if the SATS user record isn't found immediately after signup. This is a race condition workaround for the DB trigger timing. It works but is fragile — if the trigger fails silently, the user will have `satsUser: null` and the app shows "User" as their name until reload.
 
 **Role enforcement:** RBAC has two layers:
+
 - Legacy: `sats_users_public.role` field checked in `AdminRoute.tsx` and `has_role()` SQL function
 - New (P21): `sats_user_role_assignments` table with `sats_has_permission()` function — **not yet used in any frontend component or RLS policy on core tables**
 
@@ -379,21 +387,21 @@ The P21 RBAC layer is fully implemented in the database but has zero integration
 
 **Edge function security summary:**
 
-| Function | JWT | Input validation | Rate limiting | Error sanitization |
-|---------|-----|-----------------|--------------|-------------------|
-| `ats-analysis-direct` | YES | YES (required fields checked) | NO | YES (mapProviderError) |
-| `async-ats-scorer` | NO | CORS only | NO | YES |
-| `fetch-market-jobs` | NO | CORS only | NO | YES |
-| `linkedin-profile-ingest` | YES | YES | NO | PARTIAL (own error classes) |
-| `enrich-experiences` | YES | YES | NO | YES |
-| `generate-upskill-roadmap` | YES | YES | NO | YES |
-| `delete-account` | YES | Password verified | NO | YES |
-| `inbound-email-ingest` | NO (Postmark) | Sender allowlist + signature | NO | YES |
-| `classify-skill-profile` | YES | YES | NO | YES |
-| `generate-gap-matrix` | YES | YES | NO | YES |
-| `reset-profile-data` | YES | YES | NO | YES |
-| `centralized-logging` | YES | MINIMAL | NO | YES |
-| `cancel-account-deletion` | YES | YES | NO | YES |
+| Function                   | JWT           | Input validation              | Rate limiting | Error sanitization          |
+| -------------------------- | ------------- | ----------------------------- | ------------- | --------------------------- |
+| `ats-analysis-direct`      | YES           | YES (required fields checked) | NO            | YES (mapProviderError)      |
+| `async-ats-scorer`         | NO            | CORS only                     | NO            | YES                         |
+| `fetch-market-jobs`        | NO            | CORS only                     | NO            | YES                         |
+| `linkedin-profile-ingest`  | YES           | YES                           | NO            | PARTIAL (own error classes) |
+| `enrich-experiences`       | YES           | YES                           | NO            | YES                         |
+| `generate-upskill-roadmap` | YES           | YES                           | NO            | YES                         |
+| `delete-account`           | YES           | Password verified             | NO            | YES                         |
+| `inbound-email-ingest`     | NO (Postmark) | Sender allowlist + signature  | NO            | YES                         |
+| `classify-skill-profile`   | YES           | YES                           | NO            | YES                         |
+| `generate-gap-matrix`      | YES           | YES                           | NO            | YES                         |
+| `reset-profile-data`       | YES           | YES                           | NO            | YES                         |
+| `centralized-logging`      | YES           | MINIMAL                       | NO            | YES                         |
+| `cancel-account-deletion`  | YES           | YES                           | NO            | YES                         |
 
 **FLAG (MAJOR):** No edge function implements rate limiting. A malicious authenticated user could trigger unlimited ATS analyses, burning OpenAI credits without bound.
 
@@ -422,6 +430,7 @@ The P21 RBAC layer is fully implemented in the database but has zero integration
 **Pattern used across all functions:** User-supplied resume text and JD text are injected into LLM prompts as string interpolation. Example from `ats-analysis-direct` (line ~569): resume text and JD text are pasted directly into the user prompt.
 
 **No prompt sanitization layer exists.** A resume containing `IGNORE PREVIOUS INSTRUCTIONS` could theoretically alter model behavior. However:
+
 - Schema-locked JSON output (`response_format: json_schema`, `strict: true`) means even a hijacked response must match the expected JSON schema to be parsed
 - `retryAttempts` re-prompts on invalid schema output, creating a structural defense
 - The `additionalProperties: false` in all schemas limits injection surface
@@ -435,6 +444,7 @@ The P21 RBAC layer is fully implemented in the database but has zero integration
 ### Dimension 3 Verdict: **NEEDS IMMEDIATE FIXES**
 
 Not fundamentally insecure, but two MAJOR vulnerabilities require patching before any public launch:
+
 1. `async-ats-scorer` and `fetch-market-jobs` accept unauthenticated POST requests (JWT disabled, no cron secret)
 2. No rate limiting on any LLM-invoking endpoint
 
@@ -446,35 +456,36 @@ Both are fixable in <1 week without architectural changes.
 
 ### 4A — Complete Feature Census
 
-| Feature | Status | Core files | Has tests? | Has error handling? | User-visible bugs? |
-|---------|--------|-----------|------------|--------------------|--------------------|
-| Resume Upload & Management | WORKING | `MyResumes.tsx`, `FileUpload.tsx`, `useResumes.ts` | a11y tests | YES | None known |
-| Job Description Management (manual + URL ingest) | WORKING | `JobDescriptions.tsx`, `JobDescriptionModal.tsx`, `job-description-url-ingest/` | NO | YES | SPA sites handled with warning banner |
-| ATS Analysis (3-call: score + CV opt + intelligence) | WORKING | `ATSAnalyses.tsx`, `ats-analysis-direct/`, `useATSAnalyses.ts` | Playwright suite | YES | — |
-| Real-time analysis progress updates | WORKING | `useATSAnalyses.ts` (realtime + polling) | Playwright (partial) | YES | — |
-| CV Optimisation Score panel | PARTIAL | `ATSAnalyses.tsx`, `ats-analysis-direct` | Absent-case tested; present-case pending | YES | — |
-| Resume Intelligence (4 sub-panels) | WORKING | `ResumeIntelligencePanel.tsx`, `ats-analysis-direct` | NO | YES (null-safe) | — |
-| AI Experience Enrichment | WORKING | `EnrichedExperiences.tsx`, `enrich-experiences/` | NO | YES | — |
-| LinkedIn Profile Import (HITL) | PARTIAL | `ProfileImportReviewModal.tsx`, `linkedin-profile-ingest/`, `useLinkedinImportPreparation.ts` | 11 unit tests (merge logic) | YES | Live E2E untested |
-| Proactive Job Matching | WORKING | `ProactiveMatches.tsx`, `async-ats-scorer/`, `fetch-market-jobs/` | Playwright (8 tests pass) | YES | Notification threshold bug fixed, redeployment pending |
-| Upskilling Roadmaps | WORKING | `UpskillingRoadmaps.tsx`, `generate-upskill-roadmap/` | Playwright (8 tests pass) | YES | E2E of edge function untested |
-| Inbound Email Job Ingestion (Postmark) | WORKING | `inbound-email-ingest/`, `Settings.tsx` | RUNTIME-VERIFIED | YES | — |
-| Skill Profile Engine | WORKING | `SkillProfileManager.tsx`, `SkillClassificationReview.tsx`, `classify-skill-profile/` | 5 a11y tests | YES | — |
-| Gap Analysis Engine | PARTIAL | `GapMatrix.tsx`, `generate-gap-matrix/`, `aggregate-market-signals/` | CODE-VERIFIED only | YES | Runtime E2E pending |
-| Resume Personas | PARTIAL | `PersonaManager.tsx`, `useResumePersonas.ts` | 6/7 tests pass | YES | CRUD blocked by pending migration |
-| Dashboard Analytics | WORKING | `Dashboard.tsx`, `useATSAnalyses.ts`, `useATSAnalysisStats` | a11y tests | YES | — |
-| Help Hub | WORKING | `HelpHub.tsx`, `helpContent.ts` | Playwright (10 tests pass) | YES | — |
-| Admin Dashboard | WORKING | `AdminDashboard.tsx`, admin components | Playwright (log viewer) | YES | — |
-| Settings + Data Management | WORKING | `Settings.tsx`, `useAccountDeletion.ts`, `useCareerDataReset.ts` | a11y tests | YES | Career data reset runtime E2E pending |
-| Career Data Reset | PARTIAL | `ResetCareerDataModal.tsx`, `reset-profile-data/` | CODE-VERIFIED | YES | Runtime E2E pending |
-| Plan/Feature Gating | PARTIAL | `usePlanFeature.ts` | NO | YES | All users hardcoded to 'free' until P22 |
-| PM Dashboard | WORKING | `PMDashboard.tsx` | NO | YES | — |
+| Feature                                              | Status  | Core files                                                                                    | Has tests?                               | Has error handling? | User-visible bugs?                                     |
+| ---------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------- | ------------------------------------------------------ |
+| Resume Upload & Management                           | WORKING | `MyResumes.tsx`, `FileUpload.tsx`, `useResumes.ts`                                            | a11y tests                               | YES                 | None known                                             |
+| Job Description Management (manual + URL ingest)     | WORKING | `JobDescriptions.tsx`, `JobDescriptionModal.tsx`, `job-description-url-ingest/`               | NO                                       | YES                 | SPA sites handled with warning banner                  |
+| ATS Analysis (3-call: score + CV opt + intelligence) | WORKING | `ATSAnalyses.tsx`, `ats-analysis-direct/`, `useATSAnalyses.ts`                                | Playwright suite                         | YES                 | —                                                      |
+| Real-time analysis progress updates                  | WORKING | `useATSAnalyses.ts` (realtime + polling)                                                      | Playwright (partial)                     | YES                 | —                                                      |
+| CV Optimisation Score panel                          | PARTIAL | `ATSAnalyses.tsx`, `ats-analysis-direct`                                                      | Absent-case tested; present-case pending | YES                 | —                                                      |
+| Resume Intelligence (4 sub-panels)                   | WORKING | `ResumeIntelligencePanel.tsx`, `ats-analysis-direct`                                          | NO                                       | YES (null-safe)     | —                                                      |
+| AI Experience Enrichment                             | WORKING | `EnrichedExperiences.tsx`, `enrich-experiences/`                                              | NO                                       | YES                 | —                                                      |
+| LinkedIn Profile Import (HITL)                       | PARTIAL | `ProfileImportReviewModal.tsx`, `linkedin-profile-ingest/`, `useLinkedinImportPreparation.ts` | 11 unit tests (merge logic)              | YES                 | Live E2E untested                                      |
+| Proactive Job Matching                               | WORKING | `ProactiveMatches.tsx`, `async-ats-scorer/`, `fetch-market-jobs/`                             | Playwright (8 tests pass)                | YES                 | Notification threshold bug fixed, redeployment pending |
+| Upskilling Roadmaps                                  | WORKING | `UpskillingRoadmaps.tsx`, `generate-upskill-roadmap/`                                         | Playwright (8 tests pass)                | YES                 | E2E of edge function untested                          |
+| Inbound Email Job Ingestion (Postmark)               | WORKING | `inbound-email-ingest/`, `Settings.tsx`                                                       | RUNTIME-VERIFIED                         | YES                 | —                                                      |
+| Skill Profile Engine                                 | WORKING | `SkillProfileManager.tsx`, `SkillClassificationReview.tsx`, `classify-skill-profile/`         | 5 a11y tests                             | YES                 | —                                                      |
+| Gap Analysis Engine                                  | PARTIAL | `GapMatrix.tsx`, `generate-gap-matrix/`, `aggregate-market-signals/`                          | CODE-VERIFIED only                       | YES                 | Runtime E2E pending                                    |
+| Resume Personas                                      | PARTIAL | `PersonaManager.tsx`, `useResumePersonas.ts`                                                  | 6/7 tests pass                           | YES                 | CRUD blocked by pending migration                      |
+| Dashboard Analytics                                  | WORKING | `Dashboard.tsx`, `useATSAnalyses.ts`, `useATSAnalysisStats`                                   | a11y tests                               | YES                 | —                                                      |
+| Help Hub                                             | WORKING | `HelpHub.tsx`, `helpContent.ts`                                                               | Playwright (10 tests pass)               | YES                 | —                                                      |
+| Admin Dashboard                                      | WORKING | `AdminDashboard.tsx`, admin components                                                        | Playwright (log viewer)                  | YES                 | —                                                      |
+| Settings + Data Management                           | WORKING | `Settings.tsx`, `useAccountDeletion.ts`, `useCareerDataReset.ts`                              | a11y tests                               | YES                 | Career data reset runtime E2E pending                  |
+| Career Data Reset                                    | PARTIAL | `ResetCareerDataModal.tsx`, `reset-profile-data/`                                             | CODE-VERIFIED                            | YES                 | Runtime E2E pending                                    |
+| Plan/Feature Gating                                  | PARTIAL | `usePlanFeature.ts`                                                                           | NO                                       | YES                 | All users hardcoded to 'free' until P22                |
+| PM Dashboard                                         | WORKING | `PMDashboard.tsx`                                                                             | NO                                       | YES                 | —                                                      |
 
 ---
 
 ### 4B — Feature Coupling Assessment
 
 The feature architecture is loose by design (each feature = one page + one hook + one edge function). Removing any single feature requires:
+
 1. Delete the page component
 2. Delete the hook
 3. Remove the route from `App.tsx`
@@ -499,24 +510,24 @@ No analytics data is accessible from the codebase. The `sats_log_entries` table 
 
 Sample of 30 files assessed (mix of pages, hooks, edge functions, utilities, UI components):
 
-| File category | Formatting | Naming | SoC | Error handling | Score |
-|--------------|-----------|--------|-----|---------------|-------|
-| `src/pages/Dashboard.tsx` | 5 | 5 | 4 | 4 | 4.5 |
-| `src/pages/MyResumes.tsx` | 5 | 5 | 4 | 4 | 4.5 |
-| `src/hooks/useATSAnalyses.ts` | 5 | 5 | 3 (realtime mixed into query hook) | 5 | 4.5 |
-| `src/hooks/useDirectATSAnalysis.ts` | 5 | 5 | 4 | 5 | 4.75 |
-| `src/contexts/AuthContext.tsx` | 5 | 5 | 3 (retry logic mixed with auth state) | 5 | 4.5 |
-| `src/components/FileUpload.tsx` | 5 | 5 | 3 (name dialog inline in upload component) | 4 | 4.25 |
-| `supabase/functions/ats-analysis-direct/index.ts` | 4 | 5 | 3 (1654 lines, 3 LLM calls inline) | 5 | 4.25 |
-| `supabase/functions/linkedin-profile-ingest/index.ts` | 4 | 5 | 3 (direct OpenAI call diverges from shared pattern) | 4 | 4.0 |
-| `supabase/functions/_shared/llmProvider.ts` | 5 | 5 | 5 | 5 | 5.0 |
-| `src/lib/centralizedLogger.ts` | 5 | 5 | 4 | 5 | 4.75 |
-| `src/utils/linkedin-import-merge.ts` | 5 | 5 | 5 | 4 | 4.75 |
-| `src/components/ui/card.tsx` (shadcn) | 5 | 5 | 5 | N/A | 5.0 |
-| `src/components/ui/accordion.tsx` (shadcn) | 5 | 5 | 5 | N/A | 5.0 |
-| `src/hooks/usePlanFeature.ts` | 5 | 5 | 4 | 4 | 4.5 |
-| `src/services/documentProcessor.ts` | 5 | 5 | 4 | 5 | 4.75 |
-| (remaining 15 files estimated by pattern) | 4-5 | 4-5 | 3-5 | 4-5 | 4.25 avg |
+| File category                                         | Formatting | Naming | SoC                                                 | Error handling | Score    |
+| ----------------------------------------------------- | ---------- | ------ | --------------------------------------------------- | -------------- | -------- |
+| `src/pages/Dashboard.tsx`                             | 5          | 5      | 4                                                   | 4              | 4.5      |
+| `src/pages/MyResumes.tsx`                             | 5          | 5      | 4                                                   | 4              | 4.5      |
+| `src/hooks/useATSAnalyses.ts`                         | 5          | 5      | 3 (realtime mixed into query hook)                  | 5              | 4.5      |
+| `src/hooks/useDirectATSAnalysis.ts`                   | 5          | 5      | 4                                                   | 5              | 4.75     |
+| `src/contexts/AuthContext.tsx`                        | 5          | 5      | 3 (retry logic mixed with auth state)               | 5              | 4.5      |
+| `src/components/FileUpload.tsx`                       | 5          | 5      | 3 (name dialog inline in upload component)          | 4              | 4.25     |
+| `supabase/functions/ats-analysis-direct/index.ts`     | 4          | 5      | 3 (1654 lines, 3 LLM calls inline)                  | 5              | 4.25     |
+| `supabase/functions/linkedin-profile-ingest/index.ts` | 4          | 5      | 3 (direct OpenAI call diverges from shared pattern) | 4              | 4.0      |
+| `supabase/functions/_shared/llmProvider.ts`           | 5          | 5      | 5                                                   | 5              | 5.0      |
+| `src/lib/centralizedLogger.ts`                        | 5          | 5      | 4                                                   | 5              | 4.75     |
+| `src/utils/linkedin-import-merge.ts`                  | 5          | 5      | 5                                                   | 4              | 4.75     |
+| `src/components/ui/card.tsx` (shadcn)                 | 5          | 5      | 5                                                   | N/A            | 5.0      |
+| `src/components/ui/accordion.tsx` (shadcn)            | 5          | 5      | 5                                                   | N/A            | 5.0      |
+| `src/hooks/usePlanFeature.ts`                         | 5          | 5      | 4                                                   | 4              | 4.5      |
+| `src/services/documentProcessor.ts`                   | 5          | 5      | 4                                                   | 5              | 4.75     |
+| (remaining 15 files estimated by pattern)             | 4-5        | 4-5    | 3-5                                                 | 4-5            | 4.25 avg |
 
 **Aggregate mean: ~4.5 / 5.0**
 
@@ -529,6 +540,7 @@ No files scored below 3. The codebase is notably consistent for a startup produc
 ### 5B — AI-Generated Code Footprint
 
 **Identified AI-generated scaffolding:**
+
 - `src/components/ui/` — entire directory is shadcn/ui scaffolding (30+ files). These are standard, unmodified, and are the correct way to use shadcn. Not harmful.
 - Early Lovable-era migrations (Sept 2025) — 12 migrations from a single day clearly represent Lovable platform output; they recreate the same trigger function multiple times, create storage buckets redundantly, and fix their own output within hours.
 - `sats_ai_agents` seed data in migration `20260328010000` seeds 17 Claude Code agent definitions into the database — the codebase is registering its own development agents as data. This is harmless but indicates agentic development process.
@@ -541,14 +553,15 @@ No files scored below 3. The codebase is notably consistent for a startup produc
 
 **Test types present:**
 
-| Test type | Location | Count | Quality |
-|-----------|---------|-------|---------|
-| Accessibility (jest-axe) | `tests/unit/a11y/` | 8 files, ~40 tests | Meaningful — tests real rendered components |
-| Unit (Vitest) | `tests/unit/utils/` | 2 files: `contentExtraction.test.ts`, `linkedinImportMerge.test.ts` | 11 tests, well-structured |
-| Playwright functional | `tests/e2e/` | 7 spec files | Meaningful — tests against live Supabase |
-| Visual regression | `tests/e2e/visual/` | Exists, non-blocking in CI | Requires auth credentials in CI |
+| Test type                | Location            | Count                                                               | Quality                                     |
+| ------------------------ | ------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
+| Accessibility (jest-axe) | `tests/unit/a11y/`  | 8 files, ~40 tests                                                  | Meaningful — tests real rendered components |
+| Unit (Vitest)            | `tests/unit/utils/` | 2 files: `contentExtraction.test.ts`, `linkedinImportMerge.test.ts` | 11 tests, well-structured                   |
+| Playwright functional    | `tests/e2e/`        | 7 spec files                                                        | Meaningful — tests against live Supabase    |
+| Visual regression        | `tests/e2e/visual/` | Exists, non-blocking in CI                                          | Requires auth credentials in CI             |
 
 **Coverage gaps:**
+
 - Zero tests for `src/hooks/` logic itself
 - Zero tests for edge functions (no Deno test files)
 - Zero tests for `src/services/documentProcessor.ts` (complex PDF/DOCX parsing)
@@ -562,6 +575,7 @@ No files scored below 3. The codebase is notably consistent for a startup produc
 ### 5D — Build and Deploy Pipeline
 
 **CI/CD:** GitHub Actions workflow at `.github/workflows/quality-gates.yml`:
+
 - `verify` job: build + unit tests + format check + docs gate + secret scan (**BLOCKING**)
 - `visual-regression` job: Playwright tests (**non-blocking, `continue-on-error: true`**)
 - `lighthouse` job: Lighthouse CI (**non-blocking**)
@@ -580,15 +594,15 @@ No files scored below 3. The codebase is notably consistent for a startup produc
 
 ### 6A — Structural Assessment
 
-| Area | Salvageable? | Effort to fix | Effort to rebuild | Verdict |
-|------|-------------|---------------|-------------------|---------|
-| **Database schema (active tables)** | YES | S (cleanup migrations) | XL | FIX |
-| **Database schema (P21 dead tables)** | YES | M (drop migrations) | N/A | FIX |
-| **Auth & security** | YES | S-M | XL | FIX |
-| **API layer (edge functions)** | YES | S (SEC-1 fix + cron secrets) | L | FIX |
-| **Frontend architecture** | YES | S (delete orphans, clean backups) | XL | FIX |
-| **LLM integration** | YES | S (fix linkedin-profile-ingest) | M | FIX |
-| **CI/CD & DevOps** | YES | S (add CD for edge functions) | S | FIX |
+| Area                                  | Salvageable? | Effort to fix                     | Effort to rebuild | Verdict |
+| ------------------------------------- | ------------ | --------------------------------- | ----------------- | ------- |
+| **Database schema (active tables)**   | YES          | S (cleanup migrations)            | XL                | FIX     |
+| **Database schema (P21 dead tables)** | YES          | M (drop migrations)               | N/A               | FIX     |
+| **Auth & security**                   | YES          | S-M                               | XL                | FIX     |
+| **API layer (edge functions)**        | YES          | S (SEC-1 fix + cron secrets)      | L                 | FIX     |
+| **Frontend architecture**             | YES          | S (delete orphans, clean backups) | XL                | FIX     |
+| **LLM integration**                   | YES          | S (fix linkedin-profile-ingest)   | M                 | FIX     |
+| **CI/CD & DevOps**                    | YES          | S (add CD for edge functions)     | S                 | FIX     |
 
 ---
 
@@ -601,6 +615,7 @@ Just messy. The active production schema is well-modeled, properly normalized, a
 **2. Are there security vulnerabilities that can't be patched incrementally?**
 
 No. Both MAJOR vulnerabilities (unprotected cron endpoints and missing rate limiting) are straightforward fixes:
+
 - Add `CRON_SECRET` header validation to `async-ats-scorer` and `fetch-market-jobs` (~2 hours each)
 - Add per-user rate limiting to `ats-analysis-direct` via a counter in Redis or Supabase (~1 day)
 
@@ -647,6 +662,7 @@ Yes, definitively. The incremental fixes identified are all additive (new migrat
 **PHASE 3 — Runtime Validation Backlog (2 weeks, HIGH PRIORITY)**
 
 Work through the 9 `CODE-VERIFIED — runtime E2E pending` items in `UNTESTED_IMPLEMENTATIONS.md`:
+
 - `async-ats-scorer` notification threshold (redeployment after token renewal)
 - `generate-upskill-roadmap` live E2E
 - `linkedin-profile-ingest` live E2E
@@ -682,21 +698,21 @@ Work through the 9 `CODE-VERIFIED — runtime E2E pending` items in `UNTESTED_IM
 
 ## Summary Table
 
-| Dimension | Finding | Severity |
-|-----------|---------|---------|
-| Journey 1 (Resume → ATS) | Clean 14-step flow, N+1 on user fetch acknowledged | MINOR |
-| Journey 2 (LinkedIn) | SEC-1: direct OpenAI call bypasses shared provider | MAJOR |
-| Journey 3 (Dashboard) | 4 parallel queries, N+1 embedded | MINOR |
-| Orphan files | `Index.tsx` + 12 backup files | MINOR |
-| Dead code | 29 P21 enterprise tables, 8 Lovable tables | MAJOR |
-| Migration quality | Early Lovable churn resolved; recent migrations clean | MINOR |
-| RLS coverage | All active tables protected; P21 tables unconnected | MINOR |
-| Cron endpoint auth | `async-ats-scorer`, `fetch-market-jobs` accept any POST | MAJOR |
-| Rate limiting | Zero rate limiting on any LLM endpoint | MAJOR |
-| Prompt injection | Schema-locked output provides structural defense | MINOR |
-| LLM abstraction | `callLLM()` shared provider clean; SEC-1 exception | MAJOR |
-| Test coverage | ~10–15%; meaningful where present; large gaps | MAJOR |
-| CI/CD | Lint non-blocking; no CD for edge functions | MINOR |
-| Code consistency | Mean 4.5/5.0 across 30 sampled files | N/A |
+| Dimension                | Finding                                                 | Severity |
+| ------------------------ | ------------------------------------------------------- | -------- |
+| Journey 1 (Resume → ATS) | Clean 14-step flow, N+1 on user fetch acknowledged      | MINOR    |
+| Journey 2 (LinkedIn)     | SEC-1: direct OpenAI call bypasses shared provider      | MAJOR    |
+| Journey 3 (Dashboard)    | 4 parallel queries, N+1 embedded                        | MINOR    |
+| Orphan files             | `Index.tsx` + 12 backup files                           | MINOR    |
+| Dead code                | 29 P21 enterprise tables, 8 Lovable tables              | MAJOR    |
+| Migration quality        | Early Lovable churn resolved; recent migrations clean   | MINOR    |
+| RLS coverage             | All active tables protected; P21 tables unconnected     | MINOR    |
+| Cron endpoint auth       | `async-ats-scorer`, `fetch-market-jobs` accept any POST | MAJOR    |
+| Rate limiting            | Zero rate limiting on any LLM endpoint                  | MAJOR    |
+| Prompt injection         | Schema-locked output provides structural defense        | MINOR    |
+| LLM abstraction          | `callLLM()` shared provider clean; SEC-1 exception      | MAJOR    |
+| Test coverage            | ~10–15%; meaningful where present; large gaps           | MAJOR    |
+| CI/CD                    | Lint non-blocking; no CD for edge functions             | MINOR    |
+| Code consistency         | Mean 4.5/5.0 across 30 sampled files                    | N/A      |
 
 **No finding rises to the level of requiring a rebuild. All MAJOR findings are patching tasks, not redesigns.**

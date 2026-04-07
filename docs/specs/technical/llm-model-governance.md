@@ -10,6 +10,7 @@
 <!-- 2026-03-29 00:00:00 | §2 Model Register updated: production model for ATS scoring is gpt-4.1
      (o4-mini rollback from 2026-03-17 is permanent until valid o4-mini API model ID is confirmed).
      §3 heading updated to reflect current reality. §6 Change Log updated with rollback entry. -->
+<!-- 2026-04-07 00:00:00 | P28 S2 — Register OPENAI_MODEL_PROFILE_FIT (Profile Fit Analyzer task). -->
 
 ## 1. Purpose
 
@@ -31,6 +32,7 @@ is a product-level defect.
 | LinkedIn profile parse | `OPENAI_MODEL_LINKEDIN`       | `gpt-4.1-mini` | `gpt-4o-mini` | `0.1`       | —    |
 | Skill classification   | `OPENAI_MODEL_SKILL_CLASSIFY` | `gpt-4.1-mini` | `gpt-4o-mini` | `0`         | `42` |
 | Resume Intelligence    | `OPENAI_MODEL_INTELLIGENCE`   | `gpt-4.1-mini` | `gpt-4o-mini` | `0`         | `42` |
+| Profile Fit Analyzer   | `OPENAI_MODEL_PROFILE_FIT`    | `gpt-4.1-mini` | `gpt-4o-mini` | `0.3`       | —    |
 
 > Seed is only used for scoring tasks where determinism matters. Creative/generative tasks (enrichment,
 > roadmaps) intentionally use no seed to allow variation across calls.

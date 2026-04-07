@@ -1,10 +1,17 @@
 # SmartATS — Periodic Code Review Prompt
 
+> **DEPRECATED — 2026-04-07**
+> This prompt has been superseded by `aws-waf-review-prompt.md`, which covers all four
+> dimensions from this prompt plus two additional WAF pillars. The unique "Help Pages vs.
+> Features" check (Dimension 3) has been merged into the WAF prompt under Pillar 1 —
+> Operational Excellence. **Use `aws-waf-review-prompt.md` for all future code reviews.**
+> This file is retained for historical reference only.
+
 <!--
   PURPOSE: Paste this prompt into Claude Code to run a full quality audit.
-  FREQUENCY: Run after every 3-5 phases, or before any major release.
-  LAST RUN: 2026-03-18 — findings saved in docs/improvements/CODE-REVIEW-2026-03-18.md
-  HOW TO RUN: Open this repo in Claude Code and paste the prompt below.
+  FREQUENCY: DEPRECATED — use aws-waf-review-prompt.md instead.
+  LAST RUN: 2026-03-18 — findings saved in docs/audits/reports/2026-03-18_code-review.md
+  HOW TO RUN: See aws-waf-review-prompt.md
 -->
 
 ---

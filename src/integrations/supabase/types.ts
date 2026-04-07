@@ -549,6 +549,7 @@ export type Database = {
           linkedin_url: string | null
           location: string | null
           phone: string | null
+          plan_override: string | null
           portfolio_url: string | null
           preferred_currency: string
           preferred_locale: string
@@ -574,6 +575,7 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           phone?: string | null
+          plan_override?: string | null
           portfolio_url?: string | null
           preferred_currency?: string
           preferred_locale?: string
@@ -599,6 +601,7 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           phone?: string | null
+          plan_override?: string | null
           portfolio_url?: string | null
           preferred_currency?: string
           preferred_locale?: string
@@ -2017,6 +2020,33 @@ export type Database = {
           },
         ]
       }
+      sats_feature_flags: {
+        Row: {
+          feature_key: string
+          id: string
+          is_enabled: boolean
+          plan_tier: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          feature_key: string
+          id?: string
+          is_enabled?: boolean
+          plan_tier: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          feature_key?: string
+          id?: string
+          is_enabled?: boolean
+          plan_tier?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       sats_features: {
         Row: {
           category: string
@@ -2937,6 +2967,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'sats_currencies'
             referencedColumns: ['code']
+          },
+        ]
+      }
+      sats_profile_fit_reports: {
+        Row: {
+          cost_estimate_usd: number | null
+          created_at: string
+          fit_score: number
+          gap_items: Json
+          gap_snapshot_id: string | null
+          id: string
+          model_used: string | null
+          reconciliation_conflicts: Json | null
+          resume_id: string | null
+          score_rationale: string | null
+          target_market_code: string
+          target_role_family_id: string
+          user_id: string
+        }
+        Insert: {
+          cost_estimate_usd?: number | null
+          created_at?: string
+          fit_score: number
+          gap_items?: Json
+          gap_snapshot_id?: string | null
+          id?: string
+          model_used?: string | null
+          reconciliation_conflicts?: Json | null
+          resume_id?: string | null
+          score_rationale?: string | null
+          target_market_code: string
+          target_role_family_id: string
+          user_id: string
+        }
+        Update: {
+          cost_estimate_usd?: number | null
+          created_at?: string
+          fit_score?: number
+          gap_items?: Json
+          gap_snapshot_id?: string | null
+          id?: string
+          model_used?: string | null
+          reconciliation_conflicts?: Json | null
+          resume_id?: string | null
+          score_rationale?: string | null
+          target_market_code?: string
+          target_role_family_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_profile_fit_reports_gap_snapshot_id_fkey'
+            columns: ['gap_snapshot_id']
+            isOneToOne: false
+            referencedRelation: 'sats_gap_snapshots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'sats_profile_fit_reports_target_role_family_id_fkey'
+            columns: ['target_role_family_id']
+            isOneToOne: false
+            referencedRelation: 'sats_role_families'
+            referencedColumns: ['id']
           },
         ]
       }

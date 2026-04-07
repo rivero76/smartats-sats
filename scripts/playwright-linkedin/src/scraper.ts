@@ -1,10 +1,11 @@
 // Created: 2026-03-01 00:00:00 - Playwright LinkedIn profile scraper with stealth, session management, and robust extraction.
 // Updated: 2026-03-02 00:00:00 - Wait for networkidle before scroll/extract to survive LinkedIn client-side redirects; wrap scrollPage in try/catch.
 // Updated: 2026-03-02 00:00:00 - Replace scrollPage page.evaluate loop with keyboard PageDown to avoid execution context destruction on SPA navigations.
+// Updated: 2026-04-07 00:00:00 - P28 S7 — Extract certifications and recommendation_count from LinkedIn profile pages.
 
 import { chromium, Browser, BrowserContext, Page } from 'playwright'
 import { loadCookies, saveCookies, StoredCookie } from './session'
-import { LinkedInProfile, LinkedInExperience } from './types'
+import { LinkedInProfile, LinkedInExperience, LinkedInCertification } from './types'
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
@@ -65,9 +66,9 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
       location: string
       summary: string
       rawSkills: string[]
-      rawExperiences: Array<{
-        block: string
-      }>
+      rawExperiences: Array<{ block: string }>
+      rawCertifications: Array<{ name: string; issuing_org: string; issued_date?: string }>
+      recommendation_count: number
     } => {
       function text(el: Element | null): string {
         return el?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
@@ -160,11 +161,87 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
         }
       }
 
-      return { full_name, headline, location, summary, rawSkills, rawExperiences }
+      // ── Certifications ──
+      const certSection =
+        document.querySelector('#licenses_and_certifications')?.closest('section') ||
+        document.querySelector('#certifications')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) => {
+          const h = s.querySelector('h2, [role="heading"]')
+          return h?.textContent?.trim().toLowerCase().includes('license')
+        })
+
+      const rawCertifications: Array<{ name: string; issuing_org: string; issued_date?: string }> =
+        []
+      if (certSection) {
+        const items = Array.from(
+          certSection.querySelectorAll('li.artdeco-list__item, li.pvs-list__item--line-separated')
+        )
+        for (const item of items) {
+          const lines = Array.from(item.querySelectorAll('[aria-hidden="true"]'))
+            .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+            .filter((t) => t.length > 0)
+          if (lines.length === 0) continue
+          const name = lines[0] ?? ''
+          const issuing_org = lines[1] ?? ''
+          // Lines[2] might be a date like "Issued Jan 2025" — extract it if present
+          const dateRaw = lines[2] ?? ''
+          const issued_date = dateRaw.match(/\d{4}/)
+            ? dateRaw.replace(/^Issued\s*/i, '').trim()
+            : undefined
+          if (name) rawCertifications.push({ name, issuing_org, issued_date })
+        }
+      }
+
+      // ── Recommendation count ──
+      let recommendation_count = 0
+      try {
+        const recSection =
+          document.querySelector('#recommendations')?.closest('section') ||
+          Array.from(document.querySelectorAll('section')).find((s) => {
+            const h = s.querySelector('h2, [role="heading"]')
+            return h?.textContent?.trim().toLowerCase().includes('recommendation')
+          })
+        if (recSection) {
+          const heading = recSection.querySelector('h2, [role="heading"]')
+          const headingText = heading?.textContent ?? ''
+          // LinkedIn renders "Recommendations (N)" or lists individual items
+          const countMatch = headingText.match(/\((\d+)\)/)
+          if (countMatch) {
+            recommendation_count = parseInt(countMatch[1], 10)
+          } else {
+            // Fall back to counting visible received recommendation items
+            const items = recSection.querySelectorAll(
+              'li.artdeco-list__item, li.pvs-list__item--line-separated'
+            )
+            recommendation_count = items.length
+          }
+        }
+      } catch {
+        // Soft failure — recommendation_count stays 0
+      }
+
+      return {
+        full_name,
+        headline,
+        location,
+        summary,
+        rawSkills,
+        rawExperiences,
+        rawCertifications,
+        recommendation_count,
+      }
     }
   )
 
   const experiences = parseExperienceBlocks(data.rawExperiences.map((e) => e.block))
+
+  const certifications: LinkedInCertification[] = data.rawCertifications
+    .map((c) => ({
+      name: cleanText(c.name),
+      issuing_org: cleanText(c.issuing_org),
+      issued_date: c.issued_date ? cleanText(c.issued_date) : undefined,
+    }))
+    .filter((c) => c.name.length > 0)
 
   return {
     full_name: cleanText(data.full_name),
@@ -173,6 +250,8 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
     summary: cleanText(data.summary),
     skills: data.rawSkills.map(cleanText).filter((s) => s.length > 0),
     experiences,
+    certifications: certifications.length > 0 ? certifications : undefined,
+    recommendation_count: data.recommendation_count > 0 ? data.recommendation_count : undefined,
   }
 }
 

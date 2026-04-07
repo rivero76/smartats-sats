@@ -1,6 +1,9 @@
 /**
  * UPDATE LOG
  * 2026-04-02 00:00:00 | Gap 2 — Added "Job Descriptions" admin tab wiring AdminJobDescriptionsPanel.
+ * 2026-04-07 15:00:00 | Story 7 — Add "Feature Flags" and "Plan Overrides" admin tabs
+ *   wiring FeatureFlagsPanel and PlanOverridePanel for admin-controlled feature gating
+ *   and per-user plan elevation.
  */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,9 +18,13 @@ import {
   AlertTriangle,
   FileText,
   Briefcase,
+  Flag,
+  UserCog,
 } from 'lucide-react'
 import { LoggingControlPanel } from '@/components/admin/LoggingControlPanel'
 import { AdminJobDescriptionsPanel } from '@/components/admin/AdminJobDescriptionsPanel'
+import { FeatureFlagsPanel } from '@/components/admin/FeatureFlagsPanel'
+import { PlanOverridePanel } from '@/components/admin/PlanOverridePanel'
 
 const AdminDashboard = () => {
   const systemStats = [
@@ -109,6 +116,14 @@ const AdminDashboard = () => {
           <TabsTrigger value="job-descriptions" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
             Job Descriptions
+          </TabsTrigger>
+          <TabsTrigger value="feature-flags" className="flex items-center gap-2">
+            <Flag className="h-4 w-4" />
+            Feature Flags
+          </TabsTrigger>
+          <TabsTrigger value="plan-overrides" className="flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Plan Overrides
           </TabsTrigger>
         </TabsList>
 
@@ -335,6 +350,14 @@ const AdminDashboard = () => {
 
         <TabsContent value="job-descriptions">
           <AdminJobDescriptionsPanel />
+        </TabsContent>
+
+        <TabsContent value="feature-flags">
+          <FeatureFlagsPanel />
+        </TabsContent>
+
+        <TabsContent value="plan-overrides">
+          <PlanOverridePanel />
         </TabsContent>
       </Tabs>
     </div>

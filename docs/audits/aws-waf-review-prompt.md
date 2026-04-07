@@ -31,7 +31,7 @@
 3. To run `arch-reviewer` + `security-auditor` in parallel, start your message with:
    > "Use the arch-reviewer and security-auditor agents in parallel to perform the following review:"
    > then paste the prompt block.
-4. Save the findings report as `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md`.
+4. Save the findings report as `docs/audits/reports/YYYY-MM-DD_code-review.md`.
 5. Update the `LAST RUN` date above.
 
 ---
@@ -59,6 +59,11 @@ Key areas to review:
 - **Deployment automation:** `scripts/ops/smartats.sh`, Docker multi-stage build, Railway deployer
 - **Operational scripts coverage:** `scripts/ops/` — are all critical ops tasks scripted?
 - **Change management:** UPDATE LOG headers in modified files (enforced via pre-commit hook)
+- **Help page parity:** Cross-check `src/data/helpContent.ts` against shipped features:
+  - Read `docs/changelog/CHANGELOG.md` and `docs/releases/UNTESTED_IMPLEMENTATIONS.md`
+  - For each shipped feature (including E2E-pending), verify a help topic exists
+  - For each gap, report: feature name, help topic key that should be created, minimum content needed (2-3 sentence overview + 3-5 steps + 1 tip)
+  - Also verify `HelpHub.tsx` renders all topics defined in `helpContent.ts` (no defined-but-unlinked topics)
 
 For each finding, report:
 
@@ -185,7 +190,7 @@ Return a structured Markdown report with:
    - SHORT-TERM (next 2 sprints) — MAJOR items
    - BACKLOG — MINOR + sustainability items
 
-Save the output as: `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md`
+Save the output as: `docs/audits/reports/YYYY-MM-DD_code-review.md`
 Update `docs/improvements/TECHNICAL_IMPROVEMENTS.md` summary table with new items.
 
 --- PROMPT END ---

@@ -13,15 +13,15 @@
 
 A systematic market gap analysis pipeline in 7 phases:
 
-| Phase | Deliverable | Status |
-|-------|-------------|--------|
-| 0 – Migrations | Role taxonomy (88 families), market signals table, gap snapshot/items tables, profile career goal columns, cert status columns | ✅ Applied |
-| 1 – Signal Extraction | `async-ats-scorer` extracts certifications/tools/methodologies/seniority/market_code/role_family_id from staged jobs | ✅ CODE-VERIFIED |
-| 2 – Aggregation | `aggregate-market-signals` edge function (nightly, 30d + 90d windows) | ✅ CODE-VERIFIED |
-| 3 – Profile Enrichment | Cert status UI in `SkillProfileManager`; Career Goals card in Settings | ✅ CODE-VERIFIED |
-| 4 – Gap Matrix | `generate-gap-matrix` edge function + `useGapAnalysis` hook | ✅ CODE-VERIFIED |
-| 5 – Roadmap Integration | `generate-upskill-roadmap` accepts `gap_snapshot_id`; `useGenerateRoadmap` mutation | ✅ CODE-VERIFIED |
-| 6 – Frontend | `/gap` route, `GapMatrix.tsx`, sidebar entry, help content | ✅ CODE-VERIFIED |
+| Phase                   | Deliverable                                                                                                                    | Status           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| 0 – Migrations          | Role taxonomy (88 families), market signals table, gap snapshot/items tables, profile career goal columns, cert status columns | ✅ Applied       |
+| 1 – Signal Extraction   | `async-ats-scorer` extracts certifications/tools/methodologies/seniority/market_code/role_family_id from staged jobs           | ✅ CODE-VERIFIED |
+| 2 – Aggregation         | `aggregate-market-signals` edge function (nightly, 30d + 90d windows)                                                          | ✅ CODE-VERIFIED |
+| 3 – Profile Enrichment  | Cert status UI in `SkillProfileManager`; Career Goals card in Settings                                                         | ✅ CODE-VERIFIED |
+| 4 – Gap Matrix          | `generate-gap-matrix` edge function + `useGapAnalysis` hook                                                                    | ✅ CODE-VERIFIED |
+| 5 – Roadmap Integration | `generate-upskill-roadmap` accepts `gap_snapshot_id`; `useGenerateRoadmap` mutation                                            | ✅ CODE-VERIFIED |
+| 6 – Frontend            | `/gap` route, `GapMatrix.tsx`, sidebar entry, help content                                                                     | ✅ CODE-VERIFIED |
 
 ---
 
@@ -30,14 +30,17 @@ A systematic market gap analysis pipeline in 7 phases:
 **Migrations (9):** `supabase/migrations/20260405100000` → `20260405180000`
 
 **Edge Functions (new):**
+
 - `supabase/functions/aggregate-market-signals/index.ts`
 - `supabase/functions/generate-gap-matrix/index.ts`
 
 **Edge Functions (modified):**
+
 - `supabase/functions/async-ats-scorer/index.ts` — signal extraction
 - `supabase/functions/generate-upskill-roadmap/index.ts` — gap_snapshot_id input path
 
 **Frontend (new):**
+
 - `src/pages/GapMatrix.tsx`
 - `src/hooks/useGapAnalysis.ts`
 - `src/hooks/useCareerGoals.ts`
@@ -46,6 +49,7 @@ A systematic market gap analysis pipeline in 7 phases:
 - `src/components/CareerGoalsCard.tsx`
 
 **Frontend (modified):**
+
 - `src/hooks/useUpskillingRoadmaps.ts` — `useGenerateRoadmap` mutation + `source_gap_snapshot_id`
 - `src/hooks/useSkillProfile.ts` — cert status fields
 - `src/components/skill-profile/SkillProfileManager.tsx` — cert status inline editing

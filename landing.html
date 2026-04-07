@@ -2,6 +2,7 @@
 <!-- UPDATE LOG
      2026-03-30 00:00:00 | End-user landing page — standalone HTML
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features
+     2026-04-07 20:00:00 | UIUX redesign: score-first ATS analyses cards, filter bar, Debug Modal plan gating, Settings PlanBillingCard tier comparison.
 -->
 <html lang="en">
   <head>
@@ -1287,12 +1288,34 @@
             <div>
               <h3>ATS Match Score</h3>
               <p>
-                AI compares your résumé to the job description and returns a 0–100% match score with
-                a clear skill-by-skill breakdown. Know exactly where you stand before you apply.
+                Your score is the hero. Every analysis opens with a large percentage front and
+                centre, a colour-coded left border (green for 80%+, amber for 60–79%, red below
+                60%), and signal badges — all visible at a glance in the collapsed card. Click to
+                expand and see matched skills, missing skills, and the full AI breakdown. Score
+                sub-dimensions (Skills Alignment, Experience Relevance, Domain Fit, Format Quality)
+                are available on Pro+.
               </p>
               <div class="feature-pills">
-                <span class="fpill">Explainable AI</span>
-                <span class="fpill">Instant results</span>
+                <span class="fpill">Score-first design</span>
+                <span class="fpill">Colour-coded status</span>
+                <span class="fpill">Filter bar</span>
+                <span class="fpill">Detail on Pro+</span>
+              </div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background: rgba(59, 130, 246, 0.12)">⚙️</div>
+            <div>
+              <h3>Your Plan, Your Controls</h3>
+              <p>
+                Compare Free, Pro, Max, and C-Level tiers directly in your account settings. See
+                exactly what each plan unlocks, and request early access with one click. No
+                guesswork.
+              </p>
+              <div class="feature-pills">
+                <span class="fpill">Free tier</span>
+                <span class="fpill">Pro $19/mo</span>
+                <span class="fpill">Max $39/mo</span>
               </div>
             </div>
           </div>
@@ -1495,6 +1518,7 @@
               <li><span class="ck">✓</span> 3 ATS analyses/month</li>
               <li><span class="ck">✓</span> Résumé upload</li>
               <li><span class="ck">✓</span> Manual JD entry</li>
+              <li><span class="ck">✓</span> Matched &amp; missing skill list</li>
             </ul>
             <a href="#" class="p-btn p-btn-outline">Get started</a>
           </div>
@@ -1528,7 +1552,7 @@
           <div class="pricing-card">
             <div class="p-tier">C-Level</div>
             <div class="p-price">$99 <span class="per">/mo</span></div>
-            <div class="p-desc">Teams & enterprise</div>
+            <div class="p-desc">Teams &amp; enterprise</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Everything in Max</li>
               <li><span class="ck">✓</span> Multi-seat RBAC</li>
@@ -1595,6 +1619,22 @@
               Absolutely. No contracts, no lock-in. You can cancel your subscription at any time
               from your account settings and your data will remain accessible during the billing
               period.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>What data can I see on the Free plan?</h3>
+            <p>
+              Free users see the ATS compatibility score, matched skills, missing skills, extraction
+              warnings, and error details. Score sub-dimensions, CV Optimisation, AI prompts, raw
+              model output, and token usage are available on Pro and Max respectively.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>Where do I upgrade my plan?</h3>
+            <p>
+              Go to Settings → Your Plan. You'll see a side-by-side comparison of all tiers with
+              pricing and feature lists. Billing is launching soon — click "Request early access" to
+              get on the list.
             </p>
           </div>
         </div>

@@ -33,5 +33,12 @@ if [[ -z "$TARGET_FILES" ]]; then
   exit 0
 fi
 
+# Filter out deleted files — prettier errors on missing paths
+EXISTING_FILES="$(echo "$TARGET_FILES" | while IFS= read -r f; do [[ -f "$f" ]] && echo "$f"; done)"
+if [[ -z "$EXISTING_FILES" ]]; then
+  echo "No supported changed files to format-check."
+  exit 0
+fi
+
 # shellcheck disable=SC2086
-npx prettier --check $TARGET_FILES
+npx prettier --check $EXISTING_FILES

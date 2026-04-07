@@ -1,7 +1,9 @@
 /**
  * UPDATE LOG
+ * 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
+ * 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for the new /profile-fit page (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for the Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
  * 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
- * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion help topics.
+ * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics.
  * 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
  * 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
  */
@@ -274,6 +276,8 @@ export const helpContentData: Record<string, HelpContent> = {
       'Geography Mode — country-specific format checklist for 8 markets',
       'Industry Lens — vertical classification with missing-section detection',
       'Cultural Tone Advisor — detects register mismatches for target market',
+      'Collapsed card list: score hero, signal badges (matched/missing), and date visible without expanding',
+      'Filter bar: All / Strong Match (80%+) / Needs Work (<60%) / In Progress',
     ],
     steps: [
       {
@@ -333,6 +337,8 @@ export const helpContentData: Record<string, HelpContent> = {
       'Pay attention to both hard skills (technical) and soft skills (communication, leadership) in results',
       'Re-run analyses after making resume updates to track improvement',
       'Use the debug feature if you encounter issues or unexpected results',
+      'Use the filter bar to focus on analyses that need attention, rather than scrolling the full list',
+      'Debug and Export buttons are in the expanded card — click any card to reveal them',
     ],
     troubleshooting: [
       {
@@ -354,6 +360,11 @@ export const helpContentData: Record<string, HelpContent> = {
         problem: 'Analysis shows error status',
         solution:
           'Use the retry button to reprocess the analysis. If errors persist, check that your resume and job description contain sufficient text content.',
+      },
+      {
+        problem: "I can't find the Debug or Export buttons",
+        solution:
+          'These buttons are in the expanded state. Click the analysis card to expand it, then look for Debug and Export in the action row at the top of the expanded section.',
       },
     ],
     relatedTopics: [
@@ -441,7 +452,7 @@ export const helpContentData: Record<string, HelpContent> = {
     description:
       'Learn how to configure your profile, manage account settings, and customize your Smart ATS experience.',
     overview:
-      'Your profile settings control how the system knows about you and your preferences. Complete profile information can improve analysis quality and helps customize recommendations to your career level and goals.',
+      'Your profile settings control how the system knows about you and your preferences. The Settings page opens with a "Your Plan" section at the top showing your current plan tier and a side-by-side comparison of Free, Pro, Max, and C-Level tiers — so you can see exactly what each plan unlocks. Complete profile information improves analysis quality and helps customize recommendations to your career level and goals.',
     keyFeatures: [
       'Personal information management',
       'Professional summary configuration',
@@ -449,6 +460,8 @@ export const helpContentData: Record<string, HelpContent> = {
       'Notification preferences (coming soon)',
       'Security and privacy settings',
       'Account data management',
+      'Your Plan section: see your current tier, compare all plans, and request early access to Pro or Max',
+      "Upgrade path: clicking 'Upgrade' from any locked feature takes you directly to the Your Plan section",
     ],
     steps: [
       {
@@ -517,6 +530,11 @@ export const helpContentData: Record<string, HelpContent> = {
         problem: 'Profile information not appearing in analyses',
         solution:
           "Profile information provides context but doesn't directly affect analysis. The main factors are resume content and job description matching.",
+      },
+      {
+        problem: "The Upgrade button says 'billing coming soon'",
+        solution:
+          "Billing via Stripe is launching in an upcoming release (P22). Click 'Request early access' in the upgrade dialog to be notified and get early access at your chosen tier.",
       },
     ],
     relatedTopics: ['Dashboard Overview', 'Resume Management', 'Account Security'],
@@ -1044,31 +1062,32 @@ export const helpContentData: Record<string, HelpContent> = {
 
   adminLogging: {
     id: 'adminLogging',
-    title: 'Admin Logging & Observability',
+    title: 'Admin Panel',
     description:
-      'Learn how to use the Admin Logging Panel to view application logs, control logging behaviour, and manage log retention.',
+      'Learn how to use the Admin Panel to view application logs, manage feature flags, set per-user plan overrides, and observe job description data across all users.',
     overview:
-      'The Admin Logging Panel gives authorized users full visibility into application activity. You can filter logs by severity level and time window, toggle logging on or off for specific scripts, and manage retention policies to control storage growth. This panel is for system administrators — it is not visible to regular users.',
+      'The Admin Panel gives authorized users full visibility and control over the application. It includes a Log Viewer for diagnosing issues, a Feature Flags panel for toggling capabilities per plan tier, a Plan Overrides panel for granting individual users elevated access, and a Job Descriptions panel showing all user-submitted JDs. This panel is only visible to admin-role accounts.',
     keyFeatures: [
-      'Log Viewer with level filter (ERROR, WARN, INFO, DEBUG, TRACE)',
-      'Time window filter (last 5 min, 15 min, 1h, 6h, 24h, all time)',
-      'Per-script logging toggle',
-      'Log retention policy management',
-      'Log cleanup automation',
+      'Log Viewer with level filter (ERROR, WARN, INFO, DEBUG, TRACE) and time window filter',
+      'Per-script logging toggle and retention policy management',
+      'Feature Flags panel — toggle any feature on or off per plan tier',
+      'Plan Overrides panel — set a specific plan tier for individual users',
+      'Job Descriptions panel — cross-user JD table with search and source filters',
+      'ATS Debug Modal is plan-gated: Score Breakdown (Pro+), CV Optimisation (Pro+), Model Details/Prompts/AI Output/Usage (Max+). Free users see score, skills, and errors.',
     ],
     steps: [
       {
         step: 1,
         title: 'Open the Admin Panel',
         description:
-          'Navigate to Admin → Logging Control. This section is only visible to admin-role accounts.',
+          'Navigate to Admin from the sidebar. This section is only visible to admin-role accounts.',
         tip: 'If you cannot see the Admin menu item, your account does not have admin privileges.',
       },
       {
         step: 2,
         title: 'Filter Logs by Level and Time',
         description:
-          'In the Log Viewer, select a log level (ERROR is the default) and a time window. Click Refresh to load matching entries.',
+          'In the Log Viewer tab, select a log level (ERROR is the default) and a time window. Click Refresh to load matching entries.',
         tip: 'Start with ERROR + Last 1 hour for incident triage. Switch to INFO or DEBUG only when investigating specific flows.',
       },
       {
@@ -1080,30 +1099,39 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         step: 4,
-        title: 'Toggle Logging Per Script',
+        title: 'Manage Feature Flags',
         description:
-          'In the Logging Control Panel, find the script you want to adjust and toggle its logging state on or off.',
-        tip: 'Disable DEBUG and TRACE logging on high-volume scripts in production to reduce storage costs.',
+          'Open the Feature Flags tab to see a grid of every feature key against each plan tier. Toggle the switch for any feature-tier cell to enable or disable that capability. Click Save to apply changes.',
+        tip: 'Changes take effect for new page loads within about 5 minutes as client caches refresh. Test in an incognito window to confirm the new flag state.',
       },
       {
         step: 5,
-        title: 'Review Retention Policies',
+        title: 'Set a Plan Override for a User',
         description:
-          'Check the retention settings to understand how long different log levels are kept before automatic cleanup.',
-        tip: 'ERROR logs are retained longer than DEBUG/TRACE logs by default. Adjust only if storage constraints require it.',
+          'Open the Plan Overrides tab, search for a user by email, select their override tier from the dropdown, and click Save. The user immediately sees features available on that tier.',
+        tip: 'Use plan overrides to grant beta access to specific users without changing their billing. Remove the override to revert them to their standard plan.',
+      },
+      {
+        step: 6,
+        title: 'Inspect Job Descriptions',
+        description:
+          'Open the Job Descriptions tab to view a filterable table of all user-submitted job descriptions across the platform. Filter by source type, date range, or search by keyword.',
+        tip: 'Use this panel to identify test contamination (e.g. example.com URLs) or to audit ingestion quality after a new ingest method ships.',
       },
     ],
     bestPractices: [
-      'Use ERROR + Last 1 hour as the default view when opening the panel during an incident',
+      'Use ERROR + Last 1 hour as the default Log Viewer view when opening the panel during an incident',
       'Disable DEBUG/TRACE logging in production unless actively debugging a specific issue',
       'Search by request_id to correlate frontend events with edge function responses',
       'Review retention policies monthly to balance observability with storage costs',
+      'Document any plan overrides you set so they can be removed after testing is complete',
+      'Use Admin → Plan Overrides to elevate a test user to Pro or Max to verify Debug Modal gating at each tier without waiting for billing.',
     ],
     troubleshooting: [
       {
         problem: 'Admin menu is not visible',
         solution:
-          'The Logging Panel requires an admin-role account. Contact your system administrator to request elevated access.',
+          'The Admin Panel requires an admin-role account. Contact your system administrator to request elevated access.',
       },
       {
         problem: 'Log Viewer shows no entries',
@@ -1116,9 +1144,19 @@ export const helpContentData: Record<string, HelpContent> = {
           'The Log Viewer does not auto-refresh. Click the Refresh button to load the latest entries.',
       },
       {
-        problem: 'Cannot toggle a script logging state',
+        problem: 'Feature flag change is not taking effect',
         solution:
-          'Refresh the page and try again. If the toggle does not persist, check the browser console for errors.',
+          'Flag changes are cached for up to 5 minutes on the client. Ask the user to reload the app or test in a fresh incognito session to see the updated state immediately.',
+      },
+      {
+        problem: 'Plan override does not appear to change available features',
+        solution:
+          'The user must reload the app after an override is set. If features are still incorrect after a reload, confirm the override was saved successfully in the Plan Overrides tab.',
+      },
+      {
+        problem: 'A Pro user says they cannot see the AI Output or Usage tabs in the Debug Modal',
+        solution:
+          "These tabs require Max+. Pro unlocks Score Breakdown and CV Optimisation. Check the user's plan_override in Admin → Plan Overrides, or ask them to verify their plan in Settings → Your Plan.",
       },
     ],
     relatedTopics: ['Dashboard Overview', 'Profile & Settings Management'],
@@ -1267,6 +1305,180 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['Enriched Experiences', 'ATS Analysis', 'Profile & Settings Management'],
   },
+
+  profileFitAnalyzer: {
+    id: 'profileFitAnalyzer',
+    title: 'Profile Fit Analyzer',
+    description:
+      'Get a 0–100 fit score showing how well your LinkedIn profile and skills match real market demand for your target role. Available on Pro and above.',
+    overview:
+      'Profile Fit Analyzer compares your imported LinkedIn profile against live job market signals for your target role and market. It produces a weighted fit score, a gap breakdown sorted by tier (Critical, Important, Nice-to-Have), and AI-generated recommended actions for each gap. Max plan users also get a Reconciliation view that highlights conflicts between your LinkedIn data and your uploaded resume, plus a score history chart to track improvement over time.',
+    keyFeatures: [
+      'Weighted 0–100 fit score based on signal coverage across your profile',
+      'Gap breakdown by tier: Critical, Important, and Nice-to-Have',
+      'AI-generated recommended action and rationale for each gap',
+      'Reconciliation view — highlights conflicts between LinkedIn profile and resume (Max+)',
+      'Score history chart to track your fit score over time (Max+)',
+      'Requires LinkedIn Profile Import and career goals to be set in Settings',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Complete LinkedIn Import and Career Goals',
+        description:
+          'Before running a fit analysis, import your LinkedIn profile in Settings → LinkedIn Import and set your target role and market in Settings → Career Goals. Both are required for an accurate fit score.',
+        tip: 'Keep your LinkedIn profile current before importing — the fit score reflects the profile data at import time.',
+      },
+      {
+        step: 2,
+        title: 'Navigate to Profile Fit',
+        description:
+          'Go to Profile Fit from the sidebar. Your current target role and market are shown at the top.',
+        tip: 'If the role or market shown is wrong, update your Career Goals in Settings first.',
+      },
+      {
+        step: 3,
+        title: 'Run a Fit Analysis',
+        description:
+          'Click "Analyze Fit" to start a new analysis. The system compares your profile against job market signals and returns a fit score with a full gap breakdown.',
+        tip: 'Analysis takes a few seconds. Each run is saved to your history so you can track progress.',
+      },
+      {
+        step: 4,
+        title: 'Review your Fit Score',
+        description:
+          'Read the overall fit score card. Scores above 70 indicate strong alignment with market expectations. Scores below 50 suggest significant gaps worth addressing before applying.',
+        tip: 'The score is weighted — Critical gaps have more impact than Nice-to-Have gaps on your overall score.',
+      },
+      {
+        step: 5,
+        title: 'Work through the Gap Breakdown',
+        description:
+          'Expand each gap tier to see the specific skills, certifications, or experiences you are missing. Each item shows a recommended action to address it.',
+        tip: 'Start with Critical gaps — these are the skills that appear most frequently in real postings for your target role.',
+      },
+      {
+        step: 6,
+        title: 'Review Reconciliation Conflicts (Max plan)',
+        description:
+          'If you are on the Max plan, the Reconciliation section highlights discrepancies between your LinkedIn profile and your uploaded resume. Resolve conflicts by updating the weaker source.',
+        tip: 'Reconciliation conflicts indicate your two data sources are telling different stories — recruiters who check both will notice.',
+      },
+    ],
+    bestPractices: [
+      'Re-run fit analysis after updating your LinkedIn profile or uploading a new resume to track score improvement',
+      'Focus on Critical gaps with the highest market frequency — these are the skills employers treat as baseline requirements',
+      'Use the score history chart (Max plan) to confirm your profile improvements are moving the needle',
+      'Combine Profile Fit with Gap Analysis to get both a profile-level score and a skill-level action plan',
+      'Resolve reconciliation conflicts before applying — consistency between your resume and LinkedIn profile builds recruiter confidence',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Profile Fit is locked and I cannot run an analysis',
+        solution:
+          'Profile Fit Analyzer is available on Pro and above. Upgrade your plan from the Settings page to unlock this feature.',
+      },
+      {
+        problem: 'Fit score is unexpectedly low despite strong experience',
+        solution:
+          'Check that your LinkedIn profile is fully imported and your career goals match the role you are targeting. Missing or mismatched data reduces signal coverage and lowers the score.',
+      },
+      {
+        problem: 'No market signals found error',
+        solution:
+          'The analyzer requires job posting data for your selected role and market. Forward a few job alert emails to your Smart ATS inbound address via Settings → Email Job Alerts to populate the signal database.',
+      },
+      {
+        problem: 'Reconciliation and score history sections are locked',
+        solution:
+          'Reconciliation and score history are Max plan features. The gap breakdown and recommended actions are available on Pro.',
+      },
+    ],
+    relatedTopics: ['gapAnalysis', 'linkedinProfileImport', 'skillProfile', 'upskillingRoadmaps'],
+  },
+
+  emailJobAlerts: {
+    id: 'emailJobAlerts',
+    title: 'Email Job Alerts Ingestion',
+    description:
+      'Forward job alert emails from LinkedIn and other job boards to automatically populate your opportunities pipeline.',
+    overview:
+      'Smart ATS provides a personal inbound email address you can use as a forwarding destination for job alert emails. When you forward an alert, the system extracts individual job listings, stages them for ATS scoring against your profile, and surfaces high-match results on your Opportunities page. This keeps your pipeline fresh without manual job searches.',
+    keyFeatures: [
+      'Personal inbound address shown in Settings → Email Job Alerts',
+      'Parses LinkedIn job alert emails and generic job board alerts (Seek, Indeed, Lever, Greenhouse)',
+      'Each extracted job is automatically scored against your resume',
+      'Matches above the threshold appear on your Opportunities page',
+      'Duplicate jobs are silently skipped — forwarding the same alert twice is safe',
+      'Sender allowlist protects against spam — only forwarded emails from known addresses are processed',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Find Your Inbound Email Address',
+        description:
+          'Go to Settings and scroll to the Email Job Alerts card. Your personal inbound address is shown there with a copy button.',
+        tip: 'This address is unique to your account — do not share it publicly.',
+      },
+      {
+        step: 2,
+        title: 'Add Your Address to the Allowlist',
+        description:
+          'Your own email address must be added to the sender allowlist before forwarded messages are accepted. Contact your admin if you cannot see the allowlist setting.',
+        tip: 'The allowlist prevents unknown senders from injecting jobs into your pipeline. Only emails from listed addresses are processed.',
+      },
+      {
+        step: 3,
+        title: 'Set Up Forwarding in Your Email Client',
+        description:
+          'In your personal email client, create a filter or rule that automatically forwards job alert emails to your Smart ATS inbound address. Most email clients (Gmail, Outlook) support auto-forwarding rules.',
+        tip: 'In Gmail: Settings → See all settings → Forwarding and POP/IMAP → Add a forwarding address. Then create a filter for emails matching the alert sender.',
+      },
+      {
+        step: 4,
+        title: 'Forward a Test Alert',
+        description:
+          'Manually forward one job alert email to your inbound address to verify the pipeline is working. Wait a few minutes, then check your Opportunities page for new matches.',
+        tip: 'LinkedIn job alerts with multiple listings in one email are fully supported — all jobs in the email are extracted.',
+      },
+      {
+        step: 5,
+        title: 'Monitor Your Opportunities Page',
+        description:
+          'New high-match jobs from forwarded alerts appear on the Opportunities page within minutes. The source column shows which emails they came from.',
+        tip: 'Only jobs that score above the match threshold appear on Opportunities. Lower-scoring jobs are still staged but not surfaced.',
+      },
+    ],
+    bestPractices: [
+      'Set up auto-forwarding rules so new alerts reach your pipeline without manual intervention',
+      'Subscribe to job alerts on LinkedIn and major job boards for your target role and market to maximize pipeline volume',
+      'Forward alerts regularly — the Gap Analysis matrix is more accurate when based on recent postings',
+      'Do not forward every email indiscriminately — focus on alerts from your target role family to keep signal quality high',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Forwarded email did not produce any new opportunities',
+        solution:
+          'Check that your email address is on the allowlist in Settings → Email Job Alerts. Also confirm the alert was from a supported source (LinkedIn, Seek, Indeed, Lever, or Greenhouse). Emails from unsupported sources are accepted but may not parse correctly.',
+      },
+      {
+        problem: 'Jobs appear staged but not on the Opportunities page',
+        solution:
+          'Jobs are only shown on Opportunities if they score above the match threshold against your resume. Update your resume or lower the score threshold from the Settings page.',
+      },
+      {
+        problem: 'Duplicate jobs keep appearing',
+        solution:
+          'Duplicate detection uses the job content hash — identical jobs forwarded multiple times are silently skipped. If duplicates are appearing, the job descriptions are slightly different across alerts. This is expected behaviour.',
+      },
+      {
+        problem: 'LinkedIn job alert URLs are not being recognized',
+        solution:
+          'Smart ATS handles both standard LinkedIn job URLs (/jobs/view/) and tracking redirect URLs (/comm/jobs/view/). If a job is still not recognized, the email format may have changed — contact support with a forwarded example.',
+      },
+    ],
+    relatedTopics: ['proactiveMatches', 'gapAnalysis', 'profileFitAnalyzer'],
+  },
 }
 
 // UPDATE LOG
@@ -1275,6 +1487,8 @@ export const helpContentData: Record<string, HelpContent> = {
 // 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
 // 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
 // 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
+// 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for /profile-fit (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
+// 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

@@ -11,7 +11,7 @@
            to the scattered docs is unclear.
   HOW TO RUN: Open this repo in Claude Code and paste everything inside
               the PROMPT START / PROMPT END block.
-  OUTPUT: docs/pm-audit/PM-PGM-AUDIT-YYYY-MM-DD.md
+  OUTPUT: docs/audits/reports/YYYY-MM-DD_pm-pgm-audit.md
 -->
 
 ---
@@ -21,7 +21,7 @@
 1. Open this repository in Claude Code.
 2. Copy everything inside the `--- PROMPT START ---` / `--- PROMPT END ---` block.
 3. Paste it as a new message in Claude Code.
-4. Save the findings as `docs/pm-audit/PM-PGM-AUDIT-YYYY-MM-DD.md`.
+4. Save the findings as `docs/audits/reports/YYYY-MM-DD_pm-pgm-audit.md`.
 
 ---
 
@@ -62,7 +62,7 @@ management purpose. This includes but is not limited to:
 For EVERY artifact found, record:
 
 | File path | Type | Last modified | Format | Scope |
-|-----------|------|---------------|--------|-------|
+| --------- | ---- | ------------- | ------ | ----- |
 | ...       | ...  | ...           | ...    | ...   |
 
 Type = one of: CHANGELOG, ROADMAP, FEATURE_SPEC, BUG_REPORT, INCIDENT,
@@ -75,6 +75,7 @@ Scope = PROJECT_WIDE / PHASE_SPECIFIC / FEATURE_SPECIFIC / ONE-OFF
 **1B — Source of truth conflicts**
 
 Identify cases where the SAME information lives in multiple places:
+
 - Is the feature list in the roadmap doc also duplicated in the dashboard DB?
 - Are bugs tracked in markdown files AND in a database table?
 - Are changelogs maintained in more than one file?
@@ -86,6 +87,7 @@ and what the risk is of someone trusting the wrong one.
 **1C — In-code PM artifacts**
 
 Search all source files for:
+
 - `// TODO`, `// FIXME`, `// HACK`, `// BUG`, `// REVIEW`
 - Comments referencing phases, sprints, tickets, or deadlines
 - Commented-out feature flags or conditional blocks tied to releases
@@ -141,6 +143,7 @@ Rate: STRUCTURED / INFORMAL / ABSENT
 **2D — Product Management Dashboard audit**
 
 Read the source code for the PM dashboard at `/pm`:
+
 - What data does it display? (List every entity: features, bugs, phases, etc.)
 - Where does the data come from? (Database tables, markdown parsing, hardcoded?)
 - Is the dashboard the source of truth, or a view of data stored elsewhere?
@@ -258,23 +261,23 @@ identify what PM/PgM artifacts or processes are MISSING:
 Check for the presence or absence of each. For each missing item,
 note whether it's critical at this stage or can wait:
 
-| Artifact                         | Exists? | Critical now? | Notes |
-|----------------------------------|---------|---------------|-------|
-| Product vision / mission statement | ...   | ...           | ...   |
-| Target user personas               | ...   | ...           | ...   |
-| Competitive analysis               | ...   | ...           | ...   |
-| Pricing strategy document          | ...   | ...           | ...   |
-| Success metrics / KPIs definition  | ...   | ...           | ...   |
-| User feedback collection process   | ...   | ...           | ...   |
-| Onboarding flow documentation      | ...   | ...           | ...   |
-| Feature flag inventory             | ...   | ...           | ...   |
-| Runbook for common operations      | ...   | ...           | ...   |
-| Rollback / disaster recovery plan  | ...   | ...           | ...   |
-| Data retention / privacy policy    | ...   | ...           | ...   |
-| Terms of service (draft)           | ...   | ...           | ...   |
-| Go-to-market plan                  | ...   | ...           | ...   |
-| Beta testing plan                  | ...   | ...           | ...   |
-| Support / escalation process       | ...   | ...           | ...   |
+| Artifact                           | Exists? | Critical now? | Notes |
+| ---------------------------------- | ------- | ------------- | ----- |
+| Product vision / mission statement | ...     | ...           | ...   |
+| Target user personas               | ...     | ...           | ...   |
+| Competitive analysis               | ...     | ...           | ...   |
+| Pricing strategy document          | ...     | ...           | ...   |
+| Success metrics / KPIs definition  | ...     | ...           | ...   |
+| User feedback collection process   | ...     | ...           | ...   |
+| Onboarding flow documentation      | ...     | ...           | ...   |
+| Feature flag inventory             | ...     | ...           | ...   |
+| Runbook for common operations      | ...     | ...           | ...   |
+| Rollback / disaster recovery plan  | ...     | ...           | ...   |
+| Data retention / privacy policy    | ...     | ...           | ...   |
+| Terms of service (draft)           | ...     | ...           | ...   |
+| Go-to-market plan                  | ...     | ...           | ...   |
+| Beta testing plan                  | ...     | ...           | ...   |
+| Support / escalation process       | ...     | ...           | ...   |
 
 **5B — Process gaps**
 
@@ -373,14 +376,14 @@ Based on what's scattered across this project:
 Provide a clear mapping:
 
 | Information type | Source of truth | Why |
-|------------------|----------------|-----|
-| Feature backlog  | ...            | ... |
-| Bug tracking     | ...            | ... |
-| Roadmap          | ...            | ... |
-| Changelogs       | ...            | ... |
-| Decisions (ADRs) | ...            | ... |
-| Tech debt        | ...            | ... |
-| Incidents        | ...            | ... |
+| ---------------- | --------------- | --- |
+| Feature backlog  | ...             | ... |
+| Bug tracking     | ...             | ... |
+| Roadmap          | ...             | ... |
+| Changelogs       | ...             | ... |
+| Decisions (ADRs) | ...             | ... |
+| Tech debt        | ...             | ... |
+| Incidents        | ...             | ... |
 
 **7E — PM dashboard recommendations**
 
@@ -409,6 +412,6 @@ Return the full report with:
    - FIRST MONTH (do these while onboarding early users)
    - WHEN YOU HIRE (do these when you're no longer solo)
 
-Save as: `docs/pm-audit/PM-PGM-AUDIT-YYYY-MM-DD.md`
+Save as: `docs/audits/reports/YYYY-MM-DD_pm-pgm-audit.md`
 
 --- PROMPT END ---

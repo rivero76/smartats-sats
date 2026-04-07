@@ -5,6 +5,7 @@
 // 2026-04-02 01:00:00 | P20 S4 — Added Reset Career Data button + ResetCareerDataModal wiring.
 // 2026-04-02 04:00:00 | ADR-0007 — Added Email Job Alerts integration card (Postmark inbound).
 // 2026-04-05 20:30:00 | P26 S3-2 — Added CareerGoalsCard section (target markets + primary role family).
+// 2026-04-07 20:30:00 | Added PlanBillingCard as first section — shows current plan + tier comparison with upgrade CTAs.
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,7 @@ import { useEffect, useState } from 'react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
 import { getHelpContent } from '@/data/helpContent'
+import { PlanBillingCard } from '@/components/settings/PlanBillingCard'
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -134,6 +136,9 @@ const Settings = () => {
           />
         )}
       </div>
+
+      {/* Plan & Billing */}
+      <PlanBillingCard />
 
       {/* Profile Settings */}
       <Card>
