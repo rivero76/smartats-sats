@@ -6,6 +6,8 @@ All notable changes to this project should be documented in this file.
 
 ### Fixed
 
+- 2026-04-08: Delete Account was failing with "Edge Function returned a non-2xx status code". Root cause: `soft_delete_user`, `cancel_account_deletion`, and `reactivate_soft_deleted_user` PL/pgSQL functions still referenced `public.account_deletion_logs`, which was renamed to `sats_account_deletion_logs` in P21 (migration `20260327150000_p21_tier1_rename_tables.sql`). New migration `20260408000000_fix_soft_delete_user_table_ref.sql` patches all three functions. Also tightened `auth.uid()` guard to `IS NOT NULL AND auth.uid() != target_user_id` so service-role edge function calls work correctly.
+
 - 2026-04-07: WAF CRITICAL fixes — `ats-analysis-direct` returns 503 (not 500) for missing OPENAI_API_KEY. `delete-account` and `cancel-account-deletion` validate SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY before use and return 503 on misconfiguration, preventing unhandled crashes from `!` force-unwrap on absent env vars.
 - 2026-04-07: RLS verified on P28 tables — `sats_profile_fit_reports` (owner-scoped) and `sats_feature_flags` (admin write-only) confirmed correctly configured.
 
