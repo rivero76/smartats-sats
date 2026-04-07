@@ -2,6 +2,8 @@
  * UPDATE LOG
  * 2026-03-01 00:00:00 | Added HelpButton and HelpModal for contextual user guide.
  * 2026-03-01 00:00:00 | Added Beta badge to page header to reflect validation status.
+ * 2026-04-08 00:00:00 | Add Knock Knock "Reach Out" button per opportunity card, opening
+ *   KnockKnockModal to generate a Bryan Creely-style LinkedIn outreach message.
  */
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -11,16 +13,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Target, TriangleAlert } from 'lucide-react'
+import { ExternalLink, Target, TriangleAlert, MessageSquare } from 'lucide-react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
 import { getHelpContent } from '@/data/helpContent'
+import KnockKnockModal from '@/components/KnockKnockModal'
 
 type ProactiveMatchRow = {
   id: string
   ats_score: number | null
   status: string
   created_at: string
+  matched_skills: unknown
   missing_skills: unknown
   analysis_data: Record<string, unknown> | null
   job_description: {
@@ -30,9 +34,16 @@ type ProactiveMatchRow = {
   } | null
 }
 
+interface KnockKnockTarget {
+  jobTitle: string
+  companyName: string
+  matchedSkills: string[]
+}
+
 const ProactiveMatches = () => {
   const { user } = useAuth()
   const [showHelp, setShowHelp] = useState(false)
+  const [knockKnockTarget, setKnockKnockTarget] = useState<KnockKnockTarget | null>(null)
   const helpContent = getHelpContent('proactiveMatches')
 
   const { data, isLoading, isError, error } = useQuery({
@@ -49,6 +60,7 @@ const ProactiveMatches = () => {
           ats_score,
           status,
           created_at,
+          matched_skills,
           missing_skills,
           analysis_data,
           job_description:sats_job_descriptions!sats_analyses_jd_id_fkey (
@@ -157,6 +169,7 @@ const ProactiveMatches = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {matches.map((match) => {
+            const matchedSkills = parseSkills(match.matched_skills)
             const missingSkills = parseSkills(match.missing_skills)
             const breakdown = scoreBreakdown(match.analysis_data)
             const score = match.ats_score ?? 0
@@ -203,19 +216,44 @@ const ProactiveMatches = () => {
                     )}
                   </div>
 
-                  {match.job_description?.source_url && (
-                    <Button asChild variant="outline" size="sm">
-                      <a href={match.job_description.source_url} target="_blank" rel="noreferrer">
-                        View Original Posting
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
+                  <div className="flex flex-wrap gap-2">
+                    {match.job_description?.source_url && (
+                      <Button asChild variant="outline" size="sm">
+                        <a href={match.job_description.source_url} target="_blank" rel="noreferrer">
+                          View Original Posting
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setKnockKnockTarget({
+                          jobTitle: match.job_description?.name || 'this role',
+                          companyName: 'this company',
+                          matchedSkills,
+                        })
+                      }
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Reach Out
                     </Button>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             )
           })}
         </div>
+      )}
+      {knockKnockTarget && (
+        <KnockKnockModal
+          open={!!knockKnockTarget}
+          onOpenChange={(open) => !open && setKnockKnockTarget(null)}
+          jobTitle={knockKnockTarget.jobTitle}
+          companyName={knockKnockTarget.companyName}
+          matchedSkills={knockKnockTarget.matchedSkills}
+        />
       )}
     </div>
   )

@@ -9,6 +9,9 @@
  * 2026-03-30 11:00:00 | PROD-9–12: Import and render ResumeIntelligencePanel after CV Optimisation panel.
  * 2026-04-07 18:00:00 | UIUX redesign: collapsed score-first cards with progressive disclosure,
  *   colour-coded left border, filter bar, debug/export moved to expanded state.
+ * 2026-04-08 00:00:00 | Callback rate UX: rename "ATS Compatibility Score" → "Recruiter Searchability Score",
+ *   add recruiter-reality tooltip, surface score_breakdown bars for all users, add First-Impression
+ *   Summary indicator aggregating format_audit + cultural_tone + industry_lens.
  */
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -614,9 +617,9 @@ const ATSAnalyses = () => {
                                 {/* Score bar */}
                                 <div className="space-y-1.5">
                                   <div className="flex items-center justify-between">
-                                    <HelpTooltip content="Score from 0–100% showing how well your resume matches the job. 80%+ is excellent.">
+                                    <HelpTooltip content="How easily a recruiter finds your resume by keyword search. A high score means you appear in their ATS search results — but a human will still decide whether to call you. The next barrier is the 6-second first impression.">
                                       <span className="text-sm font-medium">
-                                        ATS Compatibility Score
+                                        Recruiter Searchability Score
                                       </span>
                                     </HelpTooltip>
                                     <span
@@ -627,6 +630,49 @@ const ATSAnalyses = () => {
                                   </div>
                                   <Progress value={analysis.ats_score ?? 0} className="h-2" />
                                 </div>
+
+                                {/* Score breakdown — all users, guarded for older analyses */}
+                                {(() => {
+                                  const sb = analysis.analysis_data?.score_breakdown as
+                                    | Record<string, number>
+                                    | undefined
+                                  if (!sb) return null
+                                  const barColor = (v: number) =>
+                                    v >= 0.8
+                                      ? 'bg-green-500'
+                                      : v >= 0.6
+                                        ? 'bg-amber-400'
+                                        : 'bg-red-400'
+                                  const rows: [string, number][] = [
+                                    ['Skills Alignment', sb.skills_alignment ?? 0],
+                                    ['Experience Relevance', sb.experience_relevance ?? 0],
+                                    ['Domain Fit', sb.domain_fit ?? 0],
+                                    ['Format Quality', sb.format_quality ?? 0],
+                                  ]
+                                  return (
+                                    <div className="space-y-2 pt-1">
+                                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                        Score Breakdown
+                                      </p>
+                                      {rows.map(([label, value]) => (
+                                        <div key={label} className="space-y-0.5">
+                                          <div className="flex justify-between text-xs">
+                                            <span className="text-muted-foreground">{label}</span>
+                                            <span className="font-mono font-medium">
+                                              {Math.round(value * 100)}%
+                                            </span>
+                                          </div>
+                                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                            <div
+                                              className={`h-full rounded-full ${barColor(value)}`}
+                                              style={{ width: `${Math.round(value * 100)}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )
+                                })()}
 
                                 {/* Skills grid */}
                                 <div className="grid gap-4 md:grid-cols-2">
@@ -688,6 +734,70 @@ const ATSAnalyses = () => {
                                     </div>
                                   )}
                                 </div>
+
+                                {/* First-Impression Summary — aggregates format_audit, cultural_tone, industry_lens */}
+                                {(() => {
+                                  const ad = analysis.analysis_data ?? {}
+                                  const fa = ad.format_audit as
+                                    | { overall_health?: string; pass?: boolean }
+                                    | undefined
+                                  const ct = ad.cultural_tone as
+                                    | { overall_alignment?: string }
+                                    | undefined
+                                  const il = ad.industry_lens as
+                                    | { missing_sections?: string[] }
+                                    | undefined
+                                  if (!fa && !ct && !il) return null
+
+                                  const hasFormatIssue =
+                                    fa?.overall_health === 'poor' || fa?.pass === false
+                                  const hasToneMismatch =
+                                    ct?.overall_alignment === 'significant_mismatch'
+                                  const hasMissingSections = (il?.missing_sections?.length ?? 0) > 0
+
+                                  let state: 'strong' | 'attention' | 'issues'
+                                  let label: string
+                                  let explainer: string
+                                  let colorClass: string
+
+                                  if (hasFormatIssue || hasToneMismatch) {
+                                    state = 'issues'
+                                    label = 'Format Issues Found'
+                                    explainer =
+                                      'Your resume may not parse correctly or reads poorly for this role. See details below.'
+                                    colorClass = 'bg-red-50 border-red-200 text-red-800'
+                                  } else if (hasMissingSections) {
+                                    state = 'attention'
+                                    label = 'Needs Attention'
+                                    explainer =
+                                      'Some expected resume sections are missing for this role. See details below.'
+                                    colorClass = 'bg-amber-50 border-amber-200 text-amber-800'
+                                  } else {
+                                    state = 'strong'
+                                    label = 'Strong First Impression'
+                                    explainer =
+                                      'Format, tone, and structure look good for this role and market.'
+                                    colorClass = 'bg-green-50 border-green-200 text-green-800'
+                                  }
+
+                                  return (
+                                    <div
+                                      className={`border rounded-lg px-4 py-3 flex items-start gap-3 ${colorClass}`}
+                                    >
+                                      <span className="text-lg leading-none mt-0.5">
+                                        {state === 'strong'
+                                          ? '✓'
+                                          : state === 'attention'
+                                            ? '⚠'
+                                            : '✗'}
+                                      </span>
+                                      <div>
+                                        <p className="text-sm font-semibold">{label}</p>
+                                        <p className="text-xs mt-0.5">{explainer}</p>
+                                      </div>
+                                    </div>
+                                  )
+                                })()}
 
                                 {/* AI Suggestions */}
                                 {analysis.suggestions && (

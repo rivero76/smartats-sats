@@ -6,6 +6,10 @@ All notable changes to this project should be documented in this file.
 
 ### Added
 
+- 2026-04-08: Callback Rate UX — Recruiter Searchability Score rename + score breakdown bars + First-Impression Summary in `src/pages/ATSAnalyses.tsx`. (1) "ATS Compatibility Score" label renamed to "Recruiter Searchability Score" with recruiter-reality tooltip explaining the human review barrier. (2) Score breakdown (Skills Alignment, Experience Relevance, Domain Fit, Format Quality) now surfaced as colour-coded bars for all users in the main analysis detail view — previously only visible in the Pro+ Debug Modal. (3) First-Impression Summary badge added between skills grid and AI Suggestions: aggregates format_audit.overall_health, cultural_tone.overall_alignment, and industry_lens.missing_sections into a single "Strong First Impression / Needs Attention / Format Issues Found" indicator.
+
+- 2026-04-08: Knock Knock Outreach Coach — new `generate-outreach-message` edge function, `src/hooks/useOutreachMessage.ts` hook, `src/components/KnockKnockModal.tsx` modal, and "Reach Out" button on `src/pages/ProactiveMatches.tsx`. For each Opportunity, users can now generate a Bryan Creely-style LinkedIn outreach message (genuine interest → specific observation → low-ask close) using gpt-4.1-mini. Message is editable and copyable before sending.
+
 - 2026-04-08: P29 S1–S6 — MVP Upgrade Requests system fully implemented. New `sats_upgrade_requests` table (migration `20260408030000`) with RLS policies: users can INSERT/SELECT own requests; admins can SELECT/UPDATE all. Columns: id, user_id, requested_tier, status (pending/approved/denied), reason_text, admin_notes, created_at, updated_at, reviewed_at, reviewed_by. Immutable after review.
 
 - 2026-04-08: P29 S1 — New `sats_approve_upgrade_request(p_request_id UUID)` SECURITY DEFINER RPC function. Atomically marks request approved, updates `profiles.plan_override` to the requested tier, and updates reviewed_at/reviewed_by. Callable by admins only. Blocks concurrent updates via version column.
