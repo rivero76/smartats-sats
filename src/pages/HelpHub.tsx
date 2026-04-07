@@ -12,6 +12,7 @@ import { helpContentData, type HelpContent } from '@/data/helpContent'
 // 2026-03-18 00:00:00 | CR3-1–CR3-4: Added route mappings for linkedinProfileImport, resumePersonas, adminLogging, accountDeletion
 // 2026-04-06 00:00:00 | P26 — Added gapAnalysis route mapping for /gap (Gap Analysis, Pro+ gated)
 // 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer route mapping for /profile-fit. Added emailJobAlerts route mapping for /settings (ADR-0007).
+// 2026-04-07 23:50:00 | WAF OE-2 — Added missing route mappings: skillProfile → /settings, resumeIntelligence → /analyses
 const HELP_ROUTE_MAP: Record<string, string> = {
   dashboard: '/',
   resumes: '/resumes',
@@ -28,6 +29,8 @@ const HELP_ROUTE_MAP: Record<string, string> = {
   adminLogging: '/admin',
   accountDeletion: '/settings',
   emailJobAlerts: '/settings',
+  skillProfile: '/settings',
+  resumeIntelligence: '/analyses',
 }
 
 type HelpTopic = HelpContent & { route?: string }

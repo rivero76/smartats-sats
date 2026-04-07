@@ -10,6 +10,8 @@
  *   reconciliation LLM call when resume_id is provided. Persists result to
  *   sats_profile_fit_reports. Returns 503 on missing env, 404 on no signals,
  *   401 on bad JWT.
+ * 2026-04-07 23:50:00 | WAF REL-1 — Add fallback model candidate to both callLLM() calls so
+ *   a transient error on gpt-4.1-mini falls through to gpt-4o-mini instead of failing.
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -235,7 +237,7 @@ For each gap return:
 - estimated_weeks_to_close: realistic weeks (null if unknown)
 
 Also write a score_rationale: 2-3 sentences explaining what the ${fitScore}/100 score means for this candidate targeting ${roleFamilyName} roles in ${marketLabel}. Be honest but constructive.`,
-    modelCandidates: [modelName],
+    modelCandidates: [modelName, modelFallback],
     jsonSchema: PROFILE_FIT_JSON_SCHEMA,
     schemaName: 'profile_fit_result',
     temperature: 0.3,
@@ -296,7 +298,7 @@ Identify any real conflicts between what the LinkedIn profile signals and what t
 - linkedin_value: what the LinkedIn data shows
 - resume_value: what the resume says
 - severity: HIGH (factual contradiction that could hurt credibility), MEDIUM (notable difference), LOW (minor inconsistency)`,
-    modelCandidates: [modelName],
+    modelCandidates: [modelName, modelFallback],
     jsonSchema: RECONCILIATION_JSON_SCHEMA,
     schemaName: 'reconciliation_result',
     temperature: 0.1,
@@ -377,6 +379,7 @@ serve(async (req) => {
   }
 
   const modelName = Deno.env.get('OPENAI_MODEL_PROFILE_FIT') || 'gpt-4.1-mini'
+  const modelFallback = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const authHeader = req.headers.get('Authorization')

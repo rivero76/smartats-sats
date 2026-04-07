@@ -7,7 +7,7 @@
   PURPOSE: Paste this prompt into Claude Code to run a full WAF architecture and code review.
   FREQUENCY: Run before any major release, after significant infrastructure changes, or quarterly.
   AGENTS: arch-reviewer (primary) + security-auditor (Security pillar deep-dive)
-  LAST RUN: never
+  LAST RUN: 2026-04-07
   HOW TO RUN: Open this repo in Claude Code and paste the prompt below.
 -->
 
