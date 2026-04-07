@@ -8,6 +8,8 @@
  *   before force-unwrap with !. Prevents unhandled crash; returns proper misconfiguration signal.
  * 2026-04-08 | Fix admin.signOut called with user.id (UUID) instead of token (JWT).
  *   admin.signOut expects a JWT; passing a UUID causes "invalid number of segments" error.
+ * 2026-04-08 | P1-14: Implement deletion confirmation email via Resend (RESEND_API_KEY secret).
+ *   Replaces TODO placeholder. Non-fatal — email errors do not fail the deletion flow.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -235,8 +237,61 @@ serve(async (req) => {
       },
     })
 
-    // TODO: Send confirmation email (implement email service)
-    console.log('TODO: Send deletion confirmation email to:', user.email)
+    // Send deletion confirmation email via Resend
+    // Wrapped in try/catch — mail provider outage must not prevent deletion from completing.
+    try {
+      const resendApiKey = Deno.env.get('RESEND_API_KEY')
+      const appUrl = Deno.env.get('SATS_APP_URL') || 'https://smartats-sats.vercel.app'
+      const permanentDeletionDate = new Date(deletionResult.permanent_deletion_date).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
+
+      if (resendApiKey && user.email) {
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'SmartATS <noreply@smartats.io>',
+            to: [user.email],
+            subject: 'Your SmartATS account has been scheduled for deletion',
+            html: `
+              <p>Hi,</p>
+              <p>We received your request to delete your SmartATS account. Your account has been scheduled for permanent deletion on <strong>${permanentDeletionDate}</strong> (30 days from now).</p>
+              <p>During this grace period, all your data remains intact and you can cancel this request at any time:</p>
+              <p><a href="${appUrl}/settings">Cancel account deletion</a></p>
+              <p>After ${permanentDeletionDate}, your account and all associated data will be permanently and irreversibly deleted.</p>
+              <p>If you did not request this, please <a href="${appUrl}/settings">cancel immediately</a> and change your password.</p>
+              <p>— The SmartATS Team</p>
+            `,
+            text: `Your SmartATS account has been scheduled for permanent deletion on ${permanentDeletionDate}.\n\nTo cancel, visit: ${appUrl}/settings\n\nIf you did not request this, cancel immediately and change your password.`,
+          }),
+        })
+        if (!emailRes.ok) {
+          const errBody = await emailRes.text()
+          console.error('Resend email failed:', emailRes.status, errBody)
+          await logEvent('ERROR', 'Deletion confirmation email failed to send', {
+            operation: 'email_notification',
+            user_id: user.id,
+            details: { status: emailRes.status, body: errBody },
+          })
+        } else {
+          console.log('Deletion confirmation email sent to:', user.email)
+          await logEvent('INFO', 'Deletion confirmation email sent', {
+            operation: 'email_notification',
+            outcome: 'success',
+            user_id: user.id,
+          })
+        }
+      } else {
+        console.warn('RESEND_API_KEY not set or no email address — skipping deletion confirmation email')
+      }
+    } catch (emailError) {
+      console.error('Deletion confirmation email error (non-fatal):', emailError)
+    }
+
     await logEvent('INFO', 'Account deletion workflow completed', {
       operation: 'account_delete',
       outcome: 'success',

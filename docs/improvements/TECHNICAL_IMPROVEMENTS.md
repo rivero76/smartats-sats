@@ -20,6 +20,7 @@
 <!-- Updated: 2026-03-31 — added INFRA-1 (LinkedIn scraper hosting — MVP-temporary Fly.io, review at scale) -->
 <!-- Updated: 2026-04-01 — added UX-FILE-1 (cloud-synced file upload detection — OneDrive/GDrive stub files) -->
 <!-- Updated: 2026-04-07 — WAF review 2 (2026-04-07_waf-review.md): added WAF2-1 through WAF2-10; OE-2/REL-1/REL-2 already fixed in fix/waf-critical-findings branch -->
+<!-- Updated: 2026-04-08 — added P1-14 (deletion confirmation email via Resend); implemented in fix/waf-critical-findings -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -1111,3 +1112,23 @@ This affects all file ingestion entry points:
 - Relevant hooks (`useResumes`, job description upload logic)
 
 **Non-goals:** Automatically downloading the file from the cloud provider — that requires OAuth scopes beyond the current app scope.
+
+---
+
+### P1-14 · Send deletion confirmation email when account is scheduled for deletion
+
+**Area:** Account lifecycle / User communication
+**Effort:** 1–2 hours
+**File:** `supabase/functions/delete-account/index.ts`
+
+When a user triggers account deletion the edge function currently has a `TODO` comment and logs `"TODO: Send deletion confirmation email"` but never sends anything. Users receive no confirmation that their 30-day grace period has started, which erodes trust and increases support tickets.
+
+**Fix:** Integrate Resend (or SendGrid) transactional email inside `delete-account`. Add `RESEND_API_KEY` (or `SENDGRID_API_KEY`) to Supabase secrets. Send a plain-text + HTML email immediately after `soft_delete_user` succeeds, containing:
+
+- Confirmation that the account is scheduled for deletion
+- The exact permanent deletion date (30 days out)
+- A clear "Cancel deletion" call-to-action linking to `<app-url>/settings`
+
+The send call must be wrapped in `try/catch` so a mail provider outage cannot prevent the deletion from completing.
+
+**Status:** Implemented in `fix/waf-critical-findings` (2026-04-08). Uses Resend via `RESEND_API_KEY` secret + `SATS_APP_URL` for the cancellation link. ✅

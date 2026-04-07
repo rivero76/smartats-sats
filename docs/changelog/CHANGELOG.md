@@ -6,6 +6,8 @@ All notable changes to this project should be documented in this file.
 
 ### Fixed
 
+- 2026-04-08: P1-14 — Deletion confirmation email implemented in `delete-account` edge function via Resend (`RESEND_API_KEY` secret + `SATS_APP_URL`). Email includes permanent deletion date and a cancel link. Non-fatal — provider errors are logged but do not block the deletion flow.
+
 - 2026-04-08: Delete Account was failing with "Edge Function returned a non-2xx status code" — three root causes fixed. (1) `supabase.auth.admin.signOut` was called with `user.id` (a UUID) instead of `token` (the user's JWT) — admin.signOut expects a JWT and threw "invalid number of segments". (2) `soft_delete_user`, `cancel_account_deletion`, and `reactivate_soft_deleted_user` PL/pgSQL functions still referenced `public.account_deletion_logs`, renamed to `sats_account_deletion_logs` in P21. Migration `20260408000000` patches the `account_deletion_logs` reference; migration `20260408010000` patches the `enriched_experiences` reference (also renamed in P21 to `sats_enriched_experiences`, missed in the first pass).
 
 - 2026-04-07: WAF CRITICAL fixes — `ats-analysis-direct` returns 503 (not 500) for missing OPENAI_API_KEY. `delete-account` and `cancel-account-deletion` validate SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY before use and return 503 on misconfiguration, preventing unhandled crashes from `!` force-unwrap on absent env vars.
