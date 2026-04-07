@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
  * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion help topics.
  * 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
  * 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
@@ -704,6 +705,99 @@ export const helpContentData: Record<string, HelpContent> = {
     relatedTopics: ['ATS Analysis', 'Experience Enrichment', 'Resume Management'],
   },
 
+  gapAnalysis: {
+    id: 'gapAnalysis',
+    title: 'Gap Analysis',
+    description:
+      'See exactly which skills and certifications stand between you and your target role — and get a prioritized action plan to close each gap. Available on Pro and above.',
+    overview:
+      'Gap Analysis compares your current skill profile against real job posting data for your chosen role family and target market. It produces a prioritized gap matrix grouped into Critical, Important, and Nice-to-Have gaps. Each gap comes with the market frequency of that skill, a recommended action, an estimated time to close, and a ready-to-use resume language template. From here you can generate an Upskilling Roadmap driven directly by your critical and important gaps.',
+    keyFeatures: [
+      'Role family and target market selector (NZ, AU, UK, BR, US)',
+      'Three-tier gap matrix: Critical, Important, and Nice-to-Have',
+      'Market frequency bar showing how often each skill appears in real job postings',
+      'Signal type badge (skill, certification, experience, keyword)',
+      'Recommended action and estimated weeks to close for each gap',
+      'Expandable resume language template per gap item',
+      '"Generate Roadmap from Gaps" creates a targeted upskilling roadmap and navigates to /roadmaps',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Set your Career Goals in Settings',
+        description:
+          'Before using Gap Analysis, go to Settings and fill in the Career Goals card with your target role and target market. These values pre-populate the dropdowns on the Gap Analysis page.',
+        tip: 'Keeping your Career Goals current means every Gap Analysis refresh uses your latest ambitions automatically.',
+      },
+      {
+        step: 2,
+        title: 'Open Gap Analysis',
+        description:
+          'Navigate to Gap Analysis from the sidebar. Select your target role family and target market from the dropdowns at the top of the page.',
+        tip: 'Choose the market where you are actively applying — gap frequency data is sourced from real postings in that region.',
+      },
+      {
+        step: 3,
+        title: 'Refresh the Analysis',
+        description:
+          'Click "Refresh Analysis" to compute your gap matrix. The system compares your skill profile against job posting signals for the selected role and market.',
+        tip: 'Re-run after updating your resume or skill profile to see how your gaps have changed.',
+      },
+      {
+        step: 4,
+        title: 'Review Critical Gaps first',
+        description:
+          'Start with the Critical Gaps section. These are the skills and certifications that appear most frequently in postings for your target role and are absent from your profile.',
+        tip: 'Critical gaps with a market frequency above 70% are high-priority — employers treat these as baseline expectations.',
+      },
+      {
+        step: 5,
+        title: 'Expand gap items for detail',
+        description:
+          'Click any gap item to expand it and see the signal type badge, recommended action, estimated weeks to close, and a resume language template you can copy directly into your resume.',
+        tip: 'Use the resume language template as a starting point — edit figures and context to reflect your real experience before adding it to your resume.',
+      },
+      {
+        step: 6,
+        title: 'Generate a Roadmap from your gaps',
+        description:
+          'Click "Generate Roadmap from Gaps" to create an upskilling roadmap built from your Critical and Important gaps. You are taken to the Roadmaps page automatically when it is ready.',
+        tip: 'The generated roadmap sequences milestones by estimated time to close — shorter wins come first to build momentum.',
+      },
+    ],
+    bestPractices: [
+      'Update your skill profile before running Gap Analysis — the gap matrix is only as accurate as your profile',
+      'Focus on Critical gaps with the highest market frequency before moving to Important gaps',
+      'Use the estimated weeks to close to prioritize gaps you can realistically address before your next application deadline',
+      'Forward job alert emails to your Smart ATS inbound address so the gap matrix is based on current postings for your market',
+      'Re-run Gap Analysis monthly or after any significant resume update to track progress',
+      'Use the resume language templates as drafts — always tailor them to your actual experience before applying',
+    ],
+    troubleshooting: [
+      {
+        problem: 'Gap Analysis shows no data or an empty matrix',
+        solution:
+          'The analysis requires real job posting data for your selected role and market. Make sure you have forwarded at least a few job alert emails to your Smart ATS inbound address via Settings → Email Job Alerts. Then select your role and market and click Refresh Analysis.',
+      },
+      {
+        problem: 'My target role or market is not in the dropdown',
+        solution:
+          'Select the closest available role family. Role families are broad groupings — for example, "Software Engineering" covers both frontend and backend roles. Contact support if your target is consistently missing.',
+      },
+      {
+        problem: 'Gap Analysis is gated and I cannot access it',
+        solution:
+          'Gap Analysis is available on Pro and above. Your current plan does not include this feature. Upgrade your plan from the Settings page.',
+      },
+      {
+        problem: 'Skills I already have are showing as gaps',
+        solution:
+          'Check that those skills are listed in your skill profile under Settings → Skill Profile. Skills only appear in your profile after an ATS analysis or LinkedIn import — add any missing skills by running a fresh analysis or re-importing your LinkedIn profile.',
+      },
+    ],
+    relatedTopics: ['upskillingRoadmaps', 'skillProfile', 'atsAnalysis', 'proactiveMatches'],
+  },
+
   proactiveMatches: {
     id: 'proactiveMatches',
     title: 'Proactive Opportunities',
@@ -1117,6 +1211,7 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['Profile & Settings Management', 'Dashboard Overview'],
   },
+
   skillProfile: {
     id: 'skillProfile',
     title: 'Skill Profile',
@@ -1179,6 +1274,7 @@ export const helpContentData: Record<string, HelpContent> = {
 // 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics
 // 2026-03-30 10:00:00 | P25 S6 — Added skillProfile help topic.
 // 2026-03-30 12:00:00 | PROD-9–PROD-12 — Added resumeIntelligence topic; updated atsAnalysis with intelligence panel steps and features.
+// 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

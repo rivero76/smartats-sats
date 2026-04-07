@@ -2,6 +2,8 @@
  * UPDATE LOG
  * 2026-03-18 00:00:00 | CR1-6: Add explanatory comment for job extraction confidence weights (0.4/0.35/0.25).
  * 2026-03-18 00:01:00 | CR2-2: Renamed from contentExtraction.ts to content-extraction.ts (kebab-case convention).
+ * 2026-04-01 00:00:00 | UX-FILE-1: Add SPA/navigation noise lines to UI_NOISE_LINES so shell pages don't produce false extractions.
+ * 2026-04-01 15:00:00 | UX-FILE-1 fix: looksLikeCompanyName now rejects job reference IDs (e.g. "P-1520", "JR107011"). extractCompany adds "At [Company]," and "Join [Company]" patterns.
  */
 // Pattern-based content extraction utilities (no AI)
 import { logContentExtraction, createContentExtractionLogger } from '@/lib/jobDescriptionLogger'
@@ -51,6 +53,19 @@ const UI_NOISE_LINES = new Set([
   'apply',
   'save',
   'cancel',
+  // SPA shell / navigation noise
+  'skip to main content',
+  'skip to content',
+  'login',
+  'log in',
+  'sign in',
+  'sign up',
+  'menu',
+  'close',
+  'navigation',
+  'back to top',
+  'enable javascript',
+  'javascript is required',
 ])
 
 const LOCATION_WORDS = new Set([
@@ -266,6 +281,10 @@ function looksLikeCompanyName(line: string): boolean {
   ) {
     return false
   }
+
+  // Reject job reference IDs: 1–4 uppercase letters optionally followed by hyphen/underscore + digits
+  // e.g. "P-1520", "JR107011", "REQ-12345", "JOB-2024-001"
+  if (/^[A-Z]{1,4}[-_]?\d{3,}$/i.test(cleaned)) return false
 
   // Prefer short proper-name style lines: "The Good Source", "Acme Labs"
   if (/^[A-Z][A-Za-z0-9&'.-]*(\s+[A-Z][A-Za-z0-9&'.-]*){0,5}$/.test(cleaned)) {
@@ -627,6 +646,10 @@ function extractCompany(content: string, lines: string[]): string | null {
 
   const companyPatterns = [
     /(?:company|organization|at|join)\s*:\s*(.+)/i,
+    // "At Databricks, we are..." — very common in job description body text
+    /^At\s+([A-Z][a-zA-Z0-9&'.]+(?:\s+[A-Z][a-zA-Z0-9&'.]+){0,3}),/m,
+    // "Join Databricks and..." or "Join us at Databricks"
+    /\bJoin\s+([A-Z][a-zA-Z0-9&'.]+(?:\s+[A-Z][a-zA-Z0-9&'.]+){0,3})(?:\s+and\b|\s+today\b|,)/,
     /about\s+([A-Z][a-zA-Z\s&,.-]+)(?:\s+is|\s+was|\s+provides)/i,
     /([A-Z][a-zA-Z\s&,.-]+)\s+is\s+(?:looking|seeking|hiring)/i,
   ]

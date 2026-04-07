@@ -84,13 +84,13 @@ export interface LLMResponse {
 // ---------------------------------------------------------------------------
 
 const MODEL_PRICING_USD: Record<string, { input: number; output: number }> = {
-  'gpt-4o-mini': { input: 0.15, output: 0.60 },
-  'gpt-4.1': { input: 2.00, output: 8.00 },
-  'gpt-4.1-mini': { input: 0.40, output: 1.60 },
+  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gpt-4.1': { input: 2.0, output: 8.0 },
+  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
   // Reasoning models (o-series) — see docs/specs/technical/llm-model-governance.md
-  'o4-mini': { input: 1.10, output: 4.40 },
-  'o3': { input: 10.00, output: 40.00 },
-  'o3-mini': { input: 1.10, output: 4.40 },
+  'o4-mini': { input: 1.1, output: 4.4 },
+  o3: { input: 10.0, output: 40.0 },
+  'o3-mini': { input: 1.1, output: 4.4 },
 }
 
 // ---------------------------------------------------------------------------
@@ -187,7 +187,11 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
         let providerBody = await response.text()
 
         // Schema unsupported by this model — retry the same attempt without schema mode
-        if (response.status === 400 && request.jsonSchema && isSchemaUnsupportedError(providerBody)) {
+        if (
+          response.status === 400 &&
+          request.jsonSchema &&
+          isSchemaUnsupportedError(providerBody)
+        ) {
           console.log(
             `[${request.taskLabel}] Schema output unsupported by ${modelName}; retrying without schema mode`
           )
@@ -288,7 +292,9 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
                 run_id: ctx.runId ?? null,
                 analysis_id: ctx.analysisId ?? null,
               }),
-            }).catch(() => { /* intentionally silent */ })
+            }).catch(() => {
+              /* intentionally silent */
+            })
           }
         } catch {
           // telemetry must not block

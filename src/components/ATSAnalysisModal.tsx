@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-03-30 11:00:00 | PROD-10: Added optional Target Market select field; passes target_country to mutation.
+ * 2026-04-01 00:00:00 | fix: Replace empty-string SelectItem value with "auto" sentinel to satisfy Radix UI constraint.
  */
 import { useState } from 'react'
 import {
@@ -134,12 +135,16 @@ const ATSAnalysisModal = ({ open, onOpenChange }: ATSAnalysisModalProps) => {
               Target Market{' '}
               <span className="text-muted-foreground text-xs font-normal">(optional)</span>
             </Label>
-            <Select value={targetCountry} onValueChange={setTargetCountry} disabled={isLoading}>
+            <Select
+              value={targetCountry || 'auto'}
+              onValueChange={(v) => setTargetCountry(v === 'auto' ? '' : v)}
+              disabled={isLoading}
+            >
               <SelectTrigger id="country-select">
                 <SelectValue placeholder="Auto-detect from job description" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Auto-detect from job description</SelectItem>
+                <SelectItem value="auto">Auto-detect from job description</SelectItem>
                 <SelectItem value="US">United States</SelectItem>
                 <SelectItem value="UK">United Kingdom</SelectItem>
                 <SelectItem value="DE">Germany</SelectItem>

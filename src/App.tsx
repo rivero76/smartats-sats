@@ -2,6 +2,8 @@
  * UPDATE LOG
  * 2026-03-17 12:00:00 | P1-2: wrap main route outlet in ErrorBoundary to prevent blank-screen crashes
  * 2026-03-26 19:00:00 | P19 S2-2: add AnimatePresence page transitions via AnimatedRoutes component (P19-S2-2)
+ * 2026-04-02 00:00:00 | Add /pm route for PM Dashboard (unified backlog/roadmap/incident view)
+ * 2026-04-05 22:30:00 | P26 S6-1 — Add /gap route for Gap Analysis page.
  */
 import React from 'react'
 import { Toaster } from '@/components/ui/toaster'
@@ -29,6 +31,8 @@ import AdminDashboard from './pages/AdminDashboard'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
+import PMDashboard from './pages/PMDashboard'
+import GapMatrix from './pages/GapMatrix'
 
 // Added imports
 import DevErrorOverlay from '@/components/DevErrorOverlay'
@@ -62,7 +66,9 @@ const AnimatedRoutes = () => {
             <Route path="/opportunities" element={<ProactiveMatches />} />
             <Route path="/experiences" element={<EnrichedExperiences />} />
             <Route path="/roadmaps" element={<UpskillingRoadmaps />} />
+            <Route path="/gap" element={<GapMatrix />} />
             <Route path="/help" element={<HelpHub />} />
+            <Route path="/pm" element={<PMDashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route
               path="/admin"

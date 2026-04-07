@@ -4,6 +4,11 @@
  *   managing the AI-classified skill profile. Shows skill count, career chapter breakdown,
  *   per-skill delete, and a link to re-trigger classification from the Experiences page.
  *   Free tier: read-only; Pro/Max: individual delete enabled.
+ * 2026-04-02 00:00:00 | Gap 3 — Wired usePlanFeature hook: delete button gated to Pro/Max,
+ *   "Re-classify all" placeholder added (gated to Pro/Max).
+ * 2026-04-05 20:00:00 | P26 S3-1 — Add certification status badges (held/in_progress/planned)
+ *   for category='certification' skills. Pro+ users can update status inline via a select.
+ *   Free users see status read-only. Expected date shown when status=in_progress.
  */
 import { useState } from 'react'
 import { motion } from 'framer-motion'
@@ -22,8 +27,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { staggerContainer, listItem } from '@/lib/animations'
-import { useSkillProfile, useDeleteSkillProfile } from '@/hooks/useSkillProfile'
+import {
+  useSkillProfile,
+  useDeleteSkillProfile,
+  useUpdateCertificationStatus,
+} from '@/hooks/useSkillProfile'
+import { usePlanFeature } from '@/hooks/usePlanFeature'
 
 // ---------------------------------------------------------------------------
 // Category colours (mirror SkillClassificationReview)
@@ -45,6 +62,18 @@ const DEPTH_LABEL: Record<string, string> = {
   trainer: 'Trainer / Mentor',
 }
 
+const CERT_STATUS_LABEL: Record<string, string> = {
+  held: 'Held',
+  in_progress: 'In Progress',
+  planned: 'Planned',
+}
+
+const CERT_STATUS_COLOURS: Record<string, string> = {
+  held: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  in_progress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  planned: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+}
+
 // ---------------------------------------------------------------------------
 // Chapter group
 // ---------------------------------------------------------------------------
@@ -54,6 +83,9 @@ function ChapterGroup({
   skills,
   onDelete,
   deleteIsPending,
+  canDelete,
+  onUpdateCertStatus,
+  certStatusIsPending,
 }: {
   chapter: string
   skills: Array<{
@@ -62,9 +94,14 @@ function ChapterGroup({
     depth: string
     ai_last_used_year: number | null
     user_confirmed_last_used_year: number | null
+    certification_status: 'held' | 'in_progress' | 'planned' | null
+    certification_expected_date: string | null
   }>
   onDelete: (skillName: string) => void
   deleteIsPending: boolean
+  canDelete: boolean
+  onUpdateCertStatus: (skillName: string, status: 'held' | 'in_progress' | 'planned' | null) => void
+  certStatusIsPending: boolean
 }) {
   const [open, setOpen] = useState(true)
 
@@ -95,11 +132,12 @@ function ChapterGroup({
         >
           {skills.map((skill) => {
             const lastUsed = skill.user_confirmed_last_used_year ?? skill.ai_last_used_year
+            const isCert = skill.category === 'certification'
             return (
               <motion.li
                 key={skill.skill_name}
                 variants={listItem}
-                className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+                className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm flex-wrap"
               >
                 <span className="font-medium flex-1 min-w-0 truncate">{skill.skill_name}</span>
                 <span
@@ -113,14 +151,63 @@ function ChapterGroup({
                 {lastUsed && (
                   <span className="shrink-0 text-xs text-muted-foreground">{lastUsed}</span>
                 )}
+                {isCert && canDelete && (
+                  <Select
+                    value={skill.certification_status ?? 'unset'}
+                    onValueChange={(val) =>
+                      onUpdateCertStatus(
+                        skill.skill_name,
+                        val === 'unset' ? null : (val as 'held' | 'in_progress' | 'planned')
+                      )
+                    }
+                    disabled={certStatusIsPending}
+                  >
+                    <SelectTrigger className="h-6 w-28 text-xs px-2 shrink-0">
+                      <SelectValue placeholder="Status…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unset" className="text-xs">
+                        —
+                      </SelectItem>
+                      <SelectItem value="held" className="text-xs">
+                        Held
+                      </SelectItem>
+                      <SelectItem value="in_progress" className="text-xs">
+                        In Progress
+                      </SelectItem>
+                      <SelectItem value="planned" className="text-xs">
+                        Planned
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {isCert && !canDelete && skill.certification_status && (
+                  <span
+                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${CERT_STATUS_COLOURS[skill.certification_status] ?? ''}`}
+                  >
+                    {CERT_STATUS_LABEL[skill.certification_status]}
+                  </span>
+                )}
+                {isCert &&
+                  skill.certification_status === 'in_progress' &&
+                  skill.certification_expected_date && (
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      by {skill.certification_expected_date}
+                    </span>
+                  )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
-                      aria-label={`Remove ${skill.skill_name} from skill profile`}
-                      disabled={deleteIsPending}
+                      aria-label={
+                        canDelete
+                          ? `Remove ${skill.skill_name} from skill profile`
+                          : 'Upgrade to Pro to remove skills'
+                      }
+                      disabled={deleteIsPending || !canDelete}
+                      title={!canDelete ? 'Pro / Max — upgrade to manage skills' : undefined}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -160,6 +247,10 @@ function ChapterGroup({
 export function SkillProfileManager() {
   const { data: skills = [], isLoading, error } = useSkillProfile()
   const deleteSkill = useDeleteSkillProfile()
+  const updateCertStatus = useUpdateCertificationStatus()
+  const { hasFeature } = usePlanFeature()
+  const canDelete = hasFeature('skill_reclassify')
+  const canReclassifyAll = hasFeature('skill_reclassify_all')
 
   // Group by career chapter
   const byChapter = skills.reduce<Record<string, typeof skills>>((acc, s) => {
@@ -227,8 +318,33 @@ export function SkillProfileManager() {
                   skills={chapterSkills}
                   onDelete={(skillName) => deleteSkill.mutate(skillName)}
                   deleteIsPending={deleteSkill.isPending}
+                  canDelete={canDelete}
+                  onUpdateCertStatus={(skillName, status) =>
+                    updateCertStatus.mutate({
+                      skillName,
+                      certificationStatus: status,
+                      certificationExpectedDate: null,
+                    })
+                  }
+                  certStatusIsPending={updateCertStatus.isPending}
                 />
               ))}
+            </div>
+
+            <div className="pt-3 border-t flex items-center justify-between gap-4">
+              <p className="text-xs text-muted-foreground">
+                Re-classification re-runs AI analysis on all your experiences.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!canReclassifyAll}
+                title={
+                  !canReclassifyAll ? 'Pro / Max — upgrade to re-classify all skills' : undefined
+                }
+              >
+                {canReclassifyAll ? 'Re-classify all' : 'Re-classify all (Pro / Max)'}
+              </Button>
             </div>
           </>
         )}

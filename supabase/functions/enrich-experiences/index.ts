@@ -371,7 +371,8 @@ function buildEnrichmentPrompt({
       'education',
       'achievements',
     ],
-    priorityRegex: /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
+    priorityRegex:
+      /(%|\$|led|managed|built|improved|reduced|increased|delivered|developed|implemented)/i,
   })
   const preparedJobText = buildSectionAwareContext(jobContent, {
     maxChars: 4200,
@@ -441,7 +442,10 @@ function buildSectionAwareContext(
     priorityRegex: RegExp
   }
 ): string {
-  const normalized = text.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim()
+  const normalized = text
+    .replace(/\r/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim()
   if (!normalized) return ''
 
   const lines = normalized.split('\n').map((line) => line.trim())
@@ -478,7 +482,8 @@ function buildSectionAwareContext(
   }
   flushSection()
 
-  const allSections = sectionBuckets.length > 0 ? sectionBuckets : [`## general\n${lines.join('\n')}`]
+  const allSections =
+    sectionBuckets.length > 0 ? sectionBuckets : [`## general\n${lines.join('\n')}`]
   const rankedLines = allSections
     .join('\n')
     .split('\n')
@@ -535,10 +540,7 @@ function parseEnrichmentResponse(raw: string): EnrichmentSuggestion[] {
       })
       .filter(
         (item: EnrichmentSuggestion) =>
-          item.skill_name &&
-          item.suggestion &&
-          item.source_resume_evidence &&
-          item.explanation
+          item.skill_name && item.suggestion && item.source_resume_evidence && item.explanation
       )
   } catch (error) {
     console.error('Failed to parse enrichment response:', error, raw)
@@ -547,7 +549,9 @@ function parseEnrichmentResponse(raw: string): EnrichmentSuggestion[] {
 }
 
 function mapRiskFlag(value: unknown): 'low' | 'medium' | 'high' {
-  const normalized = String(value || '').trim().toLowerCase()
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
   if (normalized === 'low' || normalized === 'medium' || normalized === 'high') {
     return normalized
   }

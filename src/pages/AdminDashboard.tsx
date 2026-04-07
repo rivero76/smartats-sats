@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-04-02 00:00:00 | Gap 2 — Added "Job Descriptions" admin tab wiring AdminJobDescriptionsPanel.
+ */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,8 +14,10 @@ import {
   Settings,
   AlertTriangle,
   FileText,
+  Briefcase,
 } from 'lucide-react'
 import { LoggingControlPanel } from '@/components/admin/LoggingControlPanel'
+import { AdminJobDescriptionsPanel } from '@/components/admin/AdminJobDescriptionsPanel'
 
 const AdminDashboard = () => {
   const systemStats = [
@@ -100,12 +106,17 @@ const AdminDashboard = () => {
             <FileText className="h-4 w-4" />
             Logging Control
           </TabsTrigger>
+          <TabsTrigger value="job-descriptions" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Job Descriptions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="flex items-center justify-between rounded-md border border-dashed p-3 bg-muted/40">
             <p className="text-sm text-muted-foreground">
-              This overview is a placeholder preview and is not fully wired to live system telemetry yet.
+              This overview is a placeholder preview and is not fully wired to live system telemetry
+              yet.
             </p>
             <Badge variant="secondary">Preview</Badge>
           </div>
@@ -320,6 +331,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="logging">
           <LoggingControlPanel />
+        </TabsContent>
+
+        <TabsContent value="job-descriptions">
+          <AdminJobDescriptionsPanel />
         </TabsContent>
       </Tabs>
     </div>

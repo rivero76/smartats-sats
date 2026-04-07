@@ -1,4 +1,8 @@
 // src/components/FileUpload.tsx
+/**
+ * UPDATE LOG
+ * 2026-04-01 00:00:00 | UX-FILE-1: Call assertFileIsLocal() before Supabase upload to surface cloud-stub files (OneDrive, GDrive, iCloud) with an actionable error message.
+ */
 import React, { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, AlertCircle } from 'lucide-react'
@@ -9,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import {
   extractTextFromDocument,
+  assertFileIsLocal,
   isProcessingError,
   ExtractedContent,
 } from '@/services/documentProcessor'
@@ -178,6 +183,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setProgress(0)
 
       try {
+        await assertFileIsLocal(file)
+
         const fileExt = file.name.split('.').pop()
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `${user.id}/${fileName}`

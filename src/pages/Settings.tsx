@@ -2,6 +2,9 @@
 // 2026-03-17 12:00:00 | P16 Story 1: added PersonaManager (My Resume Profiles) section
 // 2026-03-26 | S3-1: fix heading hierarchy (section CardTitle → h2, h4 → h3); add aria-label to Switch components (P19-S3-1)
 // 2026-03-30 10:00:00 | P25 S6 — Added SkillProfileManager section before Data Management card.
+// 2026-04-02 01:00:00 | P20 S4 — Added Reset Career Data button + ResetCareerDataModal wiring.
+// 2026-04-02 04:00:00 | ADR-0007 — Added Email Job Alerts integration card (Postmark inbound).
+// 2026-04-05 20:30:00 | P26 S3-2 — Added CareerGoalsCard section (target markets + primary role family).
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +31,9 @@ import {
   Key,
   Loader2,
   AlertTriangle,
+  Mail,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,8 +41,10 @@ import { z } from 'zod'
 import { useProfile, type ProfileFormData } from '@/hooks/useProfile'
 import { useAccountDeletion } from '@/hooks/useAccountDeletion'
 import { DeleteAccountModal } from '@/components/DeleteAccountModal'
+import { ResetCareerDataModal } from '@/components/ResetCareerDataModal'
 import { PersonaManager } from '@/components/PersonaManager'
 import { SkillProfileManager } from '@/components/skill-profile/SkillProfileManager'
+import { CareerGoalsCard } from '@/components/CareerGoalsCard'
 import { useEffect, useState } from 'react'
 import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
@@ -67,6 +75,18 @@ const Settings = () => {
     refreshStatus,
   } = useAccountDeletion()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [copiedInboundUrl, setCopiedInboundUrl] = useState(false)
+
+  const INBOUND_EMAIL_ADDRESS = 'alerts@inbound.smartats.app'
+  const INBOUND_WEBHOOK_URL =
+    'https://nkgscksbgmzhizohobhg.functions.supabase.co/inbound-email-ingest'
+
+  const copyToClipboard = async (text: string, setCopied: (v: boolean) => void) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('profileSettings')
 
@@ -374,6 +394,11 @@ const Settings = () => {
         </CardContent>
       </Card>
 
+      {/* Career Goals */}
+      <section>
+        <CareerGoalsCard />
+      </section>
+
       {/* Skill Profile */}
       <SkillProfileManager />
 
@@ -396,6 +421,21 @@ const Settings = () => {
             </div>
             <Button variant="outline" disabled>
               Export <span className="ml-2 text-xs">(Coming Soon)</span>
+            </Button>
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <h3 className="font-medium">Reset Career Data</h3>
+              <p className="text-sm text-muted-foreground">
+                Delete all resumes, analyses, skills, and roadmaps — keeps your account and settings
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive/5"
+              onClick={() => setShowResetModal(true)}
+            >
+              Reset career data
             </Button>
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -446,6 +486,101 @@ const Settings = () => {
         </CardContent>
       </Card>
 
+      {/* Email Job Alerts Integration */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center space-x-2">
+            <Mail className="h-5 w-5" />
+            <span>Email Job Alerts</span>
+          </h2>
+          <CardDescription>
+            Forward job alert emails from LinkedIn, Seek, or Indeed to Smart ATS. Jobs are
+            automatically staged and scored against your resumes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Step 1 */}
+          <div className="space-y-2">
+            <h3 className="font-medium text-sm">
+              Step 1 — Forward job alert emails to this address
+            </h3>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono select-all">
+                {INBOUND_EMAIL_ADDRESS}
+              </code>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => copyToClipboard(INBOUND_EMAIL_ADDRESS, setCopiedInboundUrl)}
+                aria-label="Copy inbound email address"
+              >
+                {copiedInboundUrl ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              In Gmail: open a LinkedIn job alert email → click the three-dot menu → Forward. Or set
+              up an automatic filter: From <strong>jobalerts@linkedin.com</strong> → Forward to this
+              address.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="space-y-2">
+            <h3 className="font-medium text-sm">Step 2 — One-time Postmark setup (admin)</h3>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>
+                Create a free account at <strong>postmark.com</strong> (100 emails/month free)
+              </li>
+              <li>
+                Go to <strong>Servers → Default → Settings → Inbound</strong>
+              </li>
+              <li>
+                Set Webhook URL to:
+                <code className="ml-1 rounded bg-muted px-1 py-0.5 font-mono text-xs">
+                  {INBOUND_WEBHOOK_URL}
+                </code>
+              </li>
+              <li>
+                Copy the <strong>X-Postmark-Signature</strong> token shown
+              </li>
+              <li>
+                Save it to the database:
+                <code className="block mt-1 rounded bg-muted px-2 py-1 font-mono text-xs whitespace-pre">
+                  {`UPDATE sats_runtime_settings
+SET value = '<your-token>'
+WHERE key = 'postmark_webhook_secret';
+
+UPDATE sats_runtime_settings
+SET value = 'your@email.com'
+WHERE key = 'inbound_email_allowlist';`}
+                </code>
+              </li>
+            </ol>
+          </div>
+
+          {/* How it works */}
+          <Alert>
+            <Mail className="h-4 w-4" />
+            <AlertDescription className="text-xs space-y-1">
+              <p>
+                <strong>How it works:</strong> When you forward a job alert, Smart ATS parses the
+                email, extracts job URLs + titles, and adds them to your proactive job queue. The
+                ATS scorer runs automatically and notifies you of strong matches on the{' '}
+                <strong>/opportunities</strong> page.
+              </p>
+              <p className="text-muted-foreground">
+                Works with: LinkedIn job alerts, Seek, Indeed, Google Alerts, and recruiter emails
+                containing job URLs.
+              </p>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
       {/* API Settings (Future) */}
       <Card className="opacity-75">
         <CardHeader>
@@ -471,6 +606,14 @@ const Settings = () => {
         onSuccess={() => {
           refreshStatus()
           // User will be signed out automatically by the edge function
+        }}
+      />
+
+      <ResetCareerDataModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onSuccess={() => {
+          // TanStack Query caches invalidated by the hook — UI will reflect empty state
         }}
       />
 

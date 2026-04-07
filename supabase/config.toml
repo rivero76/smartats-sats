@@ -2,3 +2,6 @@ project_id = "nkgscksbgmzhizohobhg"
 
 [functions.ats-analysis-direct]
 verify_jwt = true
+
+[functions.inbound-email-ingest]
+verify_jwt = false

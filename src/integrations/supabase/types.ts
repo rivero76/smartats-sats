@@ -552,8 +552,10 @@ export type Database = {
           portfolio_url: string | null
           preferred_currency: string
           preferred_locale: string
+          primary_target_role_family_id: string | null
           proactive_match_threshold: number | null
           professional_summary: string | null
+          target_market_codes: string[]
           timezone: string
           updated_at: string
           updated_by: string | null
@@ -575,8 +577,10 @@ export type Database = {
           portfolio_url?: string | null
           preferred_currency?: string
           preferred_locale?: string
+          primary_target_role_family_id?: string | null
           proactive_match_threshold?: number | null
           professional_summary?: string | null
+          target_market_codes?: string[]
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -598,8 +602,10 @@ export type Database = {
           portfolio_url?: string | null
           preferred_currency?: string
           preferred_locale?: string
+          primary_target_role_family_id?: string | null
           proactive_match_threshold?: number | null
           professional_summary?: string | null
+          target_market_codes?: string[]
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -619,6 +625,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'sats_locales'
             referencedColumns: ['code']
+          },
+          {
+            foreignKeyName: 'profiles_primary_target_role_family_id_fkey'
+            columns: ['primary_target_role_family_id']
+            isOneToOne: false
+            referencedRelation: 'sats_role_families'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2037,6 +2050,133 @@ export type Database = {
         }
         Relationships: []
       }
+      sats_gap_items: {
+        Row: {
+          candidate_status: string
+          created_at: string
+          estimated_weeks_to_close: number | null
+          frequency_pct: number
+          id: string
+          priority_tier: string
+          recommended_action: string | null
+          resume_language_template: string | null
+          signal_type: string
+          signal_value: string
+          snapshot_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidate_status: string
+          created_at?: string
+          estimated_weeks_to_close?: number | null
+          frequency_pct: number
+          id?: string
+          priority_tier: string
+          recommended_action?: string | null
+          resume_language_template?: string | null
+          signal_type: string
+          signal_value: string
+          snapshot_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidate_status?: string
+          created_at?: string
+          estimated_weeks_to_close?: number | null
+          frequency_pct?: number
+          id?: string
+          priority_tier?: string
+          recommended_action?: string | null
+          resume_language_template?: string | null
+          signal_type?: string
+          signal_value?: string
+          snapshot_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_gap_items_snapshot_id_fkey'
+            columns: ['snapshot_id']
+            isOneToOne: false
+            referencedRelation: 'sats_gap_snapshots'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      sats_gap_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          critical_gap_count: number
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          important_gap_count: number
+          market_code: string
+          market_signals_window_end: string | null
+          nice_to_have_gap_count: number
+          overall_gap_score: number
+          role_family_id: string
+          snapshot_date: string
+          tenant_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          critical_gap_count?: number
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          important_gap_count?: number
+          market_code: string
+          market_signals_window_end?: string | null
+          nice_to_have_gap_count?: number
+          overall_gap_score?: number
+          role_family_id: string
+          snapshot_date?: string
+          tenant_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          critical_gap_count?: number
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          important_gap_count?: number
+          market_code?: string
+          market_signals_window_end?: string | null
+          nice_to_have_gap_count?: number
+          overall_gap_score?: number
+          role_family_id?: string
+          snapshot_date?: string
+          tenant_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_gap_snapshots_role_family_id_fkey'
+            columns: ['role_family_id']
+            isOneToOne: false
+            referencedRelation: 'sats_role_families'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       sats_idempotency_keys: {
         Row: {
           created_at: string
@@ -2291,6 +2431,7 @@ export type Database = {
           deleted_by: string | null
           id: string
           source_ats_analysis_id: string | null
+          source_gap_snapshot_id: string | null
           status: string
           target_role: string
           tenant_id: string | null
@@ -2306,6 +2447,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           source_ats_analysis_id?: string | null
+          source_gap_snapshot_id?: string | null
           status?: string
           target_role: string
           tenant_id?: string | null
@@ -2321,6 +2463,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           source_ats_analysis_id?: string | null
+          source_gap_snapshot_id?: string | null
           status?: string
           target_role?: string
           tenant_id?: string | null
@@ -2335,6 +2478,13 @@ export type Database = {
             columns: ['source_ats_analysis_id']
             isOneToOne: false
             referencedRelation: 'sats_analyses'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'sats_learning_roadmaps_source_gap_snapshot_id_fkey'
+            columns: ['source_gap_snapshot_id']
+            isOneToOne: false
+            referencedRelation: 'sats_gap_snapshots'
             referencedColumns: ['id']
           },
           {
@@ -2612,6 +2762,56 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      sats_market_signals: {
+        Row: {
+          created_at: string
+          frequency_pct: number
+          id: string
+          market_code: string
+          posting_count: number
+          role_family_id: string
+          signal_type: string
+          signal_value: string
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          frequency_pct: number
+          id?: string
+          market_code: string
+          posting_count: number
+          role_family_id: string
+          signal_type: string
+          signal_value: string
+          updated_at?: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          frequency_pct?: number
+          id?: string
+          market_code?: string
+          posting_count?: number
+          role_family_id?: string
+          signal_type?: string
+          signal_value?: string
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sats_market_signals_role_family_id_fkey'
+            columns: ['role_family_id']
+            isOneToOne: false
+            referencedRelation: 'sats_role_families'
+            referencedColumns: ['id']
+          },
+        ]
       }
       sats_outbox_events: {
         Row: {
@@ -3097,6 +3297,36 @@ export type Database = {
           },
         ]
       }
+      sats_role_families: {
+        Row: {
+          aliases: string[]
+          created_at: string
+          description: string | null
+          id: string
+          market_codes: string[]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          market_codes?: string[]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          market_codes?: string[]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sats_role_permissions: {
         Row: {
           granted_at: string
@@ -3324,6 +3554,8 @@ export type Database = {
           ai_last_used_year: number | null
           career_chapter: string | null
           category: string
+          certification_expected_date: string | null
+          certification_status: string | null
           created_at: string
           depth: string
           id: string
@@ -3340,6 +3572,8 @@ export type Database = {
           ai_last_used_year?: number | null
           career_chapter?: string | null
           category: string
+          certification_expected_date?: string | null
+          certification_status?: string | null
           created_at?: string
           depth: string
           id?: string
@@ -3356,6 +3590,8 @@ export type Database = {
           ai_last_used_year?: number | null
           career_chapter?: string | null
           category?: string
+          certification_expected_date?: string | null
+          certification_status?: string | null
           created_at?: string
           depth?: string
           id?: string
@@ -3392,6 +3628,7 @@ export type Database = {
       }
       sats_staged_jobs: {
         Row: {
+          certifications: string[]
           company_name: string | null
           content_hash: string
           created_at: string
@@ -3400,13 +3637,24 @@ export type Database = {
           error_message: string | null
           fetched_at: string
           id: string
+          location_raw: string | null
+          market_code: string | null
+          methodologies: string[]
+          role_family_id: string | null
+          salary_currency: string | null
+          salary_max: number | null
+          salary_min: number | null
+          seniority_band: string | null
           source: string
           source_url: string
           status: string
+          structured_extracted_at: string | null
           title: string
+          tools: string[]
           updated_at: string
         }
         Insert: {
+          certifications?: string[]
           company_name?: string | null
           content_hash: string
           created_at?: string
@@ -3415,13 +3663,24 @@ export type Database = {
           error_message?: string | null
           fetched_at?: string
           id?: string
+          location_raw?: string | null
+          market_code?: string | null
+          methodologies?: string[]
+          role_family_id?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          seniority_band?: string | null
           source: string
           source_url: string
           status?: string
+          structured_extracted_at?: string | null
           title: string
+          tools?: string[]
           updated_at?: string
         }
         Update: {
+          certifications?: string[]
           company_name?: string | null
           content_hash?: string
           created_at?: string
@@ -3430,13 +3689,31 @@ export type Database = {
           error_message?: string | null
           fetched_at?: string
           id?: string
+          location_raw?: string | null
+          market_code?: string | null
+          methodologies?: string[]
+          role_family_id?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          seniority_band?: string | null
           source?: string
           source_url?: string
           status?: string
+          structured_extracted_at?: string | null
           title?: string
+          tools?: string[]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'sats_staged_jobs_role_family_id_fkey'
+            columns: ['role_family_id']
+            isOneToOne: false
+            referencedRelation: 'sats_role_families'
+            referencedColumns: ['id']
+          },
+        ]
       }
       sats_tenant_features: {
         Row: {
@@ -4091,6 +4368,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      reset_career_data: { Args: { target_user_id: string }; Returns: Json }
       run_log_cleanup_policies: { Args: never; Returns: Json }
       sats_has_permission: {
         Args: { p_action: string; p_resource: string; p_scope?: string }

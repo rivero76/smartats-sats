@@ -10,6 +10,7 @@ import { helpContentData, type HelpContent } from '@/data/helpContent'
 // UPDATE LOG
 // 2026-03-01 00:00:00 | Added route mappings for Enriched Experiences, Upskilling Roadmaps, and Proactive Matches
 // 2026-03-18 00:00:00 | CR3-1–CR3-4: Added route mappings for linkedinProfileImport, resumePersonas, adminLogging, accountDeletion
+// 2026-04-06 00:00:00 | P26 — Added gapAnalysis route mapping for /gap (Gap Analysis, Pro+ gated)
 const HELP_ROUTE_MAP: Record<string, string> = {
   dashboard: '/',
   resumes: '/resumes',
@@ -18,6 +19,7 @@ const HELP_ROUTE_MAP: Record<string, string> = {
   profileSettings: '/settings',
   enrichedExperiences: '/experiences',
   upskillingRoadmaps: '/roadmaps',
+  gapAnalysis: '/gap',
   proactiveMatches: '/opportunities',
   linkedinProfileImport: '/settings',
   resumePersonas: '/settings',

@@ -14,7 +14,14 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: { id: 'test-user-id', email: 'test@example.com' },
     session: {},
-    satsUser: { id: '1', auth_user_id: 'test-user-id', name: 'Test User', role: 'user', created_at: '', updated_at: '' },
+    satsUser: {
+      id: '1',
+      auth_user_id: 'test-user-id',
+      name: 'Test User',
+      role: 'user',
+      created_at: '',
+      updated_at: '',
+    },
     loading: false,
     signUp: vi.fn(),
     signIn: vi.fn(),

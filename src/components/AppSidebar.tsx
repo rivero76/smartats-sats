@@ -1,3 +1,8 @@
+/**
+ * UPDATE LOG
+ * 2026-04-02 00:00:00 | Add PM Dashboard nav item (/pm) to main navigation
+ * 2026-04-05 22:30:00 | P26 S6-1 — Add Gap Analysis nav item (/gap).
+ */
 import {
   LayoutDashboard,
   FileText,
@@ -11,6 +16,8 @@ import {
   ShieldCheck,
   LogOut,
   User,
+  ClipboardList,
+  TrendingUp,
 } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
@@ -39,7 +46,9 @@ const navigationItems = [
   { title: 'Opportunities', url: '/opportunities', icon: Radar },
   { title: 'Enriched Experiences', url: '/experiences', icon: Sparkles },
   { title: 'Roadmaps', url: '/roadmaps', icon: GraduationCap },
+  { title: 'Gap Analysis', url: '/gap', icon: TrendingUp },
   { title: 'Help Hub', url: '/help', icon: HelpCircle },
+  { title: 'PM Dashboard', url: '/pm', icon: ClipboardList },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]
 
