@@ -19,6 +19,7 @@
 <!-- Updated: 2026-03-31 — WAF full review: added WAF-1 through WAF-18 from CODE-REVIEW-2026-03-31.md -->
 <!-- Updated: 2026-03-31 — added INFRA-1 (LinkedIn scraper hosting — MVP-temporary Fly.io, review at scale) -->
 <!-- Updated: 2026-04-01 — added UX-FILE-1 (cloud-synced file upload detection — OneDrive/GDrive stub files) -->
+<!-- Updated: 2026-04-07 — WAF review 2 (2026-04-07_waf-review.md): added WAF2-1 through WAF2-10; OE-2/REL-1/REL-2 already fixed in fix/waf-critical-findings branch -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -956,6 +957,77 @@ Currently 2 serial DB queries per (job, resume) pair. For 8 jobs × 10 users = 1
 **Files:** `supabase/functions/delete-account/index.ts` (line 228), `supabase/functions/cancel-account-deletion/index.ts` (line 137)
 **Pillar:** Sustainability (SUS-4), Operational Excellence (OE-3)
 Track email notification as a proper P1 in this backlog.
+
+---
+
+## WAF Review 2 — 2026-04-07 Findings
+
+> Source: `docs/audits/reports/2026-04-07_waf-review.md`
+> Already fixed in `fix/waf-critical-findings`: WAF2-2 (REL-1/REL-2 fallback models), OE-2 (HelpHub route mappings)
+
+#### WAF2-1 · Wire `logContext` to all `callLLM()` calls — `sats_llm_call_logs` is empty
+
+**Files:** `ats-analysis-direct` lines 570/630/664, `enrich-experiences` line 238, `generate-upskill-roadmap` line 458, `generate-gap-matrix` line 174, `analyze-profile-fit` lines 238/299, `async-ats-scorer` lines 246/440
+**Pillar:** Cost Optimization (CO-1)
+**Priority:** P1 | **Effort:** 2–3 hr
+`logContext` is omitted from every `callLLM()` call except `classify-skill-profile`. The `sats_llm_call_logs` cost-tracking table is effectively empty for all expensive operations. Wire `{ userId, functionName, runId, analysisId }` at each call site.
+
+#### WAF2-2 · Add fallback models to `analyze-profile-fit` + `generate-gap-matrix` ✅ FIXED
+
+**Status:** Fixed in `fix/waf-critical-findings` — both functions now pass `[primary, fallback]` to `modelCandidates`.
+
+#### WAF2-3 · Restrict `sats_outbox_events` RLS policy to `service_role` only
+
+**File:** `supabase/migrations/20260328070000_p21_s6_outbox_events.sql` line 38
+**Pillar:** Security (SEC-2)
+**Priority:** P1 | **Effort:** 30 min (one migration)
+Current policy is `FOR ALL USING (true)` — any authenticated user can read/write the outbox. Replace with `TO service_role USING (true)`.
+
+#### WAF2-4 · Scope `sats_llm_call_logs` INSERT policy to `service_role`
+
+**File:** `supabase/migrations/20260327140000_p21_s1_llm_call_logs.sql` line 67
+**Pillar:** Security (SEC-4)
+**Priority:** P2 | **Effort:** 30 min (one migration)
+Current `WITH CHECK (true)` allows any authenticated user to insert audit log rows. Scope to `service_role`.
+
+#### WAF2-5 · Populate incident-response runbook with actionable content
+
+**File:** `docs/runbooks/incident-response.md`
+**Pillar:** Operational Excellence (OE-1)
+**Priority:** P1 | **Effort:** 1 hr
+All five sections are placeholder dashes. Minimum: detection queries using `fetch-logs.sh`, 3 containment steps, 1 recovery script per critical function, postmortem template link.
+
+#### WAF2-6 · Fix missing Help route mappings in `HelpHub.tsx` ✅ FIXED
+
+**Status:** Fixed in `fix/waf-critical-findings` — `skillProfile: '/settings'` and `resumeIntelligence: '/analyses'` added to `HELP_ROUTE_MAP`.
+
+#### WAF2-7 · Add `<MotionConfig reducedMotion="user">` to `App.tsx`
+
+**File:** `src/App.tsx`
+**Pillar:** Sustainability (SUS-3)
+**Priority:** P2 | **Effort:** 5 min
+Users with `prefers-reduced-motion` still see all animations. Wrap app content in `<MotionConfig reducedMotion="user">`.
+
+#### WAF2-8 · Replace raw `parseInt` in `centralized-logging` with shared env helper
+
+**File:** `supabase/functions/centralized-logging/index.ts` lines 14–18
+**Pillar:** Sustainability (SUS-2)
+**Priority:** P2 | **Effort:** 15 min
+Local `getEnvInt()` duplicates `_shared/env.ts`'s `getEnvNumber`. Import and use the shared helper.
+
+#### WAF2-9 · Make lint CI gate blocking (prerequisite: fix 90 pre-existing ESLint errors)
+
+**File:** `.github/workflows/quality-gates.yml` line 47
+**Pillar:** Operational Excellence (OE-3)
+**Priority:** P1 | **Effort:** 2–4 hr
+Lint step has `continue-on-error: true` — failures are silent in PRs. Cannot be made blocking until the 90 pre-existing errors in `src/components/ui/` (shadcn files) and several hooks are resolved. Fix path: add shadcn ui/ to ESLint ignores or fix all errors, then remove `continue-on-error`.
+
+#### WAF2-10 · Add same-day deduplication guard to `analyze-profile-fit`
+
+**File:** `supabase/functions/analyze-profile-fit/index.ts`
+**Pillar:** Cost Optimization (CO-2)
+**Priority:** P2 | **Effort:** 1 hr
+No cache check before LLM call — a user re-running same `(role_family_id, market_code)` pair same day triggers duplicate LLM calls. Check for existing `sats_profile_fit_reports` row for today before calling LLM; return cached result if found.
 
 ---
 

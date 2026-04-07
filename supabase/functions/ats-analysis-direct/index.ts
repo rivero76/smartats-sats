@@ -30,6 +30,8 @@
  *   IntelligenceResult type, buildIntelligencePrompt(), parseIntelligenceOrNull(), and target_country
  *   request field. Call 2 (CV Optimisation) and new Call 3 now run in parallel via Promise.allSettled().
  *   Results stored as format_audit, geography_passport, industry_lens, cultural_tone in analysis_data.
+ * 2026-04-07 | WAF-fix: return 503 (not 500) when OPENAI_API_KEY is missing — 503 signals
+ *   misconfiguration vs 500 which signals an unexpected runtime error.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -421,7 +423,7 @@ serve(async (req) => {
       request_id
     )
     return new Response(JSON.stringify({ success: false, error: 'Service not configured' }), {
-      status: 500,
+      status: 503,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }

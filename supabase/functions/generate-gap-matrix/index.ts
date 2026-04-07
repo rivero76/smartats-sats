@@ -7,6 +7,8 @@
  *   (<20%). LLM (gpt-4.1-mini) generates recommended_action, estimated_weeks_to_close,
  *   and resume_language_template for each critical + important gap. Writes results to
  *   sats_gap_snapshots + sats_gap_items (upsert on today's date).
+ * 2026-04-07 23:50:00 | WAF REL-2 — Add fallback model candidate so a transient gpt-4.1-mini
+ *   error falls through to gpt-4o-mini instead of failing the entire gap matrix.
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -53,6 +55,7 @@ type GapRecommendation = {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const OPENAI_MODEL_GAP = Deno.env.get('OPENAI_MODEL_ENRICH') || 'gpt-4.1-mini'
+const OPENAI_MODEL_GAP_FALLBACK = Deno.env.get('OPENAI_MODEL_ENRICH_FALLBACK') || 'gpt-4o-mini'
 
 // Frequency thresholds for gap priority classification
 const CRITICAL_THRESHOLD = 50 // ≥50% → critical
@@ -171,7 +174,7 @@ async function generateRecommendations(
     systemPrompt:
       'You are a career development advisor. For each skill/certification gap, provide a specific action, realistic time estimate, and a template phrase the candidate can use on their CV once they acquire it. Be concise and practical.',
     userPrompt: `Target role: ${roleFamilyName}\nTarget market: ${marketLabel}\n\nGaps to address (ordered by importance):\n${itemList}\n\nFor each gap, return:\n- recommended_action: a specific next step (e.g. "Complete AWS Solutions Architect Associate certification via official AWS training")\n- estimated_weeks_to_close: realistic weeks to address this gap (null if unknown)\n- resume_language_template: exact phrase for the CV once achieved (e.g. "AWS Certified Solutions Architect – Associate (2026)")`,
-    modelCandidates: [OPENAI_MODEL_GAP],
+    modelCandidates: [OPENAI_MODEL_GAP, OPENAI_MODEL_GAP_FALLBACK],
     jsonSchema: GAP_RECOMMENDATIONS_SCHEMA,
     schemaName: 'gap_recommendations',
     temperature: 0.3,

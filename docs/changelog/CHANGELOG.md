@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-04-07: WAF CRITICAL fixes — `ats-analysis-direct` returns 503 (not 500) for missing OPENAI_API_KEY. `delete-account` and `cancel-account-deletion` validate SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY before use and return 503 on misconfiguration, preventing unhandled crashes from `!` force-unwrap on absent env vars.
+- 2026-04-07: RLS verified on P28 tables — `sats_profile_fit_reports` (owner-scoped) and `sats_feature_flags` (admin write-only) confirmed correctly configured.
+
 ### Added
 
 - 2026-04-07: `docs/advisory/2026-04-07_saas-podcast-advisory-guide.md` — Saved the full SmartATS Founder's Advisory Guide: 7 sessions with Omer Khan and SaaS Podcast guests, one per product lifecycle phase (Validation → Pricing → First 10 → Activation → Retention → Growth → Enterprise). Each phase includes anchor episodes with direct URLs, [ASK OMER] and [ASK THE GUEST] question sets specific to SmartATS, the one question Omer always asks that founders avoid, and the biggest mistake founders make at that phase. Sourced from live research across 477+ saasclub.io episodes.
