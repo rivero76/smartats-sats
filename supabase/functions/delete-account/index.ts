@@ -6,6 +6,8 @@
  * 2026-03-27 15:00:00 | P21 Tier 1 — renamed table account_deletion_logs → sats_account_deletion_logs.
  * 2026-04-07 | WAF-fix: add explicit 503 guard for missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
  *   before force-unwrap with !. Prevents unhandled crash; returns proper misconfiguration signal.
+ * 2026-04-08 | Fix admin.signOut called with user.id (UUID) instead of token (JWT).
+ *   admin.signOut expects a JWT; passing a UUID causes "invalid number of segments" error.
  */
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -142,7 +144,7 @@ serve(async (req) => {
     // CRITICAL: Revoke all user sessions BEFORE deletion
     // This ensures the token is still valid when we revoke sessions
     console.log('Revoking user sessions before account deletion...')
-    const { error: signOutError } = await supabase.auth.admin.signOut(user.id, 'global')
+    const { error: signOutError } = await supabase.auth.admin.signOut(token, 'global')
 
     if (signOutError) {
       console.error('Failed to sign out user globally:', signOutError)
