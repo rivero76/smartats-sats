@@ -17,6 +17,7 @@ sats_<noun_plural>
 ```
 
 Examples:
+
 - `sats_resumes` ✓
 - `sats_analyses` ✓
 - `sats_job_descriptions` ✓
@@ -28,19 +29,19 @@ Examples:
 
 The following tables **predate this convention** and will **NOT be renamed** due to high-risk migration impact (cascading RLS policies, hooks, generated types, foreign keys):
 
-| Table | Legacy Reason |
-|---|---|
-| `SATS_resumes` | Original uppercase naming |
-| `document_extractions` | No-prefix era |
-| `error_logs` | No-prefix era |
-| `profiles` | Supabase convention, no prefix |
-| `ats_jobs` | Pre-convention era (`ats_` prefix, before `sats_` was adopted) |
-| `ats_resumes` | Pre-convention era |
-| `ats_runs` | Pre-convention era |
-| `ats_scores` | Pre-convention era |
-| `ats_findings` | Pre-convention era |
-| `ats_derivatives` | Pre-convention era |
-| `ats_job_documents` | Pre-convention era |
+| Table                  | Legacy Reason                                                  |
+| ---------------------- | -------------------------------------------------------------- |
+| `SATS_resumes`         | Original uppercase naming                                      |
+| `document_extractions` | No-prefix era                                                  |
+| `error_logs`           | No-prefix era                                                  |
+| `profiles`             | Supabase convention, no prefix                                 |
+| `ats_jobs`             | Pre-convention era (`ats_` prefix, before `sats_` was adopted) |
+| `ats_resumes`          | Pre-convention era                                             |
+| `ats_runs`             | Pre-convention era                                             |
+| `ats_scores`           | Pre-convention era                                             |
+| `ats_findings`         | Pre-convention era                                             |
+| `ats_derivatives`      | Pre-convention era                                             |
+| `ats_job_documents`    | Pre-convention era                                             |
 
 These are documented as legacy exceptions. Any new FK references to these tables must use the existing name as-is.
 
@@ -53,6 +54,7 @@ These are documented as legacy exceptions. Any new FK references to these tables
 Pattern: `YYYYMMDDHHMMSS_<short_description>.sql`
 
 Examples:
+
 - `20260301000000_p13_allow_skill_insert.sql` ✓
 - `20260301120000_p16_create_career_profiles.sql` ✓
 - `add_column.sql` ✗ (missing timestamp)
@@ -91,14 +93,14 @@ import { callLLM, type LLMRequest } from '../_shared/llmProvider.ts'
 
 ## 4. TypeScript / Frontend Conventions
 
-| Construct | Convention | Example |
-|---|---|---|
-| React components | `PascalCase` | `ResumeCard.tsx`, `JobMatchPanel.tsx` |
-| Hooks | `camelCase`, `use` prefix | `useResumeAnalysis.ts` |
-| Utilities / helpers | `camelCase` | `formatScore.ts`, `buildPrompt.ts` |
-| File names in `src/` | `kebab-case` | `resume-upload.tsx`, `job-match-panel.tsx` |
-| Interfaces / types | `PascalCase` | `ATSAnalysisResult`, `LLMRequest` |
-| Enum-like string unions | `camelCase` values | `'low' \| 'medium' \| 'high'` |
+| Construct               | Convention                | Example                                    |
+| ----------------------- | ------------------------- | ------------------------------------------ |
+| React components        | `PascalCase`              | `ResumeCard.tsx`, `JobMatchPanel.tsx`      |
+| Hooks                   | `camelCase`, `use` prefix | `useResumeAnalysis.ts`                     |
+| Utilities / helpers     | `camelCase`               | `formatScore.ts`, `buildPrompt.ts`         |
+| File names in `src/`    | `kebab-case`              | `resume-upload.tsx`, `job-match-panel.tsx` |
+| Interfaces / types      | `PascalCase`              | `ATSAnalysisResult`, `LLMRequest`          |
+| Enum-like string unions | `camelCase` values        | `'low' \| 'medium' \| 'high'`              |
 
 ---
 
@@ -131,6 +133,7 @@ import { callLLM, type LLMRequest } from '../_shared/llmProvider.ts'
 ```
 
 Rules:
+
 - If a header block already exists, **append** a new line; do not replace existing entries.
 - Use the current date and UTC time at the moment of the change.
 - Keep descriptions concise but meaningful (reference plan ID and story where applicable).
@@ -153,6 +156,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', { ...
 ```
 
 The `callLLM` function:
+
 - Reads `SATS_LLM_PROVIDER` from env (default: `openai`)
 - Routes to the correct provider adapter
 - Handles retry logic, schema fallback, error mapping, and cost estimation
@@ -164,14 +168,14 @@ See `supabase/functions/_shared/llmProvider.ts` and `docs/decisions/adr-0002-llm
 
 ## 7. Environment Variable Naming
 
-| Scope | Pattern | Example |
-|---|---|---|
-| Global SATS config | `SATS_<NOUN>` | `SATS_LLM_PROVIDER` |
-| OpenAI config | `OPENAI_<NOUN>` | `OPENAI_API_KEY`, `OPENAI_MODEL_ATS` |
-| Task-specific model | `OPENAI_MODEL_<TASK>` | `OPENAI_MODEL_ATS`, `OPENAI_MODEL_ENRICH` |
-| Task-specific params | `OPENAI_<PARAM>_<TASK>` | `OPENAI_TEMPERATURE_ATS`, `OPENAI_MAX_TOKENS_ENRICH` |
-| Feature flags | `SATS_<FEATURE>_ENABLED` | `SATS_PROACTIVE_MATCH_ENABLED` |
-| Storage flags | `STORE_LLM_<NOUN>` | `STORE_LLM_PROMPTS`, `STORE_LLM_RAW_RESPONSE` |
+| Scope                | Pattern                  | Example                                              |
+| -------------------- | ------------------------ | ---------------------------------------------------- |
+| Global SATS config   | `SATS_<NOUN>`            | `SATS_LLM_PROVIDER`                                  |
+| OpenAI config        | `OPENAI_<NOUN>`          | `OPENAI_API_KEY`, `OPENAI_MODEL_ATS`                 |
+| Task-specific model  | `OPENAI_MODEL_<TASK>`    | `OPENAI_MODEL_ATS`, `OPENAI_MODEL_ENRICH`            |
+| Task-specific params | `OPENAI_<PARAM>_<TASK>`  | `OPENAI_TEMPERATURE_ATS`, `OPENAI_MAX_TOKENS_ENRICH` |
+| Feature flags        | `SATS_<FEATURE>_ENABLED` | `SATS_PROACTIVE_MATCH_ENABLED`                       |
+| Storage flags        | `STORE_LLM_<NOUN>`       | `STORE_LLM_PROMPTS`, `STORE_LLM_RAW_RESPONSE`        |
 
 ---
 
@@ -186,6 +190,7 @@ sats_<verb>_<noun>()
 ```
 
 Examples:
+
 - `sats_soft_delete_resume(resume_id UUID)` ✓
 - `sats_cascade_delete_job(job_id UUID)` ✓
 - `sats_increment_version(table_name TEXT, row_id UUID)` ✓
@@ -196,12 +201,12 @@ Examples:
 
 The following functions **predate this convention** and will **NOT be renamed**:
 
-| Function | Legacy Reason |
-|---|---|
-| `soft_delete_enriched_experience(experience_id UUID)` | Pre-convention era |
-| `handle_new_user()` | Supabase auth hook, no prefix era |
-| `update_updated_at_column()` | Generic trigger helper, no prefix era |
-| `set_audit_fields()` | P21 S1 — grandfathered at creation (audit trigger, not business logic) |
+| Function                                              | Legacy Reason                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| `soft_delete_enriched_experience(experience_id UUID)` | Pre-convention era                                                     |
+| `handle_new_user()`                                   | Supabase auth hook, no prefix era                                      |
+| `update_updated_at_column()`                          | Generic trigger helper, no prefix era                                  |
+| `set_audit_fields()`                                  | P21 S1 — grandfathered at creation (audit trigger, not business logic) |
 
 ---
 
@@ -209,10 +214,10 @@ The following functions **predate this convention** and will **NOT be renamed**:
 
 Two patterns are used depending on trigger purpose:
 
-| Purpose | Pattern | Example |
-|---|---|---|
-| `updated_at` timestamp maintenance | `sats_update_<table>_updated_at` | `sats_update_sats_resumes_updated_at` |
-| Audit field stamping (`created_by`, `updated_by`, `version`) | `trg_audit_<table>` | `trg_audit_sats_resumes` |
+| Purpose                                                      | Pattern                          | Example                               |
+| ------------------------------------------------------------ | -------------------------------- | ------------------------------------- |
+| `updated_at` timestamp maintenance                           | `sats_update_<table>_updated_at` | `sats_update_sats_resumes_updated_at` |
+| Audit field stamping (`created_by`, `updated_by`, `version`) | `trg_audit_<table>`              | `trg_audit_sats_resumes`              |
 
 ### Rules
 

@@ -33,6 +33,7 @@ SATS currently requires the user to manually bring a job description and match i
 > "I want to apply today — give me the best-fit live jobs right now."
 
 Secondary intents (backlog, not MVP):
+
 - "I don't know what I qualify for — show me options I haven't considered." (Exploration)
 - "I think I'm ready for X roles — confirm that and surface real openings." (Validation)
 
@@ -41,9 +42,11 @@ Secondary intents (backlog, not MVP):
 ## 4. Stories
 
 ### Story 0 — LLM Provider Abstraction Layer
+
 **Scope:** Infrastructure prerequisite. Must complete before any new AI edge functions are added.
 
 Deliverables:
+
 - `supabase/functions/_shared/llmProvider.ts` — shared utility implementing `callLLM()` interface
 - OpenAI adapter (migrating existing inline logic from four edge functions)
 - Refactor of `ats-analysis-direct`, `async-ats-scorer`, `enrich-experiences`, `generate-upskill-roadmap` to use shared utility
@@ -51,6 +54,7 @@ Deliverables:
 - ADR-0002 (already written at `docs/decisions/adr-0002-llm-provider-abstraction.md`)
 
 Acceptance criteria:
+
 - All existing edge function tests pass with no regression after refactor
 - `SATS_LLM_PROVIDER=openai` produces identical outputs to current behaviour
 - New env variable documented in `.env.example` and `check-secrets.sh`
@@ -62,6 +66,7 @@ Acceptance criteria:
 **Problem:** Multiple resumes lead to conflicting ground truth. Keywords, dates, and proficiency levels diverge across CV versions with no canonical reference.
 
 **Solution:** Introduce a two-layer model:
+
 - **Master Profile** — canonical, reconciled source of truth (already exists as `sats_user_skills` + `sats_skill_experiences` + `sats_profiles`)
 - **Resume Personas** — role-specific configurations that filter and weight from the master
 
@@ -93,17 +98,20 @@ CREATE INDEX ON public.sats_resume_personas (user_id, is_active);
 ```
 
 **How it works:**
+
 - A persona does not duplicate skills or experiences — it stores weights and keywords that influence how the master profile is presented and scored for a specific role family.
 - When running ATS analysis or career fit suggestions, the user selects which persona to activate.
 - Updating skills in the master profile does not require updating each persona separately.
 
 **UI:**
+
 - Persona manager in Settings → "My Resume Profiles" section
 - Create / rename / delete personas
 - Link a persona to a specific resume file
 - Set custom summary and keyword highlights per persona
 
 **Backlog (future):**
+
 - Auto-generate tailored resume PDF from persona + master profile
 - ATS score history per persona
 - Persona performance analytics (which persona gets better match scores)
@@ -116,14 +124,14 @@ CREATE INDEX ON public.sats_resume_personas (user_id, is_active);
 
 **Enterprise best practices require:**
 
-| Practice | Current State | Required State |
-|---|---|---|
-| File access control | Permanent public URL | Signed URL, generated on demand, 15-min expiry |
-| Content deduplication | None | SHA-256 hash on upload |
-| Server-side MIME validation | Client-side only | Edge function validates MIME on upload |
-| Version history | Single file per resume | Version chain with `supersedes_id` FK |
-| File access audit | None | Log every signed URL generation |
-| Retention enforcement | Soft delete only | Hard delete trigger after GDPR retention window |
+| Practice                    | Current State          | Required State                                  |
+| --------------------------- | ---------------------- | ----------------------------------------------- |
+| File access control         | Permanent public URL   | Signed URL, generated on demand, 15-min expiry  |
+| Content deduplication       | None                   | SHA-256 hash on upload                          |
+| Server-side MIME validation | Client-side only       | Edge function validates MIME on upload          |
+| Version history             | Single file per resume | Version chain with `supersedes_id` FK           |
+| File access audit           | None                   | Log every signed URL generation                 |
+| Retention enforcement       | Soft delete only       | Hard delete trigger after GDPR retention window |
 
 **Migration plan:**
 
@@ -143,6 +151,7 @@ ALTER TABLE public.sats_resumes
 ```
 
 **Signed URL generation pattern:**
+
 ```typescript
 // Never expose file_url directly in API responses.
 // Generate a signed URL at access time:
@@ -152,6 +161,7 @@ const { data } = await supabase.storage
 ```
 
 **Backlog (future):**
+
 - ClamAV virus scanning on upload (Supabase storage hook or edge function trigger)
 - File access audit log table
 - Automatic hard delete after GDPR retention window
@@ -252,6 +262,7 @@ CREATE TABLE public.sats_conflict_resolutions (
 Input: `{ user_id, trigger_source, trigger_reference_id? }`
 
 Processing steps:
+
 1. Fetch all sources: resume extractions, `sats_user_skills`, `sats_skill_experiences`, latest LinkedIn import session
 2. Canonicalise skill names across all sources
 3. Detect conflicts by type (skill missing, level mismatch, date conflict, description gap, title conflict)
@@ -271,6 +282,7 @@ Processing steps:
 - On all resolved: success banner → return to profile/settings
 
 **Triggers:**
+
 - Automatically after LinkedIn import HITL approval (P13 modal `onSuccess`)
 - Automatically after first resume upload
 - On-demand: "Check for profile inconsistencies" button in Settings
@@ -283,15 +295,16 @@ Processing steps:
 
 #### API Integration Plan
 
-| Market | Primary API | Secondary | Notes |
-|---|---|---|---|
-| USA | JSearch (RapidAPI) | Adzuna | JSearch aggregates LinkedIn, Indeed, Glassdoor, ZipRecruiter |
-| Brazil | Adzuna BR | JSearch | Adzuna has Brazilian market coverage |
-| Australia | Adzuna AU | JSearch | SEEK has no public API; Adzuna covers AU well |
-| New Zealand | Adzuna NZ | JSearch | Same as AU |
-| Global fallback | JSearch | — | Covers most English-language markets |
+| Market          | Primary API        | Secondary | Notes                                                        |
+| --------------- | ------------------ | --------- | ------------------------------------------------------------ |
+| USA             | JSearch (RapidAPI) | Adzuna    | JSearch aggregates LinkedIn, Indeed, Glassdoor, ZipRecruiter |
+| Brazil          | Adzuna BR          | JSearch   | Adzuna has Brazilian market coverage                         |
+| Australia       | Adzuna AU          | JSearch   | SEEK has no public API; Adzuna covers AU well                |
+| New Zealand     | Adzuna NZ          | JSearch   | Same as AU                                                   |
+| Global fallback | JSearch            | —         | Covers most English-language markets                         |
 
 **Playwright fallback** (backlog — not MVP):
+
 - SEEK (AU/NZ), Gupy (BR), Computrabajo (LATAM)
 - Only when Adzuna coverage is demonstrably insufficient for that market
 - Must implement rate limiting, realistic browser fingerprinting, and respectful crawl cadence
@@ -330,6 +343,7 @@ CREATE INDEX ON public.sats_job_discovery_cache (user_id, query_role, is_dismiss
 Input: `{ user_id, role_archetypes: string[], location?: string, persona_id?: string }`
 
 Processing:
+
 1. For each role archetype, build API queries for JSearch and/or Adzuna based on user's location preference
 2. Deduplicate results by job URL hash
 3. Filter to listings posted within last 14 days
@@ -337,6 +351,7 @@ Processing:
 5. Return fresh listing IDs to frontend
 
 **Token optimisation:**
+
 - Never pass raw HTML to the LLM
 - Only store `description_summary` (first 400 chars) — not full job description
 - Cache is reused for 4 hours — no re-fetch on every page load
@@ -353,6 +368,7 @@ Processing:
 Input: `{ user_id, persona_id? }`
 
 Processing:
+
 1. Fetch merged profile signal:
    - `sats_user_skills` (with proficiency and years)
    - `sats_skill_experiences` (job titles, descriptions, keywords)
@@ -413,12 +429,14 @@ CREATE INDEX ON public.sats_career_fit_suggestions (user_id, generated_at DESC);
 **New page** with the following sections:
 
 **Header:**
+
 - "Your Career Fit" title
 - Active persona selector dropdown (if user has personas)
 - "Refresh Suggestions" button — prominent, always visible
 - Last refreshed timestamp
 
 **Role Suggestion Cards** (one per suggested role):
+
 - Role title + match strength badge (High / Medium / Stretch)
 - Matched skills list (chip display)
 - Skill gaps list with importance indicator
@@ -426,17 +444,20 @@ CREATE INDEX ON public.sats_career_fit_suggestions (user_id, generated_at DESC);
 - "Build Learning Roadmap" CTA → invokes P15 `generate-upskill-roadmap` with pre-populated context
 
 **Job Listings Panel** (per role, expandable):
+
 - Ranked by recency and relevance
 - Per listing: job title, company, location, salary (if available), posted date, apply button
 - "Pre-score this job" CTA → opens ATS analysis with the job description pre-loaded (bridges to existing ATS flow)
 - "Dismiss" per listing
 
 **Empty State:**
+
 - If profile has fewer than 3 skills: "Add more skills to your profile to get suggestions"
 - If suggestions are loading: skeleton card display
 - If no live jobs found: "No recent postings found for this role — try refreshing in 24 hours"
 
 **Triggers (auto-open or badge notification):**
+
 - After LinkedIn import HITL approval → redirect to `/career-fit`
 - After first resume upload → banner on dashboard with CTA
 - On demand: sidebar nav item "Career Fit" (always visible)
@@ -448,11 +469,13 @@ CREATE INDEX ON public.sats_career_fit_suggestions (user_id, generated_at DESC);
 **Purpose:** Connect a specific skill gap identified in a career fit suggestion directly to the P15 upskilling roadmap generator with pre-populated context, so the user does not have to re-enter information manually.
 
 **Current P15 flow (standalone):**
+
 ```
 User on /roadmaps → "Generate Roadmap" → manual goal input → LLM → milestones stored
 ```
 
 **New bridged flow:**
+
 ```
 Career Fit UI → skill gap item → "Build Roadmap to close this gap" →
   invoke generate-upskill-roadmap with:
@@ -465,12 +488,14 @@ Career Fit UI → skill gap item → "Build Roadmap to close this gap" →
 ```
 
 **What the LLM receives (richer than manual invocation):**
+
 - Target role (from career fit suggestion)
 - Specific gap skills with importance ratings
 - User's current skills (avoids recommending things they already know)
 - Persona context (role family weighting)
 
 **Test cases for manual validation:**
+
 1. Click "Build Roadmap" from a "stretch" role gap → confirm roadmap is gap-specific, not generic
 2. Confirm milestones reference the specific gap skills named in the suggestion
 3. Confirm roadmap appears on `/roadmaps` under the user's profile
@@ -519,11 +544,13 @@ Career Fit AI Engine — suggest-career-fit (Story 5)
 **Rule 1:** Always prefer an official API. Only use Playwright for markets where no API exists AND the market is critical to your user base.
 
 **Rate limiting strategy:**
+
 - JSearch: cache all results for 4 hours minimum. Never query per page load.
 - Adzuna: 1,000 free requests/day — batch queries per user session, not per role card render.
 - Playwright (future): max 1 request per domain per 30 seconds, realistic user-agent, no concurrent scraping.
 
 **Deduplication:**
+
 - Hash job URL + company name + role title → `sha256` key
 - Skip insert if hash already exists in cache with `expires_at > now()`
 
@@ -533,14 +560,14 @@ Career Fit AI Engine — suggest-career-fit (Story 5)
 
 ## 7. Success Metrics
 
-| Metric | Definition | Target |
-|---|---|---|
-| Activation rate | % of users with 3+ skills who view Career Fit page | >40% within 7 days of feature launch |
-| Suggestion relevance | % of suggestions user rates as "accurate" (thumbs up) | >65% |
-| Gap engagement | % of users who click a skill gap item | >30% |
-| Roadmap conversion | % of gap clicks that result in a roadmap being generated | >20% |
-| Job listing click-through | % of suggested jobs where user clicks "Apply" or "Pre-score" | >25% |
-| Reconciliation completion | % of reconciliation runs where all conflicts are resolved (not dismissed) | >50% |
+| Metric                    | Definition                                                                | Target                               |
+| ------------------------- | ------------------------------------------------------------------------- | ------------------------------------ |
+| Activation rate           | % of users with 3+ skills who view Career Fit page                        | >40% within 7 days of feature launch |
+| Suggestion relevance      | % of suggestions user rates as "accurate" (thumbs up)                     | >65%                                 |
+| Gap engagement            | % of users who click a skill gap item                                     | >30%                                 |
+| Roadmap conversion        | % of gap clicks that result in a roadmap being generated                  | >20%                                 |
+| Job listing click-through | % of suggested jobs where user clicks "Apply" or "Pre-score"              | >25%                                 |
+| Reconciliation completion | % of reconciliation runs where all conflicts are resolved (not dismissed) | >50%                                 |
 
 ---
 
@@ -548,54 +575,54 @@ Career Fit AI Engine — suggest-career-fit (Story 5)
 
 The following help content entries must be created or updated in `src/data/helpContent.ts`:
 
-| Help ID | Page / Context | Key Topics |
-|---|---|---|
-| `careerFit` | `/career-fit` | What suggestions mean, match strength levels, how to refresh, how to use persona selector |
-| `profileReconcile` | `/profile/reconcile` | What a conflict is, how to read source comparisons, what AI recommendation means, why HITL matters |
-| `resumePersonas` | Settings → My Resume Profiles | What a persona is vs a resume file, how weights work, when to create multiple personas |
-| `skillGapRoadmap` | Career Fit UI → gap item | How the roadmap bridge works, what gets pre-populated, where to find the roadmap |
-| `liveJobSearch` | Career Fit UI → job panel | Where jobs come from, how often they refresh, what "pre-score" does |
-| `profileSettings` | Settings (update existing) | Add LinkedIn import section and "Check for inconsistencies" button explanation |
+| Help ID            | Page / Context                | Key Topics                                                                                         |
+| ------------------ | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| `careerFit`        | `/career-fit`                 | What suggestions mean, match strength levels, how to refresh, how to use persona selector          |
+| `profileReconcile` | `/profile/reconcile`          | What a conflict is, how to read source comparisons, what AI recommendation means, why HITL matters |
+| `resumePersonas`   | Settings → My Resume Profiles | What a persona is vs a resume file, how weights work, when to create multiple personas             |
+| `skillGapRoadmap`  | Career Fit UI → gap item      | How the roadmap bridge works, what gets pre-populated, where to find the roadmap                   |
+| `liveJobSearch`    | Career Fit UI → job panel     | Where jobs come from, how often they refresh, what "pre-score" does                                |
+| `profileSettings`  | Settings (update existing)    | Add LinkedIn import section and "Check for inconsistencies" button explanation                     |
 
 ---
 
 ## 9. Backlog (Not in MVP)
 
-| Item | Origin | Priority |
-|---|---|---|
-| Exploration intent: "what could I grow into?" | PM Round 1 A1 | Medium |
-| Validation intent: "confirm I'm ready for X" | PM Round 1 A1 | Medium |
-| Playwright for SEEK, Gupy, Computrabajo | PM Round 2 A3 | Low |
-| Role titles only (lightweight suggestion mode) | PM Round 1 A3.C option 1 | Low |
-| Roles + reasoning only (no gaps) | PM Round 1 A3.C option 2 | Low |
-| Roles + live job links inline (no separate panel) | PM Round 1 A3.C option 4 | Medium |
-| Roles + ATS pre-score inline (no click) | PM Round 1 A3.C option 5 | High |
-| Scheduled weekly suggestions digest | PM Round 1 A3.D | Medium |
-| Salary intelligence per role | PM Round 2 A5 | High |
-| Competition density signal | PM Round 2 A5 | Medium |
-| Application status tracker | PM Round 2 A5 | High |
-| Cover letter generation per match | PM Round 2 A5 | Medium |
-| Employer research summary | PM Round 2 A5 | Low |
-| Stretch roles list ("almost qualify for") | PM Round 2 A5 | High |
-| Persona auto-generate tailored resume PDF | Story 1 backlog | Medium |
-| Persona performance analytics | Story 1 backlog | Low |
-| ClamAV virus scanning on upload | Story 2 backlog | High (enterprise) |
-| File access audit log | Story 2 backlog | High (enterprise) |
-| Auto hard-delete after GDPR retention window | Story 2 backlog | High (compliance) |
-| Playwright backlog — legal review per platform | Story 4 | Required before enabling |
-| Location / remote / hybrid filtering | PM Round 1 out-of-scope | Medium |
-| Salary expectations input | PM Round 1 out-of-scope | Medium |
-| Multi-language job search (PT, ES) | Future globalisation | Low |
+| Item                                              | Origin                   | Priority                 |
+| ------------------------------------------------- | ------------------------ | ------------------------ |
+| Exploration intent: "what could I grow into?"     | PM Round 1 A1            | Medium                   |
+| Validation intent: "confirm I'm ready for X"      | PM Round 1 A1            | Medium                   |
+| Playwright for SEEK, Gupy, Computrabajo           | PM Round 2 A3            | Low                      |
+| Role titles only (lightweight suggestion mode)    | PM Round 1 A3.C option 1 | Low                      |
+| Roles + reasoning only (no gaps)                  | PM Round 1 A3.C option 2 | Low                      |
+| Roles + live job links inline (no separate panel) | PM Round 1 A3.C option 4 | Medium                   |
+| Roles + ATS pre-score inline (no click)           | PM Round 1 A3.C option 5 | High                     |
+| Scheduled weekly suggestions digest               | PM Round 1 A3.D          | Medium                   |
+| Salary intelligence per role                      | PM Round 2 A5            | High                     |
+| Competition density signal                        | PM Round 2 A5            | Medium                   |
+| Application status tracker                        | PM Round 2 A5            | High                     |
+| Cover letter generation per match                 | PM Round 2 A5            | Medium                   |
+| Employer research summary                         | PM Round 2 A5            | Low                      |
+| Stretch roles list ("almost qualify for")         | PM Round 2 A5            | High                     |
+| Persona auto-generate tailored resume PDF         | Story 1 backlog          | Medium                   |
+| Persona performance analytics                     | Story 1 backlog          | Low                      |
+| ClamAV virus scanning on upload                   | Story 2 backlog          | High (enterprise)        |
+| File access audit log                             | Story 2 backlog          | High (enterprise)        |
+| Auto hard-delete after GDPR retention window      | Story 2 backlog          | High (compliance)        |
+| Playwright backlog — legal review per platform    | Story 4                  | Required before enabling |
+| Location / remote / hybrid filtering              | PM Round 1 out-of-scope  | Medium                   |
+| Salary expectations input                         | PM Round 1 out-of-scope  | Medium                   |
+| Multi-language job search (PT, ES)                | Future globalisation     | Low                      |
 
 ---
 
 ## 10. Dependencies and Risks
 
-| Risk | Mitigation |
-|---|---|
-| JSearch API rate limits hit before cache implemented | Implement cache (Story 4) before enabling UI (Story 6) |
-| OpenAI schema changes break `suggest-career-fit` | LLM abstraction (Story 0) isolates schema contract |
-| Profile with very few skills produces useless suggestions | Gate career fit behind minimum signal: ≥3 skills OR ≥1 experience |
-| Reconciliation engine overwhelms users with low-severity conflicts | Filter: show high severity first; low severity collapsed by default |
-| Persona model confuses users unfamiliar with the concept | Clear in-app help content (see Section 8) + onboarding tooltip on first persona creation |
-| P15 roadmap not yet E2E validated when Story 7 is built | Story 7 must be gated behind P15 release validation completion |
+| Risk                                                               | Mitigation                                                                               |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| JSearch API rate limits hit before cache implemented               | Implement cache (Story 4) before enabling UI (Story 6)                                   |
+| OpenAI schema changes break `suggest-career-fit`                   | LLM abstraction (Story 0) isolates schema contract                                       |
+| Profile with very few skills produces useless suggestions          | Gate career fit behind minimum signal: ≥3 skills OR ≥1 experience                        |
+| Reconciliation engine overwhelms users with low-severity conflicts | Filter: show high severity first; low severity collapsed by default                      |
+| Persona model confuses users unfamiliar with the concept           | Clear in-app help content (see Section 8) + onboarding tooltip on first persona creation |
+| P15 roadmap not yet E2E validated when Story 7 is built            | Story 7 must be gated behind P15 release validation completion                           |

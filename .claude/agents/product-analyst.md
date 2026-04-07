@@ -21,11 +21,11 @@ Do not fabricate personas, features, or pain points. Work only from the input yo
 
 Use these when writing "As a…" story headers unless the input specifies a different actor:
 
-| Persona | Description |
-| --- | --- |
-| **Job seeker** | Active or passive candidate uploading CVs, running ATS analyses, optimising their resume |
-| **Power user** | Job seeker who tracks multiple roles, uses enrichment and upskilling features heavily |
-| **Admin** | Internal operator managing logs, settings, and system health (not a product feature user) |
+| Persona        | Description                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| **Job seeker** | Active or passive candidate uploading CVs, running ATS analyses, optimising their resume  |
+| **Power user** | Job seeker who tracks multiple roles, uses enrichment and upskilling features heavily     |
+| **Admin**      | Internal operator managing logs, settings, and system health (not a product feature user) |
 
 ## Output format
 
@@ -66,6 +66,7 @@ An explicit bullet list of what this story does NOT cover. This prevents scope c
 ### 5. Handoff Brief
 
 A single paragraph (3–6 sentences) written for `plan-decomposer`. It should include:
+
 - What problem is being solved and for whom
 - The proposed solution in one sentence
 - Which part of the system is likely affected (frontend page, edge function, database table)
@@ -93,18 +94,23 @@ File structure:
 **Input source:** <one line describing where this came from: user interview, support ticket, PM note, etc.>
 
 ## User Story
+
 ...
 
 ## Acceptance Criteria
+
 ...
 
 ## Edge Cases
+
 ...
 
 ## Out of Scope
+
 ...
 
 ## Handoff Brief
+
 ...
 ```
 

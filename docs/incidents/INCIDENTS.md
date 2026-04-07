@@ -1,5 +1,6 @@
 <!-- UPDATE LOG -->
 <!-- 2026-03-26 20:15:00 | Created — incident index for SmartATS development environment -->
+<!-- 2026-04-01 00:00:00 | INC-003 added — ATS Analyses page crash: Radix UI Select.Item empty-string value -->
 
 # SmartATS Incident Register
 
@@ -13,16 +14,17 @@ Each incident has a dedicated document in `docs/incidents/`. Link new incidents 
 
 ## Active Incidents
 
-| ID      | Date       | Severity | Status     | Summary                                          | Document |
-| ------- | ---------- | -------- | ---------- | ------------------------------------------------ | -------- |
-| INC-002 | 2026-03-26 | Medium   | **OPEN**   | Dev server (port 8080) taken offline by Claude Code during troubleshooting. Requires `npm run dev` in terminal to restore. | [incident-2026-03-26-dev-server-outage.md](incident-2026-03-26-dev-server-outage.md) |
+| ID      | Date       | Severity | Status       | Summary                                                                                                                    | Document                                                                                                         |
+| ------- | ---------- | -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| INC-003 | 2026-04-01 | High     | **RESOLVED** | `/analyses` page crash: `<SelectItem value="">` forbidden by Radix UI; replaced with `"auto"` sentinel.                    | [incident-2026-04-01-ats-analyses-select-empty-value.md](incident-2026-04-01-ats-analyses-select-empty-value.md) |
+| INC-002 | 2026-03-26 | Medium   | **OPEN**     | Dev server (port 8080) taken offline by Claude Code during troubleshooting. Requires `npm run dev` in terminal to restore. | [incident-2026-03-26-dev-server-outage.md](incident-2026-03-26-dev-server-outage.md)                             |
 
 ---
 
 ## Resolved Incidents
 
-| ID      | Date       | Severity | Resolved   | Summary                                          | Document |
-| ------- | ---------- | -------- | ---------- | ------------------------------------------------ | -------- |
+| ID      | Date       | Severity | Resolved   | Summary                                                                                                                                                                       | Document                                                                                       |
+| ------- | ---------- | -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | INC-001 | 2026-03-02 | High     | 2026-03-03 | Railway deploy timeout — `node_modules/` (46 MB) uploaded due to Railway CLI ignoring subdirectory `.gitignore`. Fix: add `.railwayignore` to `scripts/playwright-linkedin/`. | [incident-2026-03-03-railway-deploy-timeout.md](incident-2026-03-03-railway-deploy-timeout.md) |
 
 ---
@@ -31,9 +33,9 @@ Each incident has a dedicated document in `docs/incidents/`. Link new incidents 
 
 Recurring patterns or systemic issues identified from incidents.
 
-| ID    | Linked Incidents | Problem Description                                                                              | Status |
-| ----- | ---------------- | ------------------------------------------------------------------------------------------------ | ------ |
-| PRB-01 | INC-002         | Claude Code's Bash tool cannot reliably start or manage long-running background services (Vite, Docker). Background processes orphan when the transient shell exits. | Open — CA-02 in INC-002 |
+| ID     | Linked Incidents | Problem Description                                                                                                                                                  | Status                  |
+| ------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| PRB-01 | INC-002          | Claude Code's Bash tool cannot reliably start or manage long-running background services (Vite, Docker). Background processes orphan when the transient shell exits. | Open — CA-02 in INC-002 |
 
 ---
 
@@ -52,33 +54,41 @@ Recurring patterns or systemic issues identified from incidents.
 
 # INC-NNN — <Title>
 
-| Field           | Value |
-| --------------- | ----- |
-| **Incident ID** | INC-NNN |
-| **Date**        | YYYY-MM-DD |
-| **Severity**    | Critical / High / Medium / Low |
-| **Status**      | Open / Resolved |
-| **Component**   | |
+| Field           | Value                            |
+| --------------- | -------------------------------- |
+| **Incident ID** | INC-NNN                          |
+| **Date**        | YYYY-MM-DD                       |
+| **Severity**    | Critical / High / Medium / Low   |
+| **Status**      | Open / Resolved                  |
+| **Component**   |                                  |
 | **Environment** | Production / Staging / Local dev |
-| **Reporter**    | |
-| **Resolver**    | |
+| **Reporter**    |                                  |
+| **Resolver**    |                                  |
 
 ## 1. Incident Summary
+
 ## 2. Timeline
+
 ## 3. Root Cause Analysis
+
 ## 4. Impact
+
 ## 5. Actions Taken
+
 ## 6. Resolution
+
 ## 7. Corrective Actions / Problem Record
+
 ## 8. Lessons Learned
+
 ## 9. References
 ```
 
 ### Severity Definitions
 
-| Level    | Definition |
-| -------- | ---------- |
-| Critical | Production fully unavailable or data loss |
+| Level    | Definition                                         |
+| -------- | -------------------------------------------------- |
+| Critical | Production fully unavailable or data loss          |
 | High     | Production degraded or deployment pipeline blocked |
-| Medium   | Dev/staging environment down; prod unaffected |
-| Low      | Minor degradation; workaround available |
+| Medium   | Dev/staging environment down; prod unaffected      |
+| Low      | Minor degradation; workaround available            |

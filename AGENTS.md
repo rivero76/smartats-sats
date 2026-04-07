@@ -15,6 +15,7 @@
 Claude Code is the sole agentic development environment. It owns both implementation and architecture review, using specialised sub-agents in `.claude/agents/` for delegation.
 
 See `CLAUDE.md` for:
+
 - Agent responsibilities and delegation model
 - Key commands
 - Coding conventions and guardrails

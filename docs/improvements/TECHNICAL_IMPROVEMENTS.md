@@ -18,6 +18,7 @@
 <!-- Updated: 2026-03-30 — added PROD-9 through PROD-12 from culture-aware & industry-aware resume intelligence brainstorm (PM research session 2026-03-30) -->
 <!-- Updated: 2026-03-31 — WAF full review: added WAF-1 through WAF-18 from CODE-REVIEW-2026-03-31.md -->
 <!-- Updated: 2026-03-31 — added INFRA-1 (LinkedIn scraper hosting — MVP-temporary Fly.io, review at scale) -->
+<!-- Updated: 2026-04-01 — added UX-FILE-1 (cloud-synced file upload detection — OneDrive/GDrive stub files) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -979,22 +980,62 @@ that need a proper architectural decision.
 
 **Options to evaluate at scale:**
 
-| Option | Upside | Downside |
-|---|---|---|
-| Fly.io paid tier | Same codebase, just upgrade | Still a managed scraper — LinkedIn ToS risk |
-| Browserless.io API | No infrastructure to manage | External dependency, ~$10–49/mo |
-| LinkedIn Official API (LinkedIn Partner Program) | ToS-safe, reliable | Requires LinkedIn partnership application |
-| Drop the feature | Zero cost and risk | LinkedIn import UX removed |
-| Self-hosted VPS | Full control, predictable cost | Ops burden |
+| Option                                           | Upside                         | Downside                                    |
+| ------------------------------------------------ | ------------------------------ | ------------------------------------------- |
+| Fly.io paid tier                                 | Same codebase, just upgrade    | Still a managed scraper — LinkedIn ToS risk |
+| Browserless.io API                               | No infrastructure to manage    | External dependency, ~$10–49/mo             |
+| LinkedIn Official API (LinkedIn Partner Program) | ToS-safe, reliable             | Requires LinkedIn partnership application   |
+| Drop the feature                                 | Zero cost and risk             | LinkedIn import UX removed                  |
+| Self-hosted VPS                                  | Full control, predictable cost | Ops burden                                  |
 
 **Trigger to revisit:** Before any of these events:
+
 1. Scaling beyond MVP / first 100 MAU
 2. LinkedIn login starts failing consistently (bot detection)
 3. Enterprise customer with LinkedIn enrichment as a hard requirement
 4. Monthly Fly.io bill exceeds $10 (means usage has grown beyond free tier)
 
 **Files affected when revisiting:**
+
 - `scripts/playwright-linkedin/fly.toml` (replace or remove)
 - `supabase/functions/linkedin-profile-ingest/index.ts` (update `PLAYWRIGHT_SERVICE_URL`)
 - `CLAUDE.md` Architecture section
 - This entry
+
+---
+
+## UX / File Ingestion
+
+### UX-FILE-1 · Detect and handle cloud-synced stub files (OneDrive, GDrive, iCloud)
+
+**Area:** File ingestion / UX
+**Priority:** P1 — **Done 2026-04-01**
+**Effort:** ~1 day
+**Reported:** 2026-04-01 — user could not upload a DOCX from OneDrive mapped on macOS; file was a cloud-only stub (not locally materialised), resulting in a generic "Failed to fetch" network error.
+
+**Problem:**
+When a user selects a file from a cloud-synced folder (OneDrive, Google Drive for Desktop, iCloud Drive, Dropbox) that has not been downloaded locally, the browser receives a `File` object with `size > 0` but the read fails mid-stream with a network/fetch error. There is no user-friendly message explaining _why_ it failed, and the current error (`Failed to fetch`) gives no actionable guidance.
+
+This affects all file ingestion entry points:
+
+- Resume upload (`/resumes`)
+- Job description file upload (`/jobs`)
+- Cover letter or any future document upload
+
+**Affected file types:** DOCX, PDF, TXT, HTML (any format accepted by `documentProcessor.ts`).
+
+**Investigation tasks:**
+
+1. Reproduce the failure path by selecting a cloud-only OneDrive/GDrive stub file in the file picker.
+2. Determine the earliest point where the failure can be detected client-side (e.g. `file.arrayBuffer()` rejection, `FileReader` error, or zero-byte read on a non-zero-size file).
+3. Consider reading a small header chunk first to validate the file is physically present before dispatching the upload.
+4. Add a user-facing error message with actionable advice: _"This file appears to be stored in the cloud and hasn't been downloaded. Open the file in its app first, or download it locally, then try again."_
+5. Optionally: detect known cloud-stub patterns (e.g. `.url` placeholder files, macOS `com.apple.icloud` xattrs) to show a proactive warning before the user hits the error.
+
+**Files likely to change:**
+
+- `src/services/documentProcessor.ts` — add pre-read validation
+- Upload component(s) in `src/components/` — surface better error messaging
+- Relevant hooks (`useResumes`, job description upload logic)
+
+**Non-goals:** Automatically downloading the file from the cloud provider — that requires OAuth scopes beyond the current app scope.

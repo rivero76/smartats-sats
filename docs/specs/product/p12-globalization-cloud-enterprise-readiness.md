@@ -78,17 +78,21 @@ Observed gaps:
 ## 5. Success Metrics
 
 1. Localization coverage:
-- >= 95% translated strings for core workflow surfaces in second language.
+
+- > = 95% translated strings for core workflow surfaces in second language.
 
 2. Reliability:
+
 - p95 ingestion and analysis latency within defined SLO under target load.
 - Error budget compliance over rolling 30-day windows.
 
 3. Cloud operations:
+
 - 100% production environment drift checks pass pre-release.
 - Rollback execution time within runbook target.
 
 4. Enterprise posture:
+
 - SSO-ready deployment path validated.
 - Auditability coverage for privileged actions >= 99%.
 
@@ -99,4 +103,3 @@ Observed gaps:
 3. P12.3 Queue/scaling/reliability hardening with SLO dashboards.
 4. P12.4 Enterprise controls (SSO readiness, audit, tenant boundaries).
 5. P12.5 Region/data residency rollout and compliance validation.
-

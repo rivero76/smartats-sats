@@ -41,7 +41,8 @@ function isUnitInterval(value) {
 
 function validateAtsRecord(record) {
   const output = record?.output
-  if (!output || typeof output !== 'object') return { schemaValid: false, evidenceValid: false, breakdownValid: false }
+  if (!output || typeof output !== 'object')
+    return { schemaValid: false, evidenceValid: false, breakdownValid: false }
 
   const schemaValid =
     isUnitInterval(output.match_score) &&
@@ -93,7 +94,8 @@ function validateEnrichmentRecord(record) {
   const validSuggestion = (item) => {
     if (!item || typeof item !== 'object') return false
     const skillTypeOk = item.skill_type === 'explicit' || item.skill_type === 'inferred'
-    const riskOk = item.risk_flag === 'low' || item.risk_flag === 'medium' || item.risk_flag === 'high'
+    const riskOk =
+      item.risk_flag === 'low' || item.risk_flag === 'medium' || item.risk_flag === 'high'
     return (
       typeof item.skill_name === 'string' &&
       item.skill_name.trim().length > 0 &&
@@ -113,7 +115,9 @@ function validateEnrichmentRecord(record) {
   const evidenceValid =
     output.suggestions.length > 0 &&
     output.suggestions.every(
-      (item) => typeof item.source_resume_evidence === 'string' && item.source_resume_evidence.trim().length > 0
+      (item) =>
+        typeof item.source_resume_evidence === 'string' &&
+        item.source_resume_evidence.trim().length > 0
     )
   const riskFlagValid =
     output.suggestions.length > 0 &&
@@ -206,7 +210,9 @@ function evaluate(args) {
 
   const failures = []
   if (report.metrics.schema_valid_rate < thresholds.schema_valid_rate_min) {
-    failures.push(`schema_valid_rate ${report.metrics.schema_valid_rate} < ${thresholds.schema_valid_rate_min}`)
+    failures.push(
+      `schema_valid_rate ${report.metrics.schema_valid_rate} < ${thresholds.schema_valid_rate_min}`
+    )
   }
   if (report.metrics.ats_evidence_coverage_rate < thresholds.ats.evidence_coverage_rate_min) {
     failures.push(

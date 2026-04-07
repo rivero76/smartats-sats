@@ -17,10 +17,10 @@ services:
     env_file: .env
     container_name: smartats-app
     ports:
-      - "3000:3000"
+      - '3000:3000'
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:3000']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -33,7 +33,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: smartats-dev
     ports:
-      - "8080:8080"
+      - '8080:8080'
     env_file: .env
     volumes:
       - .:/app

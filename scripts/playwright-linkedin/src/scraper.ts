@@ -25,7 +25,10 @@ export function checkRateLimit(): void {
     requestTimestamps.shift()
   }
   if (requestTimestamps.length >= RATE_LIMIT) {
-    throw new Object({ message: 'RATE_LIMITED: Too many requests. Max 10 scrapes per hour.', code: 'RATE_LIMITED' })
+    throw new Object({
+      message: 'RATE_LIMITED: Too many requests. Max 10 scrapes per hour.',
+      code: 'RATE_LIMITED',
+    })
   }
   requestTimestamps.push(now)
 }
@@ -55,107 +58,111 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
   // Allow lazy-loaded content to settle
   await page.waitForTimeout(1500)
 
-  const data = await page.evaluate((): {
-    full_name: string
-    headline: string
-    location: string
-    summary: string
-    rawSkills: string[]
-    rawExperiences: Array<{
-      block: string
-    }>
-  } => {
-    function text(el: Element | null): string {
-      return el?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-    }
-
-    function textBySelector(selector: string, root: Element | Document = document): string {
-      return text(root.querySelector(selector))
-    }
-
-    function allText(selector: string, root: Element | Document = document): string[] {
-      return Array.from(root.querySelectorAll(selector))
-        .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
-        .filter((t) => t.length > 0)
-    }
-
-    // ── Name ──
-    const full_name =
-      textBySelector('h1') ||
-      textBySelector('.pv-top-card--list .t-24') ||
-      textBySelector('[data-generated-suggestion-target] h1') ||
-      ''
-
-    // ── Headline ──
-    const headline =
-      textBySelector('.text-body-medium.break-words') ||
-      (() => {
-        const h1 = document.querySelector('h1')
-        const next = h1?.nextElementSibling
-        return next ? text(next) : ''
-      })() ||
-      ''
-
-    // ── Location ──
-    const location =
-      textBySelector('.text-body-small.inline.t-black--light.break-words') ||
-      textBySelector('.pv-top-card--list-bullet .t-black--light') ||
-      ''
-
-    // ── About / Summary ──
-    // LinkedIn wraps the about section in a <section> near an anchor with id "about"
-    const aboutSection =
-      document.querySelector('#about')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) =>
-        s.querySelector('div')?.textContent?.includes('About')
-      )
-
-    const summary = aboutSection
-      ? text(
-          aboutSection.querySelector('.pv-shared-text-with-see-more') ||
-            aboutSection.querySelector('.full-width') ||
-            aboutSection
-        )
-      : ''
-
-    // ── Skills ──
-    const skillsSection =
-      document.querySelector('#skills')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) =>
-        s.querySelector('span')?.textContent?.trim() === 'Skills'
-      )
-
-    const rawSkills: string[] = skillsSection
-      ? allText('.pvs-list__item--line-separated .t-bold span[aria-hidden="true"]', skillsSection)
-          .concat(
-            allText('span.mr1.t-bold span[aria-hidden="true"]', skillsSection),
-            allText('.pv-skill-category-entity__name-text', skillsSection)
-          )
-          .filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
-      : []
-
-    // ── Experience ──
-    const experienceSection =
-      document.querySelector('#experience')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) => {
-        const heading = s.querySelector('h2, [role="heading"]')
-        return heading?.textContent?.trim() === 'Experience'
-      })
-
-    const rawExperiences: Array<{ block: string }> = []
-
-    if (experienceSection) {
-      const items = Array.from(
-        experienceSection.querySelectorAll('li.artdeco-list__item, li.pvs-list__item--line-separated')
-      )
-      for (const item of items) {
-        const block = item.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-        if (block.length > 10) rawExperiences.push({ block })
+  const data = await page.evaluate(
+    (): {
+      full_name: string
+      headline: string
+      location: string
+      summary: string
+      rawSkills: string[]
+      rawExperiences: Array<{
+        block: string
+      }>
+    } => {
+      function text(el: Element | null): string {
+        return el?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
       }
-    }
 
-    return { full_name, headline, location, summary, rawSkills, rawExperiences }
-  })
+      function textBySelector(selector: string, root: Element | Document = document): string {
+        return text(root.querySelector(selector))
+      }
+
+      function allText(selector: string, root: Element | Document = document): string[] {
+        return Array.from(root.querySelectorAll(selector))
+          .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+          .filter((t) => t.length > 0)
+      }
+
+      // ── Name ──
+      const full_name =
+        textBySelector('h1') ||
+        textBySelector('.pv-top-card--list .t-24') ||
+        textBySelector('[data-generated-suggestion-target] h1') ||
+        ''
+
+      // ── Headline ──
+      const headline =
+        textBySelector('.text-body-medium.break-words') ||
+        (() => {
+          const h1 = document.querySelector('h1')
+          const next = h1?.nextElementSibling
+          return next ? text(next) : ''
+        })() ||
+        ''
+
+      // ── Location ──
+      const location =
+        textBySelector('.text-body-small.inline.t-black--light.break-words') ||
+        textBySelector('.pv-top-card--list-bullet .t-black--light') ||
+        ''
+
+      // ── About / Summary ──
+      // LinkedIn wraps the about section in a <section> near an anchor with id "about"
+      const aboutSection =
+        document.querySelector('#about')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) =>
+          s.querySelector('div')?.textContent?.includes('About')
+        )
+
+      const summary = aboutSection
+        ? text(
+            aboutSection.querySelector('.pv-shared-text-with-see-more') ||
+              aboutSection.querySelector('.full-width') ||
+              aboutSection
+          )
+        : ''
+
+      // ── Skills ──
+      const skillsSection =
+        document.querySelector('#skills')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find(
+          (s) => s.querySelector('span')?.textContent?.trim() === 'Skills'
+        )
+
+      const rawSkills: string[] = skillsSection
+        ? allText('.pvs-list__item--line-separated .t-bold span[aria-hidden="true"]', skillsSection)
+            .concat(
+              allText('span.mr1.t-bold span[aria-hidden="true"]', skillsSection),
+              allText('.pv-skill-category-entity__name-text', skillsSection)
+            )
+            .filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
+        : []
+
+      // ── Experience ──
+      const experienceSection =
+        document.querySelector('#experience')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) => {
+          const heading = s.querySelector('h2, [role="heading"]')
+          return heading?.textContent?.trim() === 'Experience'
+        })
+
+      const rawExperiences: Array<{ block: string }> = []
+
+      if (experienceSection) {
+        const items = Array.from(
+          experienceSection.querySelectorAll(
+            'li.artdeco-list__item, li.pvs-list__item--line-separated'
+          )
+        )
+        for (const item of items) {
+          const block = item.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+          if (block.length > 10) rawExperiences.push({ block })
+        }
+      }
+
+      return { full_name, headline, location, summary, rawSkills, rawExperiences }
+    }
+  )
 
   const experiences = parseExperienceBlocks(data.rawExperiences.map((e) => e.block))
 
@@ -184,16 +191,24 @@ function parseExperienceBlocks(blocks: string[]): LinkedInExperience[] {
       .filter((l) => l.length > 0)
 
     const title = lines[0] ?? ''
-    const company = (lines[1] ?? '').replace(/Full-time|Part-time|Contract|Freelance|Self-employed/gi, '').trim()
+    const company = (lines[1] ?? '')
+      .replace(/Full-time|Part-time|Contract|Freelance|Self-employed/gi, '')
+      .trim()
 
     // Look for a date range pattern like "Jan 2020 - Dec 2022" or "2020 - Present"
     const datePattern = /(\w{0,3}\s?\d{4})\s*[-–]\s*(\w{0,3}\s?\d{4}|Present)/i
     const dateMatch = block.match(datePattern)
     const start_date = dateMatch ? dateMatch[1].trim() : undefined
-    const end_date = dateMatch ? (dateMatch[2].trim().toLowerCase() === 'present' ? null : dateMatch[2].trim()) : undefined
+    const end_date = dateMatch
+      ? dateMatch[2].trim().toLowerCase() === 'present'
+        ? null
+        : dateMatch[2].trim()
+      : undefined
 
     // Description: everything after the date line, joined
-    const descStart = dateMatch ? block.indexOf(dateMatch[0]) + dateMatch[0].length : block.indexOf(company) + company.length
+    const descStart = dateMatch
+      ? block.indexOf(dateMatch[0]) + dateMatch[0].length
+      : block.indexOf(company) + company.length
     const description = block.slice(descStart).replace(/\s+/g, ' ').trim()
 
     return { title, company, start_date, end_date, description }
@@ -269,7 +284,10 @@ export class LinkedInScraper {
       await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15_000 })
     } catch {
       // If navigation didn't happen, check for error messages
-      const errorText = await page.locator('.alert-content, .form__label--error').textContent().catch(() => '')
+      const errorText = await page
+        .locator('.alert-content, .form__label--error')
+        .textContent()
+        .catch(() => '')
       throw new Error(`LOGIN_FAILED: ${errorText || 'Could not complete login'}`)
     }
 
@@ -296,7 +314,9 @@ export class LinkedInScraper {
     try {
       await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
       // Wait for LinkedIn's client-side JS to finish any post-load redirects
-      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
+        /* ignore timeout */
+      })
       await randomDelay(800, 1500)
 
       // Detect session expiry / not logged in
@@ -305,7 +325,9 @@ export class LinkedInScraper {
         await this.ensureLoggedIn(page)
         // Re-navigate to the profile after login
         await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
+        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
+          /* ignore timeout */
+        })
         await randomDelay(800, 1500)
       }
 
@@ -315,16 +337,22 @@ export class LinkedInScraper {
       }
 
       // scrollPage uses page.evaluate — wrap so a stray navigation doesn't abort the whole scrape
-      await scrollPage(page).catch(() => {/* ignore if page navigates during scroll */})
+      await scrollPage(page).catch(() => {
+        /* ignore if page navigates during scroll */
+      })
 
       // Try to expand "Show all skills" to get the full skills list
       try {
         const showAllSkills = page.locator('a[href*="/details/skills"]').first()
         if (await showAllSkills.isVisible({ timeout: 2000 })) {
           await showAllSkills.click()
-          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {/* ignore */})
+          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {
+            /* ignore */
+          })
           await randomDelay(800, 1200)
-          await scrollPage(page).catch(() => {/* ignore */})
+          await scrollPage(page).catch(() => {
+            /* ignore */
+          })
         }
       } catch {
         // Section may not exist — proceed with what's visible
@@ -333,7 +361,9 @@ export class LinkedInScraper {
       const profile = await extractProfileData(page)
 
       if (!profile.full_name) {
-        throw new Error('EXTRACTION_FAILED: Could not extract profile name — profile may be private or rate-limited')
+        throw new Error(
+          'EXTRACTION_FAILED: Could not extract profile name — profile may be private or rate-limited'
+        )
       }
 
       return profile

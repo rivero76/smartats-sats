@@ -7,7 +7,7 @@
 
 ## The Request (Canonical Prompt)
 
-> *"Acting as a product manager: collect all current and future features of the product from internal documentation (markdown files, app pages, help pages). Record these in a features inventory file. Then search the internet for similar products in the market and record competitor profiles in a separate file. Finally, perform a structured comparison covering features, advantages, disadvantages, monetization, and opportunities not yet identified for the product."*
+> _"Acting as a product manager: collect all current and future features of the product from internal documentation (markdown files, app pages, help pages). Record these in a features inventory file. Then search the internet for similar products in the market and record competitor profiles in a separate file. Finally, perform a structured comparison covering features, advantages, disadvantages, monetization, and opportunities not yet identified for the product."_
 
 ---
 
@@ -30,6 +30,7 @@
 | `docs/help/` | In-app help documentation (reflects what users see) |
 
 **What to classify per feature:**
+
 - Name and description
 - Status: `Live` / `In Progress` / `Planned` / `Placeholder`
 - Source file reference
@@ -44,6 +45,7 @@
 **Goal:** Profile at least 8–12 competitor products in the job-seeker AI/ATS optimization space.
 
 **Search queries to use:**
+
 ```
 AI resume optimizer ATS checker tool 2025 2026
 resume scoring AI job seeker tool pricing
@@ -79,6 +81,7 @@ Jobscan, Resume Worded, Teal, Rezi, Kickresume, Enhancv, Careerflow, Huntr, Jobr
 **Goal:** Compare SmartATS against the competitive landscape; identify strategic gaps and opportunities.
 
 **Analysis dimensions:**
+
 1. **Feature comparison matrix** — SmartATS vs. all competitors, feature-by-feature
 2. **Where SmartATS wins** — genuine competitive advantages (with evidence)
 3. **Where SmartATS loses** — gaps, table-stakes features missing, moats to close
@@ -120,17 +123,20 @@ docs/product/
 When a new run is completed, compare against the previous run on these dimensions:
 
 ### Feature Delta
+
 - New features that moved from `Planned` → `Live`
 - New features added to the roadmap since last run
 - Features that were removed or de-prioritized
 
 ### Competitor Delta
+
 - New competitors that entered the market
 - Pricing changes at existing competitors
 - Competitors that shut down or pivoted
 - New features launched by competitors
 
 ### Opportunity Delta
+
 - Opportunities from the previous run that have now been addressed
 - New opportunities identified in this run
 - Opportunities that are now less relevant (market moved)
@@ -139,8 +145,8 @@ When a new run is completed, compare against the previous run on these dimension
 
 ## Run Log
 
-| Run Date | Features Inventory | Competitor Analysis | Comparison Report | Notes |
-|---|---|---|---|---|
+| Run Date                      | Features Inventory                                                        | Competitor Analysis                                                         | Comparison Report                                                                 | Notes                  |
+| ----------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
 | [2026-03-27](#run-2026-03-27) | [2026-03-27_features-inventory.md](runs/2026-03-27_features-inventory.md) | [2026-03-27_competitor-analysis.md](runs/2026-03-27_competitor-analysis.md) | [2026-03-27_competitive-comparison.md](runs/2026-03-27_competitive-comparison.md) | Initial run — baseline |
 
 ---
@@ -156,23 +162,23 @@ When a new run is completed, compare against the previous run on these dimension
 
 #### Inputs Used
 
-| Source | Key findings |
-|---|---|
-| `docs/decisions/product-roadmap.md` | Master feature roadmap across P7–P21 |
-| `plans/` (p14, p19, sats_migration_plan) | Active implementation plans |
-| `src/pages/Dashboard.tsx` | Dashboard placeholders: Advanced Reports, Email Notifications, Data Export, Analytics, 2FA, API Access |
-| `src/pages/Settings.tsx` | Settings placeholders: Notification prefs, Update Password (Coming Soon), 2FA (Coming Soon), Data Export, API Key Generation |
-| `src/pages/ATSAnalyses.tsx` | ATS analysis UI and feature surface |
-| `src/pages/MyResumes.tsx` | Resume management features |
-| `src/pages/JobDescriptions.tsx` | JD management features |
-| `src/components/PersonaManager.tsx` | Multi-persona feature |
-| `src/components/help/HelpButton.tsx` | In-app Help Hub |
-| `src/components/admin/` | Admin observability panels (LogCleanupManager, LogViewer, ObservabilityPanel, LoggingControlPanel) |
-| `src/components/ResumePreview.tsx` | Resume preview component |
-| `supabase/functions/_shared/llmProvider.ts` | LLM abstraction, deterministic scoring config |
-| `supabase/functions/ats-analysis-direct/` | ATS scoring edge function |
-| `docs/changelog/CHANGELOG.md` | Recently shipped features evidence |
-| `README.md` | Product and stack overview |
+| Source                                      | Key findings                                                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `docs/decisions/product-roadmap.md`         | Master feature roadmap across P7–P21                                                                                         |
+| `plans/` (p14, p19, sats_migration_plan)    | Active implementation plans                                                                                                  |
+| `src/pages/Dashboard.tsx`                   | Dashboard placeholders: Advanced Reports, Email Notifications, Data Export, Analytics, 2FA, API Access                       |
+| `src/pages/Settings.tsx`                    | Settings placeholders: Notification prefs, Update Password (Coming Soon), 2FA (Coming Soon), Data Export, API Key Generation |
+| `src/pages/ATSAnalyses.tsx`                 | ATS analysis UI and feature surface                                                                                          |
+| `src/pages/MyResumes.tsx`                   | Resume management features                                                                                                   |
+| `src/pages/JobDescriptions.tsx`             | JD management features                                                                                                       |
+| `src/components/PersonaManager.tsx`         | Multi-persona feature                                                                                                        |
+| `src/components/help/HelpButton.tsx`        | In-app Help Hub                                                                                                              |
+| `src/components/admin/`                     | Admin observability panels (LogCleanupManager, LogViewer, ObservabilityPanel, LoggingControlPanel)                           |
+| `src/components/ResumePreview.tsx`          | Resume preview component                                                                                                     |
+| `supabase/functions/_shared/llmProvider.ts` | LLM abstraction, deterministic scoring config                                                                                |
+| `supabase/functions/ats-analysis-direct/`   | ATS scoring edge function                                                                                                    |
+| `docs/changelog/CHANGELOG.md`               | Recently shipped features evidence                                                                                           |
+| `README.md`                                 | Product and stack overview                                                                                                   |
 
 #### Features Snapshot (2026-03-27)
 
@@ -182,6 +188,7 @@ When a new run is completed, compare against the previous run on these dimension
 **UI Placeholders:** 10 visible-but-unimplemented features across Dashboard and Settings
 
 Key live features:
+
 - ATS Scoring & Analysis (deterministic, seed=42, temperature=0, schema-locked)
 - Experience Enrichment (evidence-grounded, risk-flagged AI suggestions)
 - Resume Personas (named persona strategy with AI-tailored content)
@@ -197,24 +204,25 @@ Key live features:
 
 12 competitors profiled with pricing, features, differentiators, and weaknesses:
 
-| Competitor | Category | Price Range | Key Differentiator |
-|---|---|---|---|
-| Jobscan | ATS Optimization Leader | $15–$50/mo | Multi-ATS platform simulation (unique) |
-| Resume Worded | Resume Scoring | ~$19/mo | Smart keyword weighting; highest Trustpilot trust |
-| Teal | All-in-one Career OS | Free–$29/mo | Most generous free tier; 4M+ users |
-| Rezi | Resume Builder + ATS | $29/mo or $149 lifetime | Lifetime deal pricing |
-| Kickresume | AI Builder + Career Intel | $8–$24/mo | Career Map (free); lowest annual price |
-| Enhancv | Human + ATS Builder | $13–$25/mo | Creative sections; design-first philosophy |
-| Careerflow | LinkedIn-first Platform | $14–$24/mo | Best free LinkedIn optimizer |
-| Huntr | Premium Job Tracker | $27–$40/mo | Best application lifecycle management |
-| Jobright.ai | AI Job Matching | $15–$30/mo | Proactive job discovery (400K+ postings/day) |
-| SkillSyncer | Budget ATS Scanner | Free–$15/mo | Most generous free ATS matching |
-| Novoresume | Design-focused Builder | $20/mo or $100/yr | Multi-language support (5 languages) |
-| Zety | Beginner Resume Wizard | $6–$26/mo | Best beginner wizard UX |
+| Competitor    | Category                  | Price Range             | Key Differentiator                                |
+| ------------- | ------------------------- | ----------------------- | ------------------------------------------------- |
+| Jobscan       | ATS Optimization Leader   | $15–$50/mo              | Multi-ATS platform simulation (unique)            |
+| Resume Worded | Resume Scoring            | ~$19/mo                 | Smart keyword weighting; highest Trustpilot trust |
+| Teal          | All-in-one Career OS      | Free–$29/mo             | Most generous free tier; 4M+ users                |
+| Rezi          | Resume Builder + ATS      | $29/mo or $149 lifetime | Lifetime deal pricing                             |
+| Kickresume    | AI Builder + Career Intel | $8–$24/mo               | Career Map (free); lowest annual price            |
+| Enhancv       | Human + ATS Builder       | $13–$25/mo              | Creative sections; design-first philosophy        |
+| Careerflow    | LinkedIn-first Platform   | $14–$24/mo              | Best free LinkedIn optimizer                      |
+| Huntr         | Premium Job Tracker       | $27–$40/mo              | Best application lifecycle management             |
+| Jobright.ai   | AI Job Matching           | $15–$30/mo              | Proactive job discovery (400K+ postings/day)      |
+| SkillSyncer   | Budget ATS Scanner        | Free–$15/mo             | Most generous free ATS matching                   |
+| Novoresume    | Design-focused Builder    | $20/mo or $100/yr       | Multi-language support (5 languages)              |
+| Zety          | Beginner Resume Wizard    | $6–$26/mo               | Best beginner wizard UX                           |
 
 #### Key Findings (2026-03-27)
 
 **SmartATS unique advantages (no competitor matches all of these simultaneously):**
+
 1. Deterministic AI scoring (seed=42, temperature=0) — unique in market
 2. Evidence-grounded enrichment (cites resume evidence, flags unsupported claims) — unique
 3. Upskilling roadmaps tied to skill-gap origin with milestones — only Kickresume's Career Map is directional, with no resources/milestones
@@ -222,6 +230,7 @@ Key live features:
 5. Named persona management strategy — not just "multiple resumes"
 
 **Most critical gaps vs. competitors:**
+
 1. No published pricing — blocking every marketing and growth effort
 2. Free tier undefined — Teal and Kickresume offer very generous free tiers; SmartATS has no clear answer
 3. LinkedIn profile optimizer missing — Careerflow (free), Jobscan, Resume Worded all have this
@@ -229,6 +238,7 @@ Key live features:
 5. Resume template library limited — most competitors have 40–100+ templates
 
 **Top 8 untapped opportunities identified:**
+
 1. **"Career Intelligence Platform" category positioning** — no competitor has claimed this label
 2. **BYOK viral channel** — unique in market; zero COGS on free tier; developer/power-user acquisition
 3. **B2B recruiter/hiring manager side** — invert the scoring engine for SMB ATS use case
@@ -254,4 +264,4 @@ Key live features:
 
 ---
 
-*Next recommended run: 2026-06-27 (quarterly cadence)*
+_Next recommended run: 2026-06-27 (quarterly cadence)_

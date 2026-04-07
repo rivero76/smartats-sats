@@ -12,35 +12,35 @@
 
 ## 1. Tech Stack Inventory
 
-| Layer | Technology | Version / Tier | Notes |
-|---|---|---|---|
-| Frontend framework | React + TypeScript + Vite | React 18.3.1, Vite 5.4.19, TS 5.8.3 | SWC compiler via `@vitejs/plugin-react-swc` |
-| Routing | React Router v6 | 6.30.1 | Standard SPA routing, 10 declared routes |
-| State management (server) | TanStack Query | 5.83.0 | One hook per domain; `staleTime` not configured anywhere |
-| State management (client) | React Context | Built-in React 18 | Auth state only; no Zustand/Redux |
-| UI components | shadcn/ui + Radix UI primitives | Latest (Q1 2026) | Full Radix set installed; Tailwind 3.4.17 |
-| Animation | Framer Motion | 12.38.0 | Presets in `src/lib/animations.ts`; stagger cap at 10 items |
-| Forms | react-hook-form + Zod | 7.61.1 / 3.25.76 | Consistent across all forms |
-| Document processing | pdfjs-dist + mammoth + html-to-text | 5.4.149 / 1.10.0 / 9.0.5 | Client-side in `src/services/documentProcessor.ts` |
-| Auth | Supabase Auth | Supabase JS 2.57.4 | JWTs, RLS enforced at DB layer; `AuthContext.tsx` wraps |
-| Database | Supabase Postgres | Free/Pro tier (project ID: `nkgscksbgmzhizohobhg`) | 91 tables, all RLS-enabled per WAF review; 21 P21 migrations applied |
-| Edge functions | Supabase Edge Functions (Deno) | Deno runtime | 10 deployed functions; shared `_shared/` utilities |
-| AI/LLM provider | OpenAI | gpt-4.1 (ATS), gpt-4.1-mini (enrichment/roadmap/LinkedIn) | Abstracted via `callLLM()` in `_shared/llmProvider.ts`; `SATS_LLM_PROVIDER` env switch |
-| LLM fallback | gpt-4o-mini | Current fallback for all tasks | Model-not-found 400s fall through correctly since 2026-03-17 fix |
-| Structured output | OpenAI JSON schema mode | `strict: true` | 6 named schemas enforced across all LLM tasks |
-| LinkedIn scraper | Playwright + Express (Node 20) | Playwright 1.40.0 | Separate service; deployed to Fly.io free tier (MVP-TEMPORARY — INFRA-1) |
-| Job market data | Mock data only | N/A (3 hardcoded jobs) | JSearch (RapidAPI) and Adzuna keys referenced in env but `fetch-market-jobs` uses hardcoded mock — WAF OE-2 |
-| Storage | Supabase Storage | Private bucket `SATS_resumes` | RLS on storage path; signed URLs not yet implemented (P16 S2 planned) |
-| Hosting (frontend) | Docker + nginx (multi-stage build) | nginx (alpine) | Port 3000 (prod), 8080 (dev); no CDN layer documented |
-| Hosting (scraper) | Fly.io free tier | shared-cpu-1x, 1 GB RAM, auto-stop | Replaced Railway on 2026-03-31; 160 GB-hours/month cap, ~30s cold start |
-| CI/CD | GitHub Actions | quality-gates.yml | build + test + format + lint (non-blocking) + UPDATE LOG (non-blocking) + docs gate + secrets scan |
-| Monitoring / logging | Centralized logging edge function + `log_events` table | Custom | `centralizedLogger.ts` on frontend; `logEvent()` in edge functions; admin LogViewer UI |
-| LLM cost audit | `sats_llm_call_logs` table | P21 S1 schema | Only `classify-skill-profile` writes to it; 5 other functions omit `logContext` — WAF REL-1 |
-| Testing (unit) | Vitest + Testing Library | 2.1.9 | Run in CI; a11y tests via `jest-axe` |
-| Testing (e2e/visual) | Playwright | 1.58.2 | Non-blocking in CI; requires `PLAYWRIGHT_TEST_EMAIL/PASSWORD` |
-| Testing (LLM eval) | Custom eval gate | `scripts/ops/llm-evals/` | `npm run llm:eval:gate` — not included in standard `verify` |
-| Code quality | ESLint 9 + Prettier 3 + TypeScript strict mode | ESLint non-blocking in CI; `strict: false` in tsconfig | P2-1 open: `strict: true` migration |
-| Dependency management | npm | Node 20 | Lockfile committed; scraper has separate `package.json` |
+| Layer                     | Technology                                             | Version / Tier                                            | Notes                                                                                                       |
+| ------------------------- | ------------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Frontend framework        | React + TypeScript + Vite                              | React 18.3.1, Vite 5.4.19, TS 5.8.3                       | SWC compiler via `@vitejs/plugin-react-swc`                                                                 |
+| Routing                   | React Router v6                                        | 6.30.1                                                    | Standard SPA routing, 10 declared routes                                                                    |
+| State management (server) | TanStack Query                                         | 5.83.0                                                    | One hook per domain; `staleTime` not configured anywhere                                                    |
+| State management (client) | React Context                                          | Built-in React 18                                         | Auth state only; no Zustand/Redux                                                                           |
+| UI components             | shadcn/ui + Radix UI primitives                        | Latest (Q1 2026)                                          | Full Radix set installed; Tailwind 3.4.17                                                                   |
+| Animation                 | Framer Motion                                          | 12.38.0                                                   | Presets in `src/lib/animations.ts`; stagger cap at 10 items                                                 |
+| Forms                     | react-hook-form + Zod                                  | 7.61.1 / 3.25.76                                          | Consistent across all forms                                                                                 |
+| Document processing       | pdfjs-dist + mammoth + html-to-text                    | 5.4.149 / 1.10.0 / 9.0.5                                  | Client-side in `src/services/documentProcessor.ts`                                                          |
+| Auth                      | Supabase Auth                                          | Supabase JS 2.57.4                                        | JWTs, RLS enforced at DB layer; `AuthContext.tsx` wraps                                                     |
+| Database                  | Supabase Postgres                                      | Free/Pro tier (project ID: `nkgscksbgmzhizohobhg`)        | 91 tables, all RLS-enabled per WAF review; 21 P21 migrations applied                                        |
+| Edge functions            | Supabase Edge Functions (Deno)                         | Deno runtime                                              | 10 deployed functions; shared `_shared/` utilities                                                          |
+| AI/LLM provider           | OpenAI                                                 | gpt-4.1 (ATS), gpt-4.1-mini (enrichment/roadmap/LinkedIn) | Abstracted via `callLLM()` in `_shared/llmProvider.ts`; `SATS_LLM_PROVIDER` env switch                      |
+| LLM fallback              | gpt-4o-mini                                            | Current fallback for all tasks                            | Model-not-found 400s fall through correctly since 2026-03-17 fix                                            |
+| Structured output         | OpenAI JSON schema mode                                | `strict: true`                                            | 6 named schemas enforced across all LLM tasks                                                               |
+| LinkedIn scraper          | Playwright + Express (Node 20)                         | Playwright 1.40.0                                         | Separate service; deployed to Fly.io free tier (MVP-TEMPORARY — INFRA-1)                                    |
+| Job market data           | Mock data only                                         | N/A (3 hardcoded jobs)                                    | JSearch (RapidAPI) and Adzuna keys referenced in env but `fetch-market-jobs` uses hardcoded mock — WAF OE-2 |
+| Storage                   | Supabase Storage                                       | Private bucket `SATS_resumes`                             | RLS on storage path; signed URLs not yet implemented (P16 S2 planned)                                       |
+| Hosting (frontend)        | Docker + nginx (multi-stage build)                     | nginx (alpine)                                            | Port 3000 (prod), 8080 (dev); no CDN layer documented                                                       |
+| Hosting (scraper)         | Fly.io free tier                                       | shared-cpu-1x, 1 GB RAM, auto-stop                        | Replaced Railway on 2026-03-31; 160 GB-hours/month cap, ~30s cold start                                     |
+| CI/CD                     | GitHub Actions                                         | quality-gates.yml                                         | build + test + format + lint (non-blocking) + UPDATE LOG (non-blocking) + docs gate + secrets scan          |
+| Monitoring / logging      | Centralized logging edge function + `log_events` table | Custom                                                    | `centralizedLogger.ts` on frontend; `logEvent()` in edge functions; admin LogViewer UI                      |
+| LLM cost audit            | `sats_llm_call_logs` table                             | P21 S1 schema                                             | Only `classify-skill-profile` writes to it; 5 other functions omit `logContext` — WAF REL-1                 |
+| Testing (unit)            | Vitest + Testing Library                               | 2.1.9                                                     | Run in CI; a11y tests via `jest-axe`                                                                        |
+| Testing (e2e/visual)      | Playwright                                             | 1.58.2                                                    | Non-blocking in CI; requires `PLAYWRIGHT_TEST_EMAIL/PASSWORD`                                               |
+| Testing (LLM eval)        | Custom eval gate                                       | `scripts/ops/llm-evals/`                                  | `npm run llm:eval:gate` — not included in standard `verify`                                                 |
+| Code quality              | ESLint 9 + Prettier 3 + TypeScript strict mode         | ESLint non-blocking in CI; `strict: false` in tsconfig    | P2-1 open: `strict: true` migration                                                                         |
+| Dependency management     | npm                                                    | Node 20                                                   | Lockfile committed; scraper has separate `package.json`                                                     |
 
 ---
 
@@ -48,63 +48,63 @@
 
 ### Frontend
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| TanStack Query — no `staleTime` | Scalability / cost | Every component mount triggers 8+ Supabase reads simultaneously. At 1000 MAU with active sessions, this multiplies Supabase connection and row-read usage significantly. WAF REL-2, PERF-2. | HIGH |
-| TypeScript `strict: false` | Tech debt | 69+ lint errors accumulate silently; real type safety gaps possible in hook return values. P2-1 open. | MEDIUM |
-| No React `ErrorBoundary` | Reliability | Fixed (P1-2, 2026-03-17) — confirmed in summary table. | LOW |
-| Client-side document processing (PDF/DOCX) | Security / performance | Large files parsed entirely in browser via pdfjs-dist and mammoth. Memory pressure on low-end devices; extraction runs on untrusted file content client-side. | MEDIUM |
-| No i18n foundation | Scalability | All strings hardcoded English. P3-1 open. Blocks P8 (Global v1) and P12 (multi-language). Estimated 3–5 days to implement. | MEDIUM |
-| `AuthContext.tsx` console leakage | Security / observability | ~20 `console.log/error` calls expose auth state transitions in browser DevTools. WAF OE-5. | LOW |
+| Component                                  | Risk type                | Detail                                                                                                                                                                                      | Severity |
+| ------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| TanStack Query — no `staleTime`            | Scalability / cost       | Every component mount triggers 8+ Supabase reads simultaneously. At 1000 MAU with active sessions, this multiplies Supabase connection and row-read usage significantly. WAF REL-2, PERF-2. | HIGH     |
+| TypeScript `strict: false`                 | Tech debt                | 69+ lint errors accumulate silently; real type safety gaps possible in hook return values. P2-1 open.                                                                                       | MEDIUM   |
+| No React `ErrorBoundary`                   | Reliability              | Fixed (P1-2, 2026-03-17) — confirmed in summary table.                                                                                                                                      | LOW      |
+| Client-side document processing (PDF/DOCX) | Security / performance   | Large files parsed entirely in browser via pdfjs-dist and mammoth. Memory pressure on low-end devices; extraction runs on untrusted file content client-side.                               | MEDIUM   |
+| No i18n foundation                         | Scalability              | All strings hardcoded English. P3-1 open. Blocks P8 (Global v1) and P12 (multi-language). Estimated 3–5 days to implement.                                                                  | MEDIUM   |
+| `AuthContext.tsx` console leakage          | Security / observability | ~20 `console.log/error` calls expose auth state transitions in browser DevTools. WAF OE-5.                                                                                                  | LOW      |
 
 ### Backend / Edge Functions
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| `linkedin-profile-ingest` direct OpenAI calls | Security / reliability | Bypasses `callLLM()`, `mapProviderError()`, fallback chain, cost tracking, and `logContext`. Raw `providerBody` potentially surfaced in 500 responses. WAF SEC-1 — CRITICAL finding. | CRITICAL |
-| `fetch-market-jobs` — mock data in production | Reliability / product | 3 hardcoded jobs. After the first cron run, deduplication hash prevents re-insertion. The proactive match feature is non-functional in production. WAF OE-2. | HIGH |
-| `delete-account` / `cancel-account-deletion` — wrong error code | Reliability | `!` non-null assertion inside try/catch returns 400 TypeError on missing config instead of 503. WAF SEC-2. | HIGH |
-| No per-user LLM quotas | Cost / security | Any authenticated user can trigger unlimited `callLLM()` invocations. No rate limiting implemented at edge function level. P2-8 open. Uncapped LLM cost exposure is an existential risk pre-feature gating. | HIGH |
-| `sats_outbox_events` RLS `USING (true)` | Security | Authenticated users can read and modify outbox events. Service role bypass removes the need for this policy; it grants unintended access. WAF SEC-3. | MEDIUM |
-| `sats_rate_limit_counters` conflicting policies | Security | `FOR ALL USING (true)` overrides the per-user SELECT restriction via OR composition. WAF SEC-4. | MEDIUM |
-| `async-ats-scorer` re-scores completed analyses | Cost / reliability | `ignoreDuplicates: false` upsert will overwrite completed analyses on re-queue. Wastes gpt-4.1 tokens. WAF REL-3, SUS-1. | MEDIUM |
-| `logContext` omitted in 5 of 6 LLM functions | Cost governance | `sats_llm_call_logs` table is 80%+ empty. No cost audit trail for ATS scoring, enrichment, roadmaps, or upskill generation. WAF REL-1, COST-1. | MEDIUM |
-| `generate-upskill-roadmap` env validation inside try/catch | Reliability | Missing env var returns wrong status code path. WAF REL-4. | LOW |
-| `centralized-logging` duplicates `getEnvNumber` | Tech debt | Inline `getEnvInt()` diverges from `_shared/env.ts`. WAF OE-4. | LOW |
+| Component                                                       | Risk type              | Detail                                                                                                                                                                                                      | Severity |
+| --------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `linkedin-profile-ingest` direct OpenAI calls                   | Security / reliability | Bypasses `callLLM()`, `mapProviderError()`, fallback chain, cost tracking, and `logContext`. Raw `providerBody` potentially surfaced in 500 responses. WAF SEC-1 — CRITICAL finding.                        | CRITICAL |
+| `fetch-market-jobs` — mock data in production                   | Reliability / product  | 3 hardcoded jobs. After the first cron run, deduplication hash prevents re-insertion. The proactive match feature is non-functional in production. WAF OE-2.                                                | HIGH     |
+| `delete-account` / `cancel-account-deletion` — wrong error code | Reliability            | `!` non-null assertion inside try/catch returns 400 TypeError on missing config instead of 503. WAF SEC-2.                                                                                                  | HIGH     |
+| No per-user LLM quotas                                          | Cost / security        | Any authenticated user can trigger unlimited `callLLM()` invocations. No rate limiting implemented at edge function level. P2-8 open. Uncapped LLM cost exposure is an existential risk pre-feature gating. | HIGH     |
+| `sats_outbox_events` RLS `USING (true)`                         | Security               | Authenticated users can read and modify outbox events. Service role bypass removes the need for this policy; it grants unintended access. WAF SEC-3.                                                        | MEDIUM   |
+| `sats_rate_limit_counters` conflicting policies                 | Security               | `FOR ALL USING (true)` overrides the per-user SELECT restriction via OR composition. WAF SEC-4.                                                                                                             | MEDIUM   |
+| `async-ats-scorer` re-scores completed analyses                 | Cost / reliability     | `ignoreDuplicates: false` upsert will overwrite completed analyses on re-queue. Wastes gpt-4.1 tokens. WAF REL-3, SUS-1.                                                                                    | MEDIUM   |
+| `logContext` omitted in 5 of 6 LLM functions                    | Cost governance        | `sats_llm_call_logs` table is 80%+ empty. No cost audit trail for ATS scoring, enrichment, roadmaps, or upskill generation. WAF REL-1, COST-1.                                                              | MEDIUM   |
+| `generate-upskill-roadmap` env validation inside try/catch      | Reliability            | Missing env var returns wrong status code path. WAF REL-4.                                                                                                                                                  | LOW      |
+| `centralized-logging` duplicates `getEnvNumber`                 | Tech debt              | Inline `getEnvInt()` diverges from `_shared/env.ts`. WAF OE-4.                                                                                                                                              | LOW      |
 
 ### Database
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| No billing / subscription enforcement | Product / commercial | `sats_tenant_features` schema exists (P21 S3) but enforcement layer is not built. Every user has access to every feature at zero cost. This is the single largest commercial risk — no revenue is possible. P23 open. | CRITICAL |
-| Permanent public file URLs for resumes | Security | `file_url` stored permanently in `sats_resumes`. Signed URLs with 15-minute expiry planned in P16 S2 but not yet implemented. A leaked URL grants permanent access to a private resume. | HIGH |
-| 91 tables, no documented schema map | Maintainability | `src/integrations/supabase/types.ts` is auto-generated and up to date, but no ERD or human-readable schema summary exists. As P21 adds more migrations, onboarding friction grows. | LOW |
+| Component                              | Risk type            | Detail                                                                                                                                                                                                                | Severity |
+| -------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| No billing / subscription enforcement  | Product / commercial | `sats_tenant_features` schema exists (P21 S3) but enforcement layer is not built. Every user has access to every feature at zero cost. This is the single largest commercial risk — no revenue is possible. P23 open. | CRITICAL |
+| Permanent public file URLs for resumes | Security             | `file_url` stored permanently in `sats_resumes`. Signed URLs with 15-minute expiry planned in P16 S2 but not yet implemented. A leaked URL grants permanent access to a private resume.                               | HIGH     |
+| 91 tables, no documented schema map    | Maintainability      | `src/integrations/supabase/types.ts` is auto-generated and up to date, but no ERD or human-readable schema summary exists. As P21 adds more migrations, onboarding friction grows.                                    | LOW      |
 
 ### AI / LLM Layer
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| Single provider (OpenAI) | Vendor lock-in | `callLLM()` abstraction supports multiple providers (`SATS_LLM_PROVIDER`), but only `openai` adapter is implemented. An OpenAI outage takes down all AI features simultaneously. | HIGH |
-| OpenAI pricing volatility | Cost cliff | gpt-4.1 at $2.00/$8.00 per 1M tokens. At scale (1000 MAU × 10 analyses/month), token costs can reach hundreds of dollars/month without feature gating. No per-user quota enforcement today. | HIGH |
-| o4-mini rollback — incomplete validation | Reliability | `gpt-4.1` is the production model after the 2026-03-17 o4-mini rollback. §4.3 post-change validation (3× identical resume+JD determinism test) is listed as "pending with real resume data" in the change log. The determinism guarantee is unverified in production. | MEDIUM |
-| LLM eval gate not in standard CI | Quality | `npm run llm:eval:gate` exists but is not included in `npm run verify` or `quality-gates.yml`. A model config change can ship without triggering the eval gate. | MEDIUM |
+| Component                                | Risk type      | Detail                                                                                                                                                                                                                                                                | Severity |
+| ---------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Single provider (OpenAI)                 | Vendor lock-in | `callLLM()` abstraction supports multiple providers (`SATS_LLM_PROVIDER`), but only `openai` adapter is implemented. An OpenAI outage takes down all AI features simultaneously.                                                                                      | HIGH     |
+| OpenAI pricing volatility                | Cost cliff     | gpt-4.1 at $2.00/$8.00 per 1M tokens. At scale (1000 MAU × 10 analyses/month), token costs can reach hundreds of dollars/month without feature gating. No per-user quota enforcement today.                                                                           | HIGH     |
+| o4-mini rollback — incomplete validation | Reliability    | `gpt-4.1` is the production model after the 2026-03-17 o4-mini rollback. §4.3 post-change validation (3× identical resume+JD determinism test) is listed as "pending with real resume data" in the change log. The determinism guarantee is unverified in production. | MEDIUM   |
+| LLM eval gate not in standard CI         | Quality        | `npm run llm:eval:gate` exists but is not included in `npm run verify` or `quality-gates.yml`. A model config change can ship without triggering the eval gate.                                                                                                       | MEDIUM   |
 
 ### LinkedIn Scraper
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| LinkedIn Terms of Service | Legal / existential | The scraper logs in with real credentials and navigates LinkedIn pages. LinkedIn's ToS explicitly prohibits scraping. At any usage level, LinkedIn could block the account, IP-ban the subnet, or send a C&D. This risk exists regardless of hosting platform. | CRITICAL |
-| Bot detection / login fragility | Reliability | Playwright navigates LinkedIn's login flow. LinkedIn's bot detection (2FA prompts, CAPTCHA, device fingerprinting) will trigger unpredictably. No session recovery mechanism beyond re-initialization. | HIGH |
-| Fly.io free tier limits | Scalability | 160 GB-hours/month RAM limit, auto-stop with ~30s cold start, no SLA. At 10 scrapes/hour (the stated rate limit), peak memory is within free tier, but cold start creates a visible UX delay. | MEDIUM |
-| No authentication beyond API key | Security | The Express server uses a static `PLAYWRIGHT_API_KEY` bearer token. If this key leaks, any caller can trigger LinkedIn scrapes. | MEDIUM |
+| Component                        | Risk type           | Detail                                                                                                                                                                                                                                                         | Severity |
+| -------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| LinkedIn Terms of Service        | Legal / existential | The scraper logs in with real credentials and navigates LinkedIn pages. LinkedIn's ToS explicitly prohibits scraping. At any usage level, LinkedIn could block the account, IP-ban the subnet, or send a C&D. This risk exists regardless of hosting platform. | CRITICAL |
+| Bot detection / login fragility  | Reliability         | Playwright navigates LinkedIn's login flow. LinkedIn's bot detection (2FA prompts, CAPTCHA, device fingerprinting) will trigger unpredictably. No session recovery mechanism beyond re-initialization.                                                         | HIGH     |
+| Fly.io free tier limits          | Scalability         | 160 GB-hours/month RAM limit, auto-stop with ~30s cold start, no SLA. At 10 scrapes/hour (the stated rate limit), peak memory is within free tier, but cold start creates a visible UX delay.                                                                  | MEDIUM   |
+| No authentication beyond API key | Security            | The Express server uses a static `PLAYWRIGHT_API_KEY` bearer token. If this key leaks, any caller can trigger LinkedIn scrapes.                                                                                                                                | MEDIUM   |
 
 ### CI/CD
 
-| Component | Risk type | Detail | Severity |
-|---|---|---|---|
-| Lint and UPDATE LOG checks non-blocking | Tech debt accumulation | Both `npm run lint` and `check-update-log.sh` have `continue-on-error: true`. Convention violations accumulate invisibly. WAF OE-1, P1-13 open. | MEDIUM |
-| Visual regression and Lighthouse CI non-blocking | Quality | Both jobs have `continue-on-error: true`. Layout regressions can merge without detection. | LOW |
-| No edge function smoke tests in CI | Deployment safety | After deploying edge functions, there is no automated check that they respond correctly. P2-5 open. | LOW |
+| Component                                        | Risk type              | Detail                                                                                                                                          | Severity |
+| ------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Lint and UPDATE LOG checks non-blocking          | Tech debt accumulation | Both `npm run lint` and `check-update-log.sh` have `continue-on-error: true`. Convention violations accumulate invisibly. WAF OE-1, P1-13 open. | MEDIUM   |
+| Visual regression and Lighthouse CI non-blocking | Quality                | Both jobs have `continue-on-error: true`. Layout regressions can merge without detection.                                                       | LOW      |
+| No edge function smoke tests in CI               | Deployment safety      | After deploying edge functions, there is no automated check that they respond correctly. P2-5 open.                                             | LOW      |
 
 ---
 
@@ -112,45 +112,45 @@
 
 ### Frontend
 
-| Opportunity | Detail | Effort | ROI |
-|---|---|---|---|
-| Add `staleTime` to all TanStack Query hooks | 30–60s for user data, 5min for reference data. Reduces Supabase reads by ~60–70% across a typical session. Immediate Supabase row-read cost reduction. | 2 hours | HIGH |
-| TypeScript `strict: true` migration | Eliminates a class of runtime bugs. Enables better editor tooling and faster onboarding. Estimated 4–8 hours to fix existing violations first (P2-1). | 4–8 hours | HIGH |
-| i18n foundation (react-i18next) | Unlocks P8 (Global v1) and P12 (multi-language). Required before any non-English market. P3-1 open. | 3–5 days | HIGH (unlocks new markets) |
-| Bundle analyser + Lighthouse CI gate | `rollup-plugin-visualizer` already in devDependencies. Adding the gate catches bundle bloat from future dependencies. UIUX-7. | 2–3 hours | MEDIUM |
+| Opportunity                                 | Detail                                                                                                                                                 | Effort    | ROI                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | -------------------------- |
+| Add `staleTime` to all TanStack Query hooks | 30–60s for user data, 5min for reference data. Reduces Supabase reads by ~60–70% across a typical session. Immediate Supabase row-read cost reduction. | 2 hours   | HIGH                       |
+| TypeScript `strict: true` migration         | Eliminates a class of runtime bugs. Enables better editor tooling and faster onboarding. Estimated 4–8 hours to fix existing violations first (P2-1).  | 4–8 hours | HIGH                       |
+| i18n foundation (react-i18next)             | Unlocks P8 (Global v1) and P12 (multi-language). Required before any non-English market. P3-1 open.                                                    | 3–5 days  | HIGH (unlocks new markets) |
+| Bundle analyser + Lighthouse CI gate        | `rollup-plugin-visualizer` already in devDependencies. Adding the gate catches bundle bloat from future dependencies. UIUX-7.                          | 2–3 hours | MEDIUM                     |
 
 ### Backend / AI Layer
 
-| Opportunity | Detail | Effort | ROI |
-|---|---|---|---|
-| Migrate `linkedin-profile-ingest` to `callLLM()` | Resolves WAF SEC-1 (CRITICAL), PERF-1, SUS-2 simultaneously. Adds fallback, cost tracking, and safe error mapping in one change. | 2–3 hours | CRITICAL |
-| Add `logContext` to 5 LLM edge functions | Activates the `sats_llm_call_logs` audit table for 80%+ of LLM spend. Enables real cost governance and model-switch comparison before P22 billing launch. | 1 hour | HIGH |
-| Replace mock data in `fetch-market-jobs` | JSearch (RapidAPI) and Adzuna keys already referenced in env. Function architecture (deduplication hash, staging table) is ready. Integrating one real API makes the proactive match feature functional in production. | 1–2 sprints | HIGH |
-| Add per-user LLM quotas | `sats_rate_limit_counters` schema exists (P21 S6). Add pre-call check in key edge functions. Returns HTTP 429. Prevents unbounded cost exposure before P23 ships. | 2–3 hours | HIGH |
-| Add idempotency check in `async-ats-scorer` | Skip `status = 'completed'` analyses before LLM call. Prevents re-scoring waste. WAF REL-3. | 1 hour | MEDIUM |
-| Implement additional LLM providers in `callLLM()` | The `SATS_LLM_PROVIDER` env switch is wired. Adding Anthropic or Gemini adapters eliminates single-provider dependency and enables cost arbitrage. Builds toward P17 BYOK. | 3–5 days per provider | HIGH |
+| Opportunity                                       | Detail                                                                                                                                                                                                                 | Effort                | ROI      |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | -------- |
+| Migrate `linkedin-profile-ingest` to `callLLM()`  | Resolves WAF SEC-1 (CRITICAL), PERF-1, SUS-2 simultaneously. Adds fallback, cost tracking, and safe error mapping in one change.                                                                                       | 2–3 hours             | CRITICAL |
+| Add `logContext` to 5 LLM edge functions          | Activates the `sats_llm_call_logs` audit table for 80%+ of LLM spend. Enables real cost governance and model-switch comparison before P22 billing launch.                                                              | 1 hour                | HIGH     |
+| Replace mock data in `fetch-market-jobs`          | JSearch (RapidAPI) and Adzuna keys already referenced in env. Function architecture (deduplication hash, staging table) is ready. Integrating one real API makes the proactive match feature functional in production. | 1–2 sprints           | HIGH     |
+| Add per-user LLM quotas                           | `sats_rate_limit_counters` schema exists (P21 S6). Add pre-call check in key edge functions. Returns HTTP 429. Prevents unbounded cost exposure before P23 ships.                                                      | 2–3 hours             | HIGH     |
+| Add idempotency check in `async-ats-scorer`       | Skip `status = 'completed'` analyses before LLM call. Prevents re-scoring waste. WAF REL-3.                                                                                                                            | 1 hour                | MEDIUM   |
+| Implement additional LLM providers in `callLLM()` | The `SATS_LLM_PROVIDER` env switch is wired. Adding Anthropic or Gemini adapters eliminates single-provider dependency and enables cost arbitrage. Builds toward P17 BYOK.                                             | 3–5 days per provider | HIGH     |
 
 ### Database / Schema
 
-| Opportunity | Detail | Effort | ROI |
-|---|---|---|---|
-| Signed URLs for resume storage | Replace permanent `file_url` with 15-minute signed URLs. P16 S2 planned. Required before enterprise sales. | 1–2 days | HIGH |
-| P22 Billing Infrastructure (Stripe) | Without it, no revenue is possible regardless of feature completeness. Hard dependency for P23 and P24. | 3–4 weeks | CRITICAL |
-| P23 Feature Gating Enforcement | Schema exists; wire enforcement into edge functions and frontend guards. Prevents free users from consuming unlimited LLM tokens. | 1–2 weeks | CRITICAL |
+| Opportunity                         | Detail                                                                                                                            | Effort    | ROI      |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------- | -------- |
+| Signed URLs for resume storage      | Replace permanent `file_url` with 15-minute signed URLs. P16 S2 planned. Required before enterprise sales.                        | 1–2 days  | HIGH     |
+| P22 Billing Infrastructure (Stripe) | Without it, no revenue is possible regardless of feature completeness. Hard dependency for P23 and P24.                           | 3–4 weeks | CRITICAL |
+| P23 Feature Gating Enforcement      | Schema exists; wire enforcement into edge functions and frontend guards. Prevents free users from consuming unlimited LLM tokens. | 1–2 weeks | CRITICAL |
 
 ### LinkedIn Scraper
 
-| Opportunity | Detail | Effort | ROI |
-|---|---|---|---|
-| LinkedIn Official API (Partner Program) | Eliminates ToS risk entirely. Application processing: 2–6 months. Free to apply. Should be initiated now if LinkedIn enrichment is a strategic feature. | Application only | HIGH (long-lead risk elimination) |
-| Browserless.io API as interim | Managed browser automation with better bot-detection handling. ~$10–49/month. Removes Playwright infrastructure burden. | 1–2 days migration | MEDIUM |
+| Opportunity                             | Detail                                                                                                                                                  | Effort             | ROI                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------- |
+| LinkedIn Official API (Partner Program) | Eliminates ToS risk entirely. Application processing: 2–6 months. Free to apply. Should be initiated now if LinkedIn enrichment is a strategic feature. | Application only   | HIGH (long-lead risk elimination) |
+| Browserless.io API as interim           | Managed browser automation with better bot-detection handling. ~$10–49/month. Removes Playwright infrastructure burden.                                 | 1–2 days migration | MEDIUM                            |
 
 ### AI Model
 
-| Opportunity | Detail | Effort | ROI |
-|---|---|---|---|
-| o4-mini re-evaluation | Rollback was caused by invalid model ID, not quality failure. Correct ID + §4.3 validation + switch to o4-mini: ~45% cheaper for ATS scoring ($1.10/$4.40 vs $2.00/$8.00 per 1M tokens). At 1,000 MAU: difference between ~$3,500 and ~$1,900/month. | 1 day | HIGH |
-| BYOK for enterprise (P17) | Per-user model preference + encrypted key storage via Supabase Vault. `callLLM()` already supports routing through user-supplied keys. Enterprise buyers treat BYOK as baseline. | 3 stories (~2 sprints) | HIGH |
+| Opportunity               | Detail                                                                                                                                                                                                                                               | Effort                 | ROI  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---- |
+| o4-mini re-evaluation     | Rollback was caused by invalid model ID, not quality failure. Correct ID + §4.3 validation + switch to o4-mini: ~45% cheaper for ATS scoring ($1.10/$4.40 vs $2.00/$8.00 per 1M tokens). At 1,000 MAU: difference between ~$3,500 and ~$1,900/month. | 1 day                  | HIGH |
+| BYOK for enterprise (P17) | Per-user model preference + encrypted key storage via Supabase Vault. `callLLM()` already supports routing through user-supplied keys. Enterprise buyers treat BYOK as baseline.                                                                     | 3 stories (~2 sprints) | HIGH |
 
 ---
 
@@ -165,14 +165,14 @@
 
 ### MVP (current — <50 MAU, low volume)
 
-| Component | Plan / Tier | Monthly cost | Notes |
-|---|---|---|---|
-| Supabase | Free tier | $0 | 500 MB DB, 1 GB storage, 50k MAU auth, 500k edge invocations, 5 GB egress |
-| OpenAI | Pay-as-you-go | ~$5–$20 | 50 users × 5 analyses × $0.0176 = $4.40; enrichments + roadmaps ~$5. Total well under $25. |
-| LinkedIn scraper (Fly.io) | Free tier | $0 | 160 GB-hours/month; ample for <50 MAU with 20% LinkedIn adoption |
-| GitHub Actions CI | Free tier | $0 | ~5 min/run, well within 2,000 min/month |
-| Docker hosting (nginx) | Self-hosted / VPS | ~$0–$10 | Depends on operator's existing infrastructure |
-| **Total estimated monthly cost** | | **$5–$30** | Dominated by OpenAI. Supabase free tier sustainable at this scale. |
+| Component                        | Plan / Tier       | Monthly cost | Notes                                                                                      |
+| -------------------------------- | ----------------- | ------------ | ------------------------------------------------------------------------------------------ |
+| Supabase                         | Free tier         | $0           | 500 MB DB, 1 GB storage, 50k MAU auth, 500k edge invocations, 5 GB egress                  |
+| OpenAI                           | Pay-as-you-go     | ~$5–$20      | 50 users × 5 analyses × $0.0176 = $4.40; enrichments + roadmaps ~$5. Total well under $25. |
+| LinkedIn scraper (Fly.io)        | Free tier         | $0           | 160 GB-hours/month; ample for <50 MAU with 20% LinkedIn adoption                           |
+| GitHub Actions CI                | Free tier         | $0           | ~5 min/run, well within 2,000 min/month                                                    |
+| Docker hosting (nginx)           | Self-hosted / VPS | ~$0–$10      | Depends on operator's existing infrastructure                                              |
+| **Total estimated monthly cost** |                   | **$5–$30**   | Dominated by OpenAI. Supabase free tier sustainable at this scale.                         |
 
 **Watch:** Supabase 500 MB database limit. With `sats_llm_call_logs`, `log_events`, and analysis JSONB blobs growing, this constraint could be reached within 3–6 months of active MVP use. Plan Supabase Pro upgrade at ~50 MAU.
 
@@ -180,29 +180,29 @@
 
 Assumptions: 500 MAU average, 8 analyses/user/month, 3 enrichments/user/month, 1 roadmap/user/month, 20% LinkedIn import adoption.
 
-| Component | Plan / Tier | Monthly cost | Notes |
-|---|---|---|---|
-| Supabase | Pro ($25/month base) | $25–$75 | Pro: 8 GB DB, 100 GB storage, 2M edge invocations. Compute add-on ($10–$50) may be needed under concurrent load. |
-| OpenAI | Pay-as-you-go | ~$165–$400 | 500 users × 8 analyses × $0.0176 = $70; CV Optimisation double-call adds 50% → $105; enrichments + roadmaps → ~$165. Power users push to $400. |
-| LinkedIn scraper (Fly.io) | Free → Paid | $0–$10 | Free tier supports ~2,380 scrapes/month (well above 10/hr rate limit). Upgrade to paid ($5–$10) at ~300 MAU to eliminate cold starts. |
-| GitHub Actions | Free (public) | $0–$4 | Free for public repos; Teams at $4/month for private. |
-| **Supabase free-tier limit breach** | 500 MB DB | Upgrade at ~100 MAU | Row growth from logs and analyses will hit this before MAU auth limits. |
-| **Total estimated monthly cost** | | **$200–$500** | OpenAI is dominant cost. P22/P23 feature gating essential to control it. |
+| Component                           | Plan / Tier          | Monthly cost        | Notes                                                                                                                                          |
+| ----------------------------------- | -------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase                            | Pro ($25/month base) | $25–$75             | Pro: 8 GB DB, 100 GB storage, 2M edge invocations. Compute add-on ($10–$50) may be needed under concurrent load.                               |
+| OpenAI                              | Pay-as-you-go        | ~$165–$400          | 500 users × 8 analyses × $0.0176 = $70; CV Optimisation double-call adds 50% → $105; enrichments + roadmaps → ~$165. Power users push to $400. |
+| LinkedIn scraper (Fly.io)           | Free → Paid          | $0–$10              | Free tier supports ~2,380 scrapes/month (well above 10/hr rate limit). Upgrade to paid ($5–$10) at ~300 MAU to eliminate cold starts.          |
+| GitHub Actions                      | Free (public)        | $0–$4               | Free for public repos; Teams at $4/month for private.                                                                                          |
+| **Supabase free-tier limit breach** | 500 MB DB            | Upgrade at ~100 MAU | Row growth from logs and analyses will hit this before MAU auth limits.                                                                        |
+| **Total estimated monthly cost**    |                      | **$200–$500**       | OpenAI is dominant cost. P22/P23 feature gating essential to control it.                                                                       |
 
 ### Commercial / Enterprise (1,000+ MAU, SLA required)
 
 Assumptions: 2,000 MAU, 10 analyses/user/month, 50% enrichment rate.
 
-| Component | Plan / Tier | Monthly cost | Notes |
-|---|---|---|---|
-| Supabase | Pro or Team ($599/month) | $25–$599 | Team tier required for SSO, priority support, and audit logs — enterprise buyers need this. |
-| Supabase compute add-on | Performance tier | $10–$150 | Required under concurrent load from 2,000+ MAU. |
-| OpenAI | Pay-as-you-go → Enterprise | $3,500–$7,000 | 2,000 users × 10 analyses × $0.0176 = $352 base; ×1.5 for CV Optimisation = $528; enrichments + roadmaps → ~$700. With enterprise volume discount (20–30%): ~$3,500–$5,000. Switching ATS to o4-mini reduces this by ~45%. |
-| LinkedIn scraper | ToS blocks at this scale | $0 (feature retired) or LinkedIn Partner API (free access tier) | Playwright scraping is not viable for enterprise. See section 5. |
-| Fly.io (if scraper continues) | Paid performance | ~$20–$50 | Moot if scraper is retired or replaced. |
-| Stripe billing | P22 | ~0.5–0.8% of revenue | No fixed cost; percentage-based. |
-| BYOK (P17) | Supabase Vault (included) | Reduces COGS | Enterprise customers supply own keys → OpenAI cost shifted to customer. |
-| **Total estimated monthly cost** | | **$4,000–$8,000** | OpenAI dominates. o4-mini + BYOK + feature gating are the three levers to control it. |
+| Component                        | Plan / Tier                | Monthly cost                                                    | Notes                                                                                                                                                                                                                      |
+| -------------------------------- | -------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase                         | Pro or Team ($599/month)   | $25–$599                                                        | Team tier required for SSO, priority support, and audit logs — enterprise buyers need this.                                                                                                                                |
+| Supabase compute add-on          | Performance tier           | $10–$150                                                        | Required under concurrent load from 2,000+ MAU.                                                                                                                                                                            |
+| OpenAI                           | Pay-as-you-go → Enterprise | $3,500–$7,000                                                   | 2,000 users × 10 analyses × $0.0176 = $352 base; ×1.5 for CV Optimisation = $528; enrichments + roadmaps → ~$700. With enterprise volume discount (20–30%): ~$3,500–$5,000. Switching ATS to o4-mini reduces this by ~45%. |
+| LinkedIn scraper                 | ToS blocks at this scale   | $0 (feature retired) or LinkedIn Partner API (free access tier) | Playwright scraping is not viable for enterprise. See section 5.                                                                                                                                                           |
+| Fly.io (if scraper continues)    | Paid performance           | ~$20–$50                                                        | Moot if scraper is retired or replaced.                                                                                                                                                                                    |
+| Stripe billing                   | P22                        | ~0.5–0.8% of revenue                                            | No fixed cost; percentage-based.                                                                                                                                                                                           |
+| BYOK (P17)                       | Supabase Vault (included)  | Reduces COGS                                                    | Enterprise customers supply own keys → OpenAI cost shifted to customer.                                                                                                                                                    |
+| **Total estimated monthly cost** |                            | **$4,000–$8,000**                                               | OpenAI dominates. o4-mini + BYOK + feature gating are the three levers to control it.                                                                                                                                      |
 
 **Key architectural changes required before commercial/enterprise:**
 
@@ -237,6 +237,7 @@ Recommended immediate action: try Render.com as a zero-friction alternative (Git
 **Growth (200–500 MAU):**
 
 At 200+ MAU with 20% LinkedIn adoption: ~40–80 scrapes/month. Still within Fly.io/Render free tier. However:
+
 - LinkedIn bot detection becomes more consistent as IP reputation builds.
 - Cold starts (~30s) create support tickets.
 
@@ -245,21 +246,23 @@ Action at 200–300 MAU milestone: upgrade to paid tier ($5–10/month) to disab
 **Commercial / Enterprise (1,000+ MAU):**
 
 Playwright-based scraping is not viable:
+
 1. LinkedIn ToS explicitly prohibits it — enterprise buyers will audit and disqualify.
 2. Bot detection at scale causes consistent failures requiring ongoing maintenance.
 3. No uptime SLA possible with a scraper.
 
 Recommended path: retire the scraper as a feature at the enterprise tier. Replace with:
+
 - **LinkedIn Official API (Partner Program)** — start application now (free, 2–6 months processing). Only ToS-safe path.
 - **Manual LinkedIn CSV export + LLM normalization** — simpler interim, no ToS risk, user-controlled. The `linkedin-profile-ingest` normalization call already handles unstructured text input.
 
 ### Summary table
 
-| Phase | Recommended hosting | Monthly cost | Key action |
-|---|---|---|---|
-| MVP (now) | Fly.io free tier (add payment method) or Render.com | $0 | Add payment method or try Render.com |
-| Growth (200–500 MAU) | Fly.io paid or Browserless.io | $5–$50 | Initiate LinkedIn Partner Program application |
-| Enterprise (1,000+ MAU) | Retire scraper → LinkedIn Official API or CSV import | $0 (API) | Apply for LinkedIn Partner Program now |
+| Phase                   | Recommended hosting                                  | Monthly cost | Key action                                    |
+| ----------------------- | ---------------------------------------------------- | ------------ | --------------------------------------------- |
+| MVP (now)               | Fly.io free tier (add payment method) or Render.com  | $0           | Add payment method or try Render.com          |
+| Growth (200–500 MAU)    | Fly.io paid or Browserless.io                        | $5–$50       | Initiate LinkedIn Partner Program application |
+| Enterprise (1,000+ MAU) | Retire scraper → LinkedIn Official API or CSV import | $0 (API)     | Apply for LinkedIn Partner Program now        |
 
 ---
 

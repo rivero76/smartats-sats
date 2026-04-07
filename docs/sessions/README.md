@@ -3,6 +3,7 @@
 > **Archive note (2026-03-26):** The checkpoint files in this folder were created during the OpenAI Codex era of this project. They are preserved as historical engineering records and should not be deleted.
 >
 > **Current toolchain:** Claude Code. Session continuity is now handled via two mechanisms:
+>
 > 1. **Project memory** (`.claude/projects/*/memory/`) — persistent cross-session context for preferences, decisions, and feedback. Managed automatically by Claude Code.
 > 2. **Checkpoint files** (this folder) — optional explicit snapshots of branch state, progress, and next actions. Create with `make checkpoint` when mid-epic.
 >

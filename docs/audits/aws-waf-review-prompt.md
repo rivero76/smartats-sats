@@ -15,12 +15,12 @@
 
 ## Which Agents to Use
 
-| Scope | Agent |
-|---|---|
-| Full WAF review (all 6 pillars) | `arch-reviewer` |
-| Security pillar deep-dive (RLS, CORS, secrets) | `security-auditor` |
+| Scope                                            | Agent                |
+| ------------------------------------------------ | -------------------- |
+| Full WAF review (all 6 pillars)                  | `arch-reviewer`      |
+| Security pillar deep-dive (RLS, CORS, secrets)   | `security-auditor`   |
 | Convention violations (UPDATE LOG, naming, CORS) | `convention-auditor` |
-| Security + arch together | Run both in parallel |
+| Security + arch together                         | Run both in parallel |
 
 ---
 
@@ -30,7 +30,7 @@
 2. To run with `arch-reviewer` only, copy the prompt block below and paste it as a new message.
 3. To run `arch-reviewer` + `security-auditor` in parallel, start your message with:
    > "Use the arch-reviewer and security-auditor agents in parallel to perform the following review:"
-   then paste the prompt block.
+   > then paste the prompt block.
 4. Save the findings report as `docs/improvements/CODE-REVIEW-YYYY-MM-DD.md`.
 5. Update the `LAST RUN` date above.
 
@@ -51,6 +51,7 @@ findings + recommendations for each.
 Assess the ability to run, monitor, and continuously improve operations.
 
 Key areas to review:
+
 - **Observability:** centralized-logging edge function, `src/lib/centralizedLogger.ts`,
   `log_entries` table, `fetch-logs.sh`, `clean-logs.sh`
 - **Runbooks and incident response:** `docs/runbooks/`, `docs/incidents/`
@@ -60,6 +61,7 @@ Key areas to review:
 - **Change management:** UPDATE LOG headers in modified files (enforced via pre-commit hook)
 
 For each finding, report:
+
 - File path + line number
 - Current state assessment: GOOD / NEEDS IMPROVEMENT / RISK
 - Concrete recommendation
@@ -72,6 +74,7 @@ For each finding, report:
 Assess the ability to protect data, systems, and assets.
 
 Key areas to review:
+
 - **RLS coverage:** every `sats_*` table in `supabase/migrations/` must have RLS policies;
   legacy exceptions: `SATS_resumes`, `document_extractions`, `error_logs`, `profiles`
 - **CORS enforcement:** all edge functions must use `_shared/cors.ts` (`isOriginAllowed` +
@@ -84,6 +87,7 @@ Key areas to review:
 - **Tenant isolation:** confirm RLS prevents cross-user data access on all key tables
 
 For each finding, report:
+
 - File path + line number
 - Violation type (RLS gap / inline CORS / raw payload / secret exposure / wrong status code)
 - Severity: CRITICAL / MAJOR / MINOR
@@ -96,6 +100,7 @@ For each finding, report:
 Assess the ability to recover from failures and meet demand.
 
 Key areas to review:
+
 - **Error handling in edge functions:** config errors → `503`; telemetry must be
   non-blocking (all `logEvent()` / centralized-logging calls in `try/catch`)
 - **Retry logic:** `callLLM()` `retryAttempts` field — is it set appropriately per task?
@@ -114,6 +119,7 @@ Key areas to review:
 Assess the ability to use resources efficiently.
 
 Key areas to review:
+
 - **LLM model tiering:** each task uses the appropriate model via `OPENAI_MODEL_<TASK>` env
   vars — verify in `supabase/functions/_shared/llmProvider.ts` and all edge functions
 - **Token management:** `maxTokens` set per task; no unbounded requests
@@ -133,6 +139,7 @@ Key areas to review:
 Assess the ability to avoid unnecessary costs.
 
 Key areas to review:
+
 - **LLM cost tracking:** `costEstimateUsd` in `LLMResponse` — is it being logged/stored?
 - **Model governance:** check `docs/specs/technical/llm-model-governance.md` — are
   model assignments aligned with task complexity (avoid over-engineering with heavy models)?
@@ -150,6 +157,7 @@ Key areas to review:
 Assess the minimisation of environmental impact.
 
 Key areas to review:
+
 - **Right-sized models per task:** heavier models (`gpt-4.1`) only for high-stakes tasks
   (ATS scoring); lighter models (`gpt-4.1-mini`) for enrichment, roadmaps, LinkedIn parse
 - **Async offloading:** is sync compute minimised on the hot path?

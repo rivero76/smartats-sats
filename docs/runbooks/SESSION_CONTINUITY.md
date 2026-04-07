@@ -13,10 +13,10 @@ Maintain deterministic handoff between sessions by relying on repository artifac
 
 Claude Code uses two complementary mechanisms:
 
-| Mechanism | Where | What it holds |
-| --- | --- | --- |
-| **Project memory** | `.claude/projects/*/memory/` | User preferences, feedback, project decisions, references — persists across all conversations |
-| **Session checkpoints** | `docs/sessions/*.md` | Snapshot of branch state, what was done, what is next — written manually or via `make checkpoint` |
+| Mechanism               | Where                        | What it holds                                                                                     |
+| ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Project memory**      | `.claude/projects/*/memory/` | User preferences, feedback, project decisions, references — persists across all conversations     |
+| **Session checkpoints** | `docs/sessions/*.md`         | Snapshot of branch state, what was done, what is next — written manually or via `make checkpoint` |
 
 For short sessions where only code changes are made, project memory is sufficient. For multi-session epics (e.g. a full plan like P14 or P19), write an explicit checkpoint so the next session can resume without re-reading history.
 
