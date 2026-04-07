@@ -68,12 +68,14 @@ order by tablename, policyname;
 Treat any non-empty result from sections A/B/C as release-blocking.
 
 For section D:
+
 - valid only when table is intentionally read-only for end users;
 - otherwise add/adjust `WITH CHECK`.
 
 ## Operations Note
 
 After every security migration:
+
 1. Run `supabase db push`.
 2. Re-run Supabase Security Advisor.
 3. Store query output in `docs/security/` with date stamp if changes touched RLS.

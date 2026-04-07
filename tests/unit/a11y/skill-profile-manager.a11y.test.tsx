@@ -70,6 +70,10 @@ vi.mock('@/hooks/useSkillProfile', () => ({
     isLoading: false,
     error: null,
   }),
+  useUpdateCertificationStatus: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
   useDeleteSkillProfile: () => ({
     mutate: vi.fn(),
     isPending: false,

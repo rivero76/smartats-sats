@@ -3,6 +3,9 @@
  * 2026-03-30 10:00:00 | P25 S3 — TanStack Query hook for sats_skill_profiles CRUD.
  *   Provides useSkillProfile (query), useSaveSkillProfiles (upsert mutation),
  *   and useDeleteSkillProfile (delete mutation).
+ * 2026-04-05 20:00:00 | P26 S3-1 — Add certification_status + certification_expected_date to
+ *   SkillProfile interface. Add useUpdateCertificationStatus mutation for marking certs as
+ *   held / in_progress / planned from the SkillProfileManager UI.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -26,6 +29,9 @@ export interface SkillProfile {
   user_context: string | null
   source_experience_ids: string[]
   ai_classification_version: string | null
+  // P26 S0-6 — certification tracking
+  certification_status: 'held' | 'in_progress' | 'planned' | null
+  certification_expected_date: string | null
   created_at: string
   updated_at: string
 }
@@ -122,6 +128,53 @@ export const useSaveSkillProfiles = () => {
       toast({
         variant: 'destructive',
         title: 'Could not save skill profile',
+        description: error.message,
+      })
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Mutation — update certification status (P26 S3-1)
+// ---------------------------------------------------------------------------
+
+export const useUpdateCertificationStatus = () => {
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      skillName,
+      certificationStatus,
+      certificationExpectedDate,
+    }: {
+      skillName: string
+      certificationStatus: 'held' | 'in_progress' | 'planned' | null
+      certificationExpectedDate: string | null
+    }): Promise<void> => {
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase
+        .from('sats_skill_profiles')
+        .update({
+          certification_status: certificationStatus,
+          certification_expected_date: certificationExpectedDate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('skill_name', skillName.toLowerCase().trim())
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skill-profiles', user?.id] })
+      toast({ title: 'Certification status updated' })
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Could not update certification status',
         description: error.message,
       })
     },

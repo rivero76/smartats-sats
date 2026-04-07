@@ -1,29 +1,37 @@
 # Session Checkpoint
 
 ## Goal
-- 
+
+-
 
 ## Completed
-- 
+
+-
 
 ## In Progress
-- 
+
+-
 
 ## Blockers
-- 
+
+-
 
 ## Decisions
-- 
+
+-
 
 ## Files Changed
-- 
+
+-
 
 ## Next Actions
-1. 
-2. 
-3. 
+
+1.
+2.
+3.
 
 ## Resume Prompt
+
 Use this to resume in a new AI session:
 
 ```text

@@ -24,7 +24,7 @@ export const HelpButton = ({
       variant={variant}
       size={size}
       onClick={onClick}
-      aria-label={size === 'icon' ? (tooltip || 'Help') : undefined}
+      aria-label={size === 'icon' ? tooltip || 'Help' : undefined}
       className={`text-muted-foreground hover:text-foreground transition-colors ${className}`}
     >
       <HelpCircle className="h-4 w-4" />

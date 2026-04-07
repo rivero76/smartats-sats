@@ -143,7 +143,12 @@ function PersonaFormDialog({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isSaving}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSaving}>
@@ -215,7 +220,9 @@ export function PersonaManager() {
             <div className="flex items-center space-x-2">
               <IdCard className="h-5 w-5" />
               <div>
-                <h2 className="text-2xl font-semibold leading-none tracking-tight">My Resume Profiles</h2>
+                <h2 className="text-2xl font-semibold leading-none tracking-tight">
+                  My Resume Profiles
+                </h2>
                 <CardDescription className="mt-1">
                   Resume profiles let you tailor your ATS scoring and keyword emphasis per role
                   family. Create a profile for each type of position you apply to.
@@ -310,7 +317,9 @@ export function PersonaManager() {
       {/* Edit Dialog */}
       <PersonaFormDialog
         open={!!editingPersona}
-        onOpenChange={(open) => { if (!open) setEditingPersona(null) }}
+        onOpenChange={(open) => {
+          if (!open) setEditingPersona(null)
+        }}
         title="Edit Resume Profile"
         description="Update this profile's details."
         initialValues={editInitialValues}
@@ -321,7 +330,9 @@ export function PersonaManager() {
       {/* Delete Confirmation */}
       <AlertDialog
         open={!!deletingPersonaId}
-        onOpenChange={(open) => { if (!open) setDeletingPersonaId(null) }}
+        onOpenChange={(open) => {
+          if (!open) setDeletingPersonaId(null)
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

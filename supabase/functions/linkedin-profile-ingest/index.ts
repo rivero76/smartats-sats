@@ -3,6 +3,8 @@
  * 2026-02-25 17:20:00 | P13 Story 1: Added LinkedIn profile ingest edge function with mock provider payload and schema-locked LLM normalization.
  * 2026-03-01 00:00:00 | P13 Story 1 (fix): Replaced mockLinkedinProviderPayload() with real HTTP call to Playwright scraper service. Added PLAYWRIGHT_SERVICE_URL + PLAYWRIGHT_API_KEY env vars. Added PlaywrightServiceError class. Removed mock function.
  * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
+ * 2026-04-07 00:00:00 | P28 S7 — Forward certifications and recommendation_count from scraper;
+ *   update LINKEDIN_NORMALIZATION_SCHEMA to include certifications array in output.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -54,9 +56,16 @@ interface LinkedInRawProfile {
     description: string
     skills_used?: string[]
   }>
+  certifications?: Array<{ name: string; issuing_org: string; issued_date?: string }>
+  recommendation_count?: number
 }
 
 interface NormalizedLinkedinData {
+  normalized_certifications?: Array<{
+    name: string
+    issuing_org: string
+    issued_date: string | null
+  }>
   normalized_skills: Array<{
     skill_name: string
     proficiency_level: 'beginner' | 'intermediate' | 'advanced' | null
@@ -186,6 +195,8 @@ async function fetchLinkedInProfile(
       end_date?: string | null
       description: string
     }>
+    certifications?: Array<{ name: string; issuing_org: string; issued_date?: string }>
+    recommendation_count?: number
   }
 
   return {
@@ -197,6 +208,9 @@ async function fetchLinkedInProfile(
     },
     skills: Array.isArray(scraped.skills) ? scraped.skills : [],
     experiences: Array.isArray(scraped.experiences) ? scraped.experiences : [],
+    certifications: Array.isArray(scraped.certifications) ? scraped.certifications : undefined,
+    recommendation_count:
+      typeof scraped.recommendation_count === 'number' ? scraped.recommendation_count : undefined,
   }
 }
 
@@ -207,6 +221,19 @@ const LINKEDIN_NORMALIZATION_SCHEMA = {
   additionalProperties: false,
   required: ['normalized_skills', 'normalized_skill_experiences'],
   properties: {
+    normalized_certifications: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'issuing_org'],
+        properties: {
+          name: { type: 'string' },
+          issuing_org: { type: 'string' },
+          issued_date: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        },
+      },
+    },
     normalized_skills: {
       type: 'array',
       minItems: 1,
@@ -291,6 +318,8 @@ Rules:
 - Set "import_date" to "${input.importDateIso}" for every row.
 - Provide at least 1 skill and 1 skill-experience row.
 - Prefer evidence-grounded skill_name values.
+- If certifications are present in the input, normalize them into normalized_certifications.
+  Omit normalized_certifications entirely if no certifications data is provided.
 
 Input LinkedIn URL:
 ${input.linkedinUrl}
@@ -582,6 +611,7 @@ serve(async (req) => {
         linkedin_url: linkedinUrl,
         provider_payload: rawProviderPayload,
         normalized_preview: normalizationResult.normalized,
+        recommendation_count: rawProviderPayload.recommendation_count ?? null,
         metadata: {
           model: normalizationResult.modelUsed,
           token_usage: normalizationResult.tokenUsage || null,

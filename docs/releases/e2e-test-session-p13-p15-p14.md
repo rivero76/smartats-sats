@@ -7,6 +7,7 @@
 Run these sessions in order. Each session depends on data created in the previous one.
 
 **Pre-conditions (all sessions):**
+
 - App running (local: `npm run dev`, or production URL)
 - Authenticated as a test user with at least one uploaded resume
 - Supabase project `nkgscksbgmzhizohobhg` accessible
@@ -156,10 +157,12 @@ Run these sessions in order. Each session depends on data created in the previou
 ## Recording Results
 
 For each session, update `docs/releases/UNTESTED_IMPLEMENTATIONS.md`:
+
 - Change status from `CODE-VERIFIED — runtime E2E pending` to closed
 - Fill in the Closure Template row with date, evidence (SQL query result screenshot or log snippet), and your name
 
 Example closure entry:
+
 ```
 | 2026-03-17 | P15 Story 1 (schema) | Applied to project nkgscksbgmzhizohobhg; sats_learning_roadmaps row created, RLS blocks cross-user query | [your name] |
 ```

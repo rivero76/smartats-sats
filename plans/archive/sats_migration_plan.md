@@ -2,6 +2,7 @@
 <!-- Completed: 2026-03-27 — All 6 stages (21 migrations) applied. Moved to plans/archive/. -->
 
 # SmartATS (SATS) — Database Migration Plan
+
 ## MVP → Enterprise Stage
 
 **Prepared from:** Diagnostic scan dated 2026-03-27, latest migration `20260317160000`  
@@ -17,6 +18,7 @@ may reference a table introduced in an earlier one. Never skip a stage unless co
 from your current schema.
 
 **Stage labels:**
+
 - **MVP** — Must exist before any real user or customer touches the system
 - **Growth** — Required before first paying customer or enterprise pilot
 - **Enterprise** — Required before regulated industry customers (healthcare, finance, legal)
@@ -24,6 +26,7 @@ from your current schema.
 - **Global** — Multi-currency, multi-language, internationalisation
 
 **Each migration block contains:**
+
 1. What it creates / modifies and why
 2. The SQL to run
 3. The RLS policy to add (if applicable)
@@ -31,6 +34,7 @@ from your current schema.
 5. Post-migration verification query
 
 **Current baseline confirmed in scan:**
+
 - 37 tables, all with RLS enabled
 - `created_at` on 100% of tables
 - `updated_at` on 73% of tables
@@ -112,6 +116,7 @@ $$;
 ```
 
 **Attach to a table (repeat for each table that gains audit columns):**
+
 ```sql
 -- Pattern — substitute <table_name>
 CREATE TRIGGER trg_audit_<table_name>
@@ -120,6 +125,7 @@ CREATE TRIGGER trg_audit_<table_name>
 ```
 
 **Verification:**
+
 ```sql
 SELECT routine_name FROM information_schema.routines
 WHERE routine_schema = 'public' AND routine_name = 'set_audit_fields';
@@ -229,6 +235,7 @@ ALTER TABLE public.document_extractions
 ```
 
 **Attach audit triggers (run once per table):**
+
 ```sql
 -- Repeat this block for each table listed above
 -- Example for sats_resumes:
@@ -246,6 +253,7 @@ CREATE TRIGGER trg_audit_sats_resumes
 ```
 
 **Verification:**
+
 ```sql
 SELECT table_name
 FROM information_schema.columns
@@ -260,7 +268,7 @@ ORDER BY table_name;
 ## 1.2 — Add `deleted_by` to All Soft-Delete Tables
 
 Only tables that already have `deleted_at` need `deleted_by`.
-Without it, you know *when* a record was deleted but not *who*.
+Without it, you know _when_ a record was deleted but not _who_.
 
 ```sql
 -- Migration: 20260318110000_stage1_add_deleted_by.sql
@@ -306,6 +314,7 @@ ALTER TABLE public.work_experiences
 ```
 
 **Update soft-delete RPCs to populate `deleted_by`:**
+
 ```sql
 -- Pattern — update existing soft-delete functions to also set deleted_by
 -- Example patch for soft_delete_enriched_experience():
@@ -362,6 +371,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_active
 ```
 
 **Update existing RLS policies to exclude soft-deleted rows:**
+
 ```sql
 -- For each table that gains deleted_at, add this guard to SELECT policies
 -- Example for sats_learning_roadmaps:
@@ -392,6 +402,7 @@ ALTER TABLE public.sats_learning_roadmaps ADD COLUMN IF NOT EXISTS version INT N
 ```
 
 **Verification:**
+
 ```sql
 SELECT table_name, column_name, column_default
 FROM information_schema.columns
@@ -469,25 +480,27 @@ CREATE POLICY "Service role inserts LLM logs"
 ```
 
 **Edge function integration — add to `llmProvider.ts` after each successful call:**
+
 ```typescript
 // Add to LLMResponse handler in llmProvider.ts
 // After getting a response, fire-and-forget to DB:
 await supabaseAdmin.from('llm_call_logs').insert({
-  user_id:           userId,          // pass from calling function
-  function_name:     functionName,    // pass from calling function
-  model_provider:    'openai',
-  model_id:          response.modelUsed,
-  prompt_tokens:     response.promptTokens,
+  user_id: userId, // pass from calling function
+  function_name: functionName, // pass from calling function
+  model_provider: 'openai',
+  model_id: response.modelUsed,
+  prompt_tokens: response.promptTokens,
   completion_tokens: response.completionTokens,
-  cost_usd:          response.costEstimateUsd,
-  duration_ms:       response.durationMs,
-  finish_reason:     response.finishReason ?? 'stop',
-  run_id:            context.runId ?? null,
-  analysis_id:       context.analysisId ?? null,
-});
+  cost_usd: response.costEstimateUsd,
+  duration_ms: response.durationMs,
+  finish_reason: response.finishReason ?? 'stop',
+  run_id: context.runId ?? null,
+  analysis_id: context.analysisId ?? null,
+})
 ```
 
 **Verification:**
+
 ```sql
 SELECT COUNT(*) FROM public.llm_call_logs;
 -- Run one analysis, then check count > 0
@@ -500,6 +513,7 @@ SELECT COUNT(*) FROM public.llm_call_logs;
 # STAGE 2 — Growth: RBAC Infrastructure
 
 **Why now:** The current `['user', 'admin']` static enum cannot support:
+
 - P17 (BYOK — bring-your-own-key) requiring scoped API access
 - P16 (persona management) requiring role-gated features
 - Any enterprise customer needing custom access tiers
@@ -631,6 +645,7 @@ CREATE POLICY "Admins can manage role assignments"
 ```
 
 **Helper function — check permission in RLS policies and edge functions:**
+
 ```sql
 CREATE OR REPLACE FUNCTION has_permission(p_resource TEXT, p_action TEXT, p_scope TEXT DEFAULT 'own')
 RETURNS BOOLEAN
@@ -652,6 +667,7 @@ $$;
 ```
 
 **Migration note — backfill existing `user_roles` data:**
+
 ```sql
 -- Migrate existing user_roles.role enum values into user_role_assignments
 INSERT INTO public.user_role_assignments (user_id, role_id)
@@ -666,6 +682,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 ```
 
 **Verification:**
+
 ```sql
 SELECT r.slug, COUNT(rp.permission_id) AS permissions_count
 FROM public.roles r
@@ -795,6 +812,7 @@ CREATE POLICY "No deletes allowed on audit_logs"
 ```
 
 **Generic audit trigger to auto-log changes to any table:**
+
 ```sql
 CREATE OR REPLACE FUNCTION log_audit_event()
 RETURNS TRIGGER
@@ -1014,6 +1032,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant          ON public.audit_logs (
 ```
 
 **Activate tenant-scoped RLS (run when multi-tenancy goes live, not before):**
+
 ```sql
 -- Pattern for each table — replace user_id = auth.uid() with tenant_id check
 -- Only activate once the app sets app.current_tenant_id in middleware
@@ -1284,6 +1303,7 @@ CREATE POLICY "Users access chunks from their sources"
 ```
 
 **Semantic search function (used by edge functions):**
+
 ```sql
 CREATE OR REPLACE FUNCTION search_document_chunks(
   query_embedding     VECTOR(1536),
@@ -1715,29 +1735,29 @@ CREATE POLICY "Service role manages rate limits"
 
 # Summary: Migration Execution Order
 
-| Order | Migration File | Stage | Priority |
-|-------|---------------|-------|----------|
-| 1 | `20260318000000_universal_audit_trigger.sql` | MVP | Critical |
-| 2 | `20260318100000_stage1_add_created_by_updated_by.sql` | MVP | Critical |
-| 3 | `20260318110000_stage1_add_deleted_by.sql` | MVP | Critical |
-| 4 | `20260318120000_stage1_add_missing_deleted_at.sql` | MVP | Critical |
-| 5 | `20260318130000_stage1_add_version_column.sql` | MVP | High |
-| 6 | `20260318140000_stage1_llm_call_logs.sql` | MVP | Critical |
-| 7 | `20260319100000_stage2_rbac_tables.sql` | Growth | Critical |
-| 8 | `20260319110000_stage2_api_keys.sql` | Growth | High |
-| 9 | `20260319120000_stage2_unified_audit_logs.sql` | Growth | Critical |
-| 10 | `20260320100000_stage3_tenants_table.sql` | Enterprise | High |
-| 11 | `20260320110000_stage3_plans_subscriptions.sql` | Enterprise | High |
-| 12 | `20260320120000_stage3_add_tenant_id.sql` | Enterprise | High |
-| 13 | `20260321100000_stage4_multi_currency.sql` | Global | Medium |
-| 14 | `20260321110000_stage4_i18n.sql` | Global | Medium |
-| 15 | `20260322100000_stage5_pgvector_knowledge_base.sql` | AI/RAG | High |
-| 16 | `20260322110000_stage5_ai_agent_infrastructure.sql` | AI/RAG | High |
-| 17 | `20260322120000_stage5_agent_orchestration.sql` | AI/RAG | Medium |
-| 18 | `20260322130000_stage5_prompt_templates.sql` | AI/RAG | Medium |
-| 19 | `20260323100000_stage6_idempotency.sql` | Modern API | Medium |
-| 20 | `20260323110000_stage6_outbox_events.sql` | Modern API | Medium |
-| 21 | `20260323120000_stage6_rate_limits.sql` | Modern API | Low |
+| Order | Migration File                                        | Stage      | Priority |
+| ----- | ----------------------------------------------------- | ---------- | -------- |
+| 1     | `20260318000000_universal_audit_trigger.sql`          | MVP        | Critical |
+| 2     | `20260318100000_stage1_add_created_by_updated_by.sql` | MVP        | Critical |
+| 3     | `20260318110000_stage1_add_deleted_by.sql`            | MVP        | Critical |
+| 4     | `20260318120000_stage1_add_missing_deleted_at.sql`    | MVP        | Critical |
+| 5     | `20260318130000_stage1_add_version_column.sql`        | MVP        | High     |
+| 6     | `20260318140000_stage1_llm_call_logs.sql`             | MVP        | Critical |
+| 7     | `20260319100000_stage2_rbac_tables.sql`               | Growth     | Critical |
+| 8     | `20260319110000_stage2_api_keys.sql`                  | Growth     | High     |
+| 9     | `20260319120000_stage2_unified_audit_logs.sql`        | Growth     | Critical |
+| 10    | `20260320100000_stage3_tenants_table.sql`             | Enterprise | High     |
+| 11    | `20260320110000_stage3_plans_subscriptions.sql`       | Enterprise | High     |
+| 12    | `20260320120000_stage3_add_tenant_id.sql`             | Enterprise | High     |
+| 13    | `20260321100000_stage4_multi_currency.sql`            | Global     | Medium   |
+| 14    | `20260321110000_stage4_i18n.sql`                      | Global     | Medium   |
+| 15    | `20260322100000_stage5_pgvector_knowledge_base.sql`   | AI/RAG     | High     |
+| 16    | `20260322110000_stage5_ai_agent_infrastructure.sql`   | AI/RAG     | High     |
+| 17    | `20260322120000_stage5_agent_orchestration.sql`       | AI/RAG     | Medium   |
+| 18    | `20260322130000_stage5_prompt_templates.sql`          | AI/RAG     | Medium   |
+| 19    | `20260323100000_stage6_idempotency.sql`               | Modern API | Medium   |
+| 20    | `20260323110000_stage6_outbox_events.sql`             | Modern API | Medium   |
+| 21    | `20260323120000_stage6_rate_limits.sql`               | Modern API | Low      |
 
 ---
 

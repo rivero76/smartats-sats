@@ -41,7 +41,10 @@ export const useResumePersonas = () => {
   return useQuery({
     queryKey: ['resume-personas'],
     queryFn: async (): Promise<ResumePersona[]> => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
       if (authError || !user) throw new Error('Not authenticated')
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,7 +68,10 @@ export const useCreatePersona = () => {
 
   return useMutation({
     mutationFn: async (input: CreatePersonaData): Promise<ResumePersona> => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
       if (authError || !user) throw new Error('Not authenticated')
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -6,12 +6,22 @@
  * 2026-03-18 | CR1-3: Extract proactive match threshold 0.6 to DEFAULT_PROACTIVE_MATCH_THRESHOLD constant; override via SATS_PROACTIVE_MATCH_THRESHOLD env var.
  * 2026-03-28 | Fix: serialize PostgrestError objects properly (they are not Error instances, so String(error) returned "[object Object]").
  * 2026-03-29 | Fix: getUserThresholdMap only populates map for users with explicit per-user threshold. Previously it stored DEFAULT_PROACTIVE_MATCH_THRESHOLD (0.6) for null-threshold users, making globalThreshold from sats_runtime_settings unreachable.
+ * 2026-04-05 01:00:00 | Fix: populate company_id and location_id on sats_job_descriptions when
+ *   creating JD rows from staged jobs. Previously these were left null, causing /jobs to show
+ *   "No company / No location" for email-ingested jobs. Now upserts company by name into
+ *   sats_companies and parses location_raw into sats_locations before JD insert.
  * 2026-03-30 10:00:00 | P25 S5 — Weighted skill context injection. Batch-reads sats_skill_profiles +
  *   sats_skill_decay_config once per scorer run. Per-user weighted text block appended to buildPrompt()
  *   via weightedSkillContext param. Falls back silently when no profile exists for a user.
  * 2026-03-30 11:00:00 | PROD-9–12 note: Resume Intelligence (Call 3) runs only in ats-analysis-direct
  *   (interactive flow). Batch-scored analyses intentionally store null for format_audit,
  *   geography_passport, industry_lens, and cultural_tone to preserve batch throughput.
+ * 2026-04-05 19:00:00 | P26 S1-1 — Add extractJobSignals() step. After per-user scoring, each
+ *   staged job is LLM-parsed (gpt-4.1-mini) for certifications, tools, methodologies, seniority_band,
+ *   and salary. market_code is derived from location_raw via keyword matching. role_family_id is
+ *   matched from the job title against the sats_role_families aliases lookup table. Results are
+ *   merged into the sats_staged_jobs status update. Idempotent: skipped if structured_extracted_at
+ *   is already set.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -26,6 +36,8 @@ import {
 } from '../_shared/skillDecay.ts'
 
 const OPENAI_MODEL_ATS = Deno.env.get('OPENAI_MODEL_ATS') || 'gpt-4.1'
+// Cheap model for structured extraction — one call per staged job
+const OPENAI_MODEL_EXTRACTION = Deno.env.get('OPENAI_MODEL_ENRICH') || 'gpt-4.1-mini'
 const OPENAI_MODEL_ATS_FALLBACK = Deno.env.get('OPENAI_MODEL_ATS_FALLBACK') || 'gpt-4o-mini'
 const OPENAI_TEMPERATURE_ATS = getEnvNumber('OPENAI_TEMPERATURE_ATS', 0.1)
 const OPENAI_MAX_TOKENS_ATS = Math.max(500, Math.floor(getEnvNumber('OPENAI_MAX_TOKENS_ATS', 1800)))
@@ -113,7 +125,152 @@ type StagedJob = {
   source_url: string
   title: string
   company_name: string | null
+  location_raw: string | null
   description_raw: string
+  structured_extracted_at: string | null
+}
+
+// ─── Job Signal Extraction (P26 S1-1) ────────────────────────────────────────
+
+const JOB_SIGNALS_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'certifications',
+    'tools',
+    'methodologies',
+    'seniority_band',
+    'salary_min',
+    'salary_max',
+    'salary_currency',
+  ],
+  properties: {
+    certifications: { type: 'array', items: { type: 'string' } },
+    tools: { type: 'array', items: { type: 'string' } },
+    methodologies: { type: 'array', items: { type: 'string' } },
+    seniority_band: {
+      anyOf: [
+        { type: 'string', enum: ['junior', 'mid', 'senior', 'lead', 'director', 'executive'] },
+        { type: 'null' },
+      ],
+    },
+    salary_min: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+    salary_max: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+    salary_currency: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+  },
+}
+
+type JobSignals = {
+  certifications: string[]
+  tools: string[]
+  methodologies: string[]
+  seniority_band: string | null
+  salary_min: number | null
+  salary_max: number | null
+  salary_currency: string | null
+}
+
+type RoleFamily = {
+  id: string
+  name: string
+  aliases: string[]
+}
+
+/** Derive a 2-letter market code from a raw location string using keyword matching. */
+function deriveMarketCode(locationRaw: string | null): string | null {
+  if (!locationRaw) return null
+  const loc = locationRaw.toLowerCase()
+
+  // Order matters: more specific terms before broader country names
+  if (/\b(auckland|wellington|christchurch|hamilton|dunedin|new zealand|nz)\b/.test(loc))
+    return 'nz'
+  if (/\b(sydney|melbourne|brisbane|perth|adelaide|canberra|australia|aus)\b/.test(loc)) return 'au'
+  if (
+    /\b(london|manchester|birmingham|leeds|edinburgh|glasgow|united kingdom|uk|england|scotland|wales)\b/.test(
+      loc
+    )
+  )
+    return 'uk'
+  if (/\b(são paulo|sao paulo|rio de janeiro|belo horizonte|curitiba|brasil|brazil|br)\b/.test(loc))
+    return 'br'
+  if (
+    /\b(new york|san francisco|los angeles|chicago|seattle|boston|austin|usa|united states)\b/.test(
+      loc
+    )
+  )
+    return 'us'
+
+  return null
+}
+
+/** Match a job title to a role family using alias containment (case-insensitive). */
+function matchRoleFamily(title: string, families: RoleFamily[]): string | null {
+  const titleLower = title.toLowerCase()
+  for (const family of families) {
+    for (const alias of family.aliases) {
+      const aliasLower = alias.toLowerCase()
+      // Match if the title contains the alias OR the alias contains the title
+      if (titleLower.includes(aliasLower) || aliasLower.includes(titleLower)) {
+        return family.id
+      }
+    }
+  }
+  return null
+}
+
+/** Fetch all role families for client-side title matching. Called once per scorer run. */
+async function fetchRoleFamilies(supabase: ReturnType<typeof createClient>): Promise<RoleFamily[]> {
+  const { data, error } = await supabase.from('sats_role_families').select('id, name, aliases')
+
+  if (error) {
+    console.warn('[async-ats-scorer] Failed to fetch role families:', String(error))
+    return []
+  }
+  return (data ?? []) as RoleFamily[]
+}
+
+/**
+ * Extract structured signals from a staged job using gpt-4.1-mini.
+ * Returns null if extraction fails — caller decides whether to surface the error.
+ * Idempotent guard: caller should check structured_extracted_at before calling.
+ */
+async function extractJobSignals(
+  job: StagedJob,
+  roleFamilies: RoleFamily[]
+): Promise<(JobSignals & { market_code: string | null; role_family_id: string | null }) | null> {
+  try {
+    const llmResult = await callLLM({
+      systemPrompt:
+        'You are a job posting parser. Extract structured requirements from job descriptions. Return JSON only. For salary, extract numeric values and currency code. For seniority, map to: junior, mid, senior, lead, director, or executive. Return null for missing fields.',
+      userPrompt: `Job title: ${job.title}\n\nJob description:\n${job.description_raw.slice(0, 8000)}`,
+      modelCandidates: [OPENAI_MODEL_EXTRACTION],
+      jsonSchema: JOB_SIGNALS_JSON_SCHEMA,
+      schemaName: 'job_signals',
+      temperature: 0,
+      maxTokens: 800,
+      retryAttempts: 1,
+      taskLabel: 'job-signal-extraction',
+    })
+
+    const parsed: JobSignals = JSON.parse(llmResult.rawContent)
+    const marketCode = deriveMarketCode(job.location_raw)
+    const roleFamilyId = matchRoleFamily(job.title, roleFamilies)
+
+    return {
+      certifications: Array.isArray(parsed.certifications) ? parsed.certifications : [],
+      tools: Array.isArray(parsed.tools) ? parsed.tools : [],
+      methodologies: Array.isArray(parsed.methodologies) ? parsed.methodologies : [],
+      seniority_band: parsed.seniority_band ?? null,
+      salary_min: parsed.salary_min ?? null,
+      salary_max: parsed.salary_max ?? null,
+      salary_currency: parsed.salary_currency ?? null,
+      market_code: marketCode,
+      role_family_id: roleFamilyId,
+    }
+  } catch (err) {
+    console.warn(`[async-ats-scorer] extractJobSignals failed for job ${job.id}:`, String(err))
+    return null
+  }
 }
 
 type ResumeRow = {
@@ -537,7 +694,9 @@ serve(async (req) => {
   try {
     const { data: queuedJobs, error: jobsError } = await supabase
       .from('sats_staged_jobs')
-      .select('id, source, source_url, title, company_name, description_raw')
+      .select(
+        'id, source, source_url, title, company_name, location_raw, description_raw, structured_extracted_at'
+      )
       .eq('status', 'queued')
       .order('fetched_at', { ascending: true })
       .limit(SCORER_BATCH_JOBS)
@@ -564,9 +723,10 @@ serve(async (req) => {
     }
 
     const latestResumes = await getLatestResumesByUser(supabase)
-    const [globalThreshold, skillDecayConfigs] = await Promise.all([
+    const [globalThreshold, skillDecayConfigs, roleFamilies] = await Promise.all([
       getGlobalThresholdDefault(supabase),
       fetchSkillDecayConfig(supabase),
+      fetchRoleFamilies(supabase),
     ])
     const userIds = Array.from(new Set(latestResumes.map((resume) => resume.user_id)))
     const [userThresholdMap, skillProfilesByUser] = await Promise.all([
@@ -589,6 +749,64 @@ serve(async (req) => {
 
           const jobName = `${job.title}${job.company_name ? ` @ ${job.company_name}` : ''}`
 
+          // Resolve company FK — upsert by lowercase name
+          let companyId: string | null = null
+          if (job.company_name && job.company_name !== 'Unknown') {
+            const { data: existingCompany } = await supabase
+              .from('sats_companies')
+              .select('id')
+              .ilike('name', job.company_name)
+              .limit(1)
+              .single()
+
+            if (existingCompany) {
+              companyId = existingCompany.id
+            } else {
+              const { data: newCompany } = await supabase
+                .from('sats_companies')
+                .insert({ name: job.company_name })
+                .select('id')
+                .single()
+              companyId = newCompany?.id ?? null
+            }
+          }
+
+          // Resolve location FK — parse "City, State (WorkType)" or "City, Country"
+          let locationId: string | null = null
+          if (job.location_raw) {
+            // Strip work type suffix: "(Hybrid)", "(On-site)", "(Remote)", "(Contract)"
+            const rawClean = job.location_raw.replace(/\s*\([^)]+\)\s*$/, '').trim()
+            const parts = rawClean
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+            const city = parts[0] ?? null
+            const second = parts[1] ?? null
+            // Heuristic: if second part is 2-3 chars it's a state code, otherwise it's a country
+            const isStateCode = second && second.length <= 3
+            const state = isStateCode ? second : null
+            const country = isStateCode ? null : second
+
+            const { data: existingLoc } = await supabase
+              .from('sats_locations')
+              .select('id')
+              .eq('city', city ?? '')
+              .is(state ? 'state' : 'country', state ?? country)
+              .limit(1)
+              .single()
+
+            if (existingLoc) {
+              locationId = existingLoc.id
+            } else {
+              const { data: newLoc } = await supabase
+                .from('sats_locations')
+                .insert({ city, state, country })
+                .select('id')
+                .single()
+              locationId = newLoc?.id ?? null
+            }
+          }
+
           const { data: jdRow, error: jdError } = await supabase
             .from('sats_job_descriptions')
             .upsert(
@@ -599,6 +817,8 @@ serve(async (req) => {
                 source_type: 'url',
                 source_url: job.source_url,
                 proactive_staged_job_id: job.id,
+                company_id: companyId,
+                location_id: locationId,
               },
               {
                 onConflict: 'user_id,proactive_staged_job_id',
@@ -754,6 +974,14 @@ serve(async (req) => {
 
       processedJobs += 1
 
+      // ── Structured signal extraction (P26 S1-1) ──────────────────────────
+      // Run once per job, after all user analyses are scored.
+      // Skipped if already extracted (idempotent). Failure is non-fatal.
+      let extractedSignals: Awaited<ReturnType<typeof extractJobSignals>> = null
+      if (!job.structured_extracted_at) {
+        extractedSignals = await extractJobSignals(job, roleFamilies)
+      }
+
       const { error: stageUpdateError } = await supabase
         .from('sats_staged_jobs')
         .update({
@@ -762,6 +990,21 @@ serve(async (req) => {
             jobFailed && jobScoreCount === 0
               ? `No analyses produced. Last error: ${lastError || 'unknown error'}`
               : null,
+          // Include extraction fields if extraction succeeded this run
+          ...(extractedSignals !== null
+            ? {
+                certifications: extractedSignals.certifications,
+                tools: extractedSignals.tools,
+                methodologies: extractedSignals.methodologies,
+                seniority_band: extractedSignals.seniority_band,
+                salary_min: extractedSignals.salary_min,
+                salary_max: extractedSignals.salary_max,
+                salary_currency: extractedSignals.salary_currency,
+                market_code: extractedSignals.market_code,
+                role_family_id: extractedSignals.role_family_id,
+                structured_extracted_at: new Date().toISOString(),
+              }
+            : {}),
         })
         .eq('id', job.id)
 

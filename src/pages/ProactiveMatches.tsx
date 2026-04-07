@@ -1,5 +1,8 @@
-// Updated: 2026-03-01 00:00:00 - Added HelpButton and HelpModal for contextual user guide.
-// Updated: 2026-03-01 00:00:00 - Added Beta badge to page header to reflect validation status.
+/**
+ * UPDATE LOG
+ * 2026-03-01 00:00:00 | Added HelpButton and HelpModal for contextual user guide.
+ * 2026-03-01 00:00:00 | Added Beta badge to page header to reflect validation status.
+ */
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -79,11 +82,15 @@ const ProactiveMatches = () => {
     if (!breakdown || typeof breakdown !== 'object') return null
     const b = breakdown as Record<string, unknown>
     return {
-      skillsAlignment: typeof b.skills_alignment === 'number' ? Math.round(b.skills_alignment * 100) : null,
+      skillsAlignment:
+        typeof b.skills_alignment === 'number' ? Math.round(b.skills_alignment * 100) : null,
       experienceRelevance:
-        typeof b.experience_relevance === 'number' ? Math.round(b.experience_relevance * 100) : null,
+        typeof b.experience_relevance === 'number'
+          ? Math.round(b.experience_relevance * 100)
+          : null,
       domainFit: typeof b.domain_fit === 'number' ? Math.round(b.domain_fit * 100) : null,
-      formatQuality: typeof b.format_quality === 'number' ? Math.round(b.format_quality * 100) : null,
+      formatQuality:
+        typeof b.format_quality === 'number' ? Math.round(b.format_quality * 100) : null,
     }
   }
 
@@ -158,7 +165,9 @@ const ProactiveMatches = () => {
               <Card key={match.id} className="transition-shadow hover:shadow-md">
                 <CardHeader className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-lg">{match.job_description?.name || 'Untitled Job'}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {match.job_description?.name || 'Untitled Job'}
+                    </CardTitle>
                     <Badge className={score >= 80 ? 'bg-green-600' : 'bg-blue-600'}>
                       <Target className="mr-1 h-3 w-3" />
                       {score}%

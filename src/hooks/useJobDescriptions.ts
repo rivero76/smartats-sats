@@ -1,3 +1,7 @@
+/**
+ * UPDATE LOG
+ * 2026-04-07 00:00:00 | Add UPDATE LOG header (convention compliance).
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
@@ -69,7 +73,9 @@ const normalizeField = (value: string | null | undefined): string | null => {
 }
 
 const normalizeCompanyInput = (value: string): string => {
-  return normalizeField(value)?.replace(/\s+(inc\.?|llc|corp\.?|ltd\.?|co\.?)$/i, '') || value.trim()
+  return (
+    normalizeField(value)?.replace(/\s+(inc\.?|llc|corp\.?|ltd\.?|co\.?)$/i, '') || value.trim()
+  )
 }
 
 export const useJobDescriptions = () => {
@@ -143,7 +149,8 @@ export const useCreateJobDescription = () => {
             hasName: !!data.name,
             hasCompany: !!data.company_id,
             hasLocation: !!data.location_id,
-            inputMethod: data.source_type || (data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown'),
+            inputMethod:
+              data.source_type || (data.pasted_text ? 'text' : data.file_url ? 'file' : 'unknown'),
           },
         })
 
@@ -415,12 +422,25 @@ export const useCreateLocation = () => {
   })
 }
 
+export interface JsonLdJob {
+  title: string | null
+  company: string | null
+  location: { city: string | null; state: string | null; country: string | null } | null
+  employmentType: string | null
+  description: string | null
+}
+
 interface UrlIngestionResponse {
   success: boolean
   url: string
   page_title: string | null
   extracted_text: string
   content_length: number
+  content_quality: 'high' | 'low'
+  is_spa_shell: boolean
+  title_hint: string | null
+  jsonld_job: JsonLdJob | null
+  blocked_host?: string
 }
 
 const getUrlIngestionErrorMessage = (error: unknown): string => {

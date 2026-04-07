@@ -16,6 +16,9 @@
 <!-- Updated: 2026-03-26 — MAINT-2 completed: AGENTS.md retired, CODEX_SESSION_CONTINUITY.md archived, SESSION_CONTINUITY.md created, ADR-0001 marked Superseded, CLAUDE.md updated, docs/sessions/README.md updated, coding-conventions.md and p19 plan Owner updated -->
 <!-- Updated: 2026-03-27 — added PROD-1 through PROD-8 from job-seeker gap analysis research session (docs/audits/job-seeker-gap-analysis-2026-03-27.md) -->
 <!-- Updated: 2026-03-30 — added PROD-9 through PROD-12 from culture-aware & industry-aware resume intelligence brainstorm (PM research session 2026-03-30) -->
+<!-- Updated: 2026-03-31 — WAF full review: added WAF-1 through WAF-18 from CODE-REVIEW-2026-03-31.md -->
+<!-- Updated: 2026-03-31 — added INFRA-1 (LinkedIn scraper hosting — MVP-temporary Fly.io, review at scale) -->
+<!-- Updated: 2026-04-01 — added UX-FILE-1 (cloud-synced file upload detection — OneDrive/GDrive stub files) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -749,47 +752,47 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 
 ## Summary Table
 
-| ID                          | Area                                                                                      | Priority | Effort      | Status                                |
-| --------------------------- | ----------------------------------------------------------------------------------------- | -------- | ----------- | ------------------------------------- |
-| P0-1                        | Create `.railwayignore`                                                                   | P0       | 5 min       | **Done 2026-03-17**                   |
-| P0-2                        | Remove hardcoded creds from docker-compose                                                | P0       | 15 min      | **Done 2026-03-17**                   |
-| P0-3                        | Commit/ignore playwright lockfile                                                         | P0       | 5 min       | **Done 2026-03-17**                   |
-| P1-1                        | Expand `.env.example`                                                                     | P1       | 30 min      | **Done 2026-03-17**                   |
-| P1-2                        | Add React `ErrorBoundary`                                                                 | P1       | 1–2 hr      | **Done 2026-03-17**                   |
-| P1-3                        | Add failure tracking to `sats_staged_jobs`                                                | P1       | 2 hr        | Open                                  |
-| P1-4                        | Add `postinstall` to playwright `package.json`                                            | P1       | 5 min       | **Done 2026-03-17**                   |
-| P1-5                        | Circuit breaker / fetch audit for job APIs                                                | P1       | 2–3 hr      | Open                                  |
-| P1-6                        | Add a CI pipeline                                                                         | P1       | 1–2 hr      | **Done 2026-03-17** (test step added) |
-| P1-7                        | Document and automate Supabase type regeneration                                          | P1       | 30 min      | **Done 2026-03-17**                   |
-| P1-8                        | Harden `fetch-logs.sh` for macOS BSD compatibility                                        | P1       | 30 min      | **Done 2026-03-17**                   |
-| P1-9                        | Add time-window filter to Admin LogViewer                                                 | P1       | 1 hr        | **Done 2026-03-17**                   |
-| BUG-2026-03-17-LOCATION-RLS | Fix `sats_locations`/`sats_companies` SELECT policy                                       | Bug/P0   | 30 min      | **Done 2026-03-17**                   |
-| P2-1                        | Enable `strict: true` in `tsconfig.app.json`                                              | P2       | 4–8 hr      | Open                                  |
-| P2-2                        | Co-locate domain loggers with their domains                                               | P2       | 1 hr        | Open                                  |
-| P2-3                        | Clarify LinkedIn scraper service boundary                                                 | P2       | 30 min–2 hr | Open                                  |
-| P2-4                        | Add Supabase seed file                                                                    | P2       | 1–2 hr      | Open                                  |
-| P2-5                        | Add smoke test script for edge functions                                                  | P2       | 1–2 hr      | Open                                  |
-| P2-6                        | Archive completed plans                                                                   | P2       | 15 min      | Open                                  |
-| P2-7                        | Sync AI model label in UI with active LLM config                                          | P2       | 15 min      | **Done 2026-03-17**                   |
-| P2-8                        | Add per-user API quotas (ATS/enrichment rate limiting)                                    | P2       | 2–3 hr      | Open                                  |
-| P3-1                        | i18n foundation — install react-i18next, extract all hardcoded strings                    | P3       | 3–5 days    | Open                                  |
-| P17-BYOK                    | Per-user model preference + BYOK + AI opt-out                                             | High     | 3 stories   | Planned (P17)                         |
-| P1-10                       | Create `.claude/agents/` with full lifecycle sub-agent definitions (16 agents)            | P1       | 1–2 hr      | **Done 2026-03-26**                   |
-| P1-11                       | Create `.claude/skills/` with 4 skill files                                               | P1       | 1 hr        | **Done 2026-03-26**                   |
-| P1-12                       | Create `.claude/commands/` with 2 operator shortcuts                                      | P1       | 30 min      | **Done 2026-03-26**                   |
-| P1-13                       | Make CI lint + UPDATE LOG checks blocking (remove `continue-on-error`)                    | P1       | 30 min      | Open                                  |
-| P2-9                        | Fix stale MEMORY.md at project root (conflicting header format)                           | P2       | 15 min      | Open                                  |
-| P2-10                       | Update CLAUDE.md — agent delegation table, test coverage expectations, Codex handoff note | P2       | 20 min      | Open                                  |
-| UIUX-1                      | Install Geist font + Tailwind type scale                                                  | P1       | 1 hr        | Open                                  |
-| UIUX-2                      | Install Framer Motion + animation presets in `src/lib/animations.ts`                      | P1       | 1 hr        | Open                                  |
-| UIUX-3                      | Animate modals/dialogs (Dialog, Sheet, Drawer)                                            | P1       | 1–2 hr      | Open                                  |
-| UIUX-4                      | Animate page transitions + list stagger (Analyses, Resumes, Jobs)                         | P1       | 2–3 hr      | Open                                  |
-| UIUX-5                      | Add axe-core a11y tests to Vitest — 5 main pages, CI blocking                             | P2       | 2–3 hr      | Open                                  |
-| UIUX-6                      | Add Playwright visual screenshot baselines — 5 main pages                                 | P2       | 2–3 hr      | Open                                  |
-| UIUX-7                      | Add bundle analyser + Lighthouse CI gate (performance ≥ 80, a11y ≥ 90)                    | P2       | 2–3 hr      | Open                                  |
-| UIUX-8                      | Bootstrap Storybook with 6 shadcn/ui component stories + a11y addon                       | P3       | 4–8 hr      | Open                                  |
-| MAINT-1                     | Remove Lovable.dev artifacts (`lovable-tagger`, `index.html` meta tags, `vite.config.ts`) | P1       | 1–2 hr      | **COMPLETED 2026-03-30**              |
-| MAINT-2                     | Migrate all Codex tooling, runbooks, and references to Claude Code exclusively            | P1       | 2–4 hr      | **Done 2026-03-26**                   |
+| ID                          | Area                                                                                      | Priority | Effort      | Status                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------- | -------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| P0-1                        | Create `.railwayignore`                                                                   | P0       | 5 min       | **Done 2026-03-17**                                                                                 |
+| P0-2                        | Remove hardcoded creds from docker-compose                                                | P0       | 15 min      | **Done 2026-03-17**                                                                                 |
+| P0-3                        | Commit/ignore playwright lockfile                                                         | P0       | 5 min       | **Done 2026-03-17**                                                                                 |
+| P1-1                        | Expand `.env.example`                                                                     | P1       | 30 min      | **Done 2026-03-17**                                                                                 |
+| P1-2                        | Add React `ErrorBoundary`                                                                 | P1       | 1–2 hr      | **Done 2026-03-17**                                                                                 |
+| P1-3                        | Add failure tracking to `sats_staged_jobs`                                                | P1       | 2 hr        | Open                                                                                                |
+| P1-4                        | Add `postinstall` to playwright `package.json`                                            | P1       | 5 min       | **Done 2026-03-17**                                                                                 |
+| P1-5                        | Circuit breaker / fetch audit for job APIs                                                | P1       | 2–3 hr      | Open                                                                                                |
+| P1-6                        | Add a CI pipeline                                                                         | P1       | 1–2 hr      | **Done 2026-03-17** (test step added)                                                               |
+| P1-7                        | Document and automate Supabase type regeneration                                          | P1       | 30 min      | **Done 2026-03-17**                                                                                 |
+| P1-8                        | Harden `fetch-logs.sh` for macOS BSD compatibility                                        | P1       | 30 min      | **Done 2026-03-17**                                                                                 |
+| P1-9                        | Add time-window filter to Admin LogViewer                                                 | P1       | 1 hr        | **Done 2026-03-17**                                                                                 |
+| BUG-2026-03-17-LOCATION-RLS | Fix `sats_locations`/`sats_companies` SELECT policy                                       | Bug/P0   | 30 min      | **Done 2026-03-17**                                                                                 |
+| P2-1                        | Enable `strict: true` in `tsconfig.app.json`                                              | P2       | 4–8 hr      | Open                                                                                                |
+| P2-2                        | Co-locate domain loggers with their domains                                               | P2       | 1 hr        | Open                                                                                                |
+| P2-3                        | Clarify LinkedIn scraper service boundary                                                 | P2       | 30 min–2 hr | Open                                                                                                |
+| P2-4                        | Add Supabase seed file                                                                    | P2       | 1–2 hr      | Open                                                                                                |
+| P2-5                        | Add smoke test script for edge functions                                                  | P2       | 1–2 hr      | Open                                                                                                |
+| P2-6                        | Archive completed plans                                                                   | P2       | 15 min      | Open                                                                                                |
+| P2-7                        | Sync AI model label in UI with active LLM config                                          | P2       | 15 min      | **Done 2026-03-17**                                                                                 |
+| P2-8                        | Add per-user API quotas (ATS/enrichment rate limiting)                                    | P2       | 2–3 hr      | Open                                                                                                |
+| P3-1                        | i18n foundation — install react-i18next, extract all hardcoded strings                    | P3       | 3–5 days    | Open                                                                                                |
+| P17-BYOK                    | Per-user model preference + BYOK + AI opt-out                                             | High     | 3 stories   | Planned (P17)                                                                                       |
+| P1-10                       | Create `.claude/agents/` with full lifecycle sub-agent definitions (16 agents)            | P1       | 1–2 hr      | **Done 2026-03-26**                                                                                 |
+| P1-11                       | Create `.claude/skills/` with 4 skill files                                               | P1       | 1 hr        | **Done 2026-03-26**                                                                                 |
+| P1-12                       | Create `.claude/commands/` with 2 operator shortcuts                                      | P1       | 30 min      | **Done 2026-03-26**                                                                                 |
+| P1-13                       | Make CI lint + UPDATE LOG checks blocking (remove `continue-on-error`)                    | P1       | 30 min      | Open                                                                                                |
+| P2-9                        | Fix stale MEMORY.md at project root (conflicting header format)                           | P2       | 15 min      | Open                                                                                                |
+| P2-10                       | Update CLAUDE.md — agent delegation table, test coverage expectations, Codex handoff note | P2       | 20 min      | Open                                                                                                |
+| UIUX-1                      | Install Geist font + Tailwind type scale                                                  | P1       | 1 hr        | **COMPLETED 2026-03-26**                                                                            |
+| UIUX-2                      | Install Framer Motion + animation presets in `src/lib/animations.ts`                      | P1       | 1 hr        | **COMPLETED 2026-03-26**                                                                            |
+| UIUX-3                      | Animate modals/dialogs (Dialog, Sheet, Drawer)                                            | P1       | 1–2 hr      | **COMPLETED 2026-03-26** (Dialog: Framer Motion scaleIn; Sheet/Drawer: Radix/vaul native animation) |
+| UIUX-4                      | Animate page transitions + list stagger (Analyses, Resumes, Jobs)                         | P1       | 2–3 hr      | **COMPLETED 2026-03-26**                                                                            |
+| UIUX-5                      | Add axe-core a11y tests to Vitest — 5 main pages, CI blocking                             | P2       | 2–3 hr      | **COMPLETED 2026-03-26** (tests/unit/a11y/)                                                         |
+| UIUX-6                      | Add Playwright visual screenshot baselines — 5 main pages                                 | P2       | 2–3 hr      | **COMPLETED 2026-03-26** (tests/e2e/visual/; baselines committed)                                   |
+| UIUX-7                      | Add bundle analyser + Lighthouse CI gate (performance ≥ 80, a11y ≥ 90)                    | P2       | 2–3 hr      | **COMPLETED 2026-03-27** (rollup-plugin-visualizer + lighthouserc.json)                             |
+| UIUX-8                      | Bootstrap Storybook with 6 shadcn/ui component stories + a11y addon                       | P3       | 4–8 hr      | **COMPLETED 2026-03-26** (src/stories/ — Button, Card, Badge, Input, Dialog, Table)                 |
+| MAINT-1                     | Remove Lovable.dev artifacts (`lovable-tagger`, `index.html` meta tags, `vite.config.ts`) | P1       | 1–2 hr      | **COMPLETED 2026-03-30**                                                                            |
+| MAINT-2                     | Migrate all Codex tooling, runbooks, and references to Claude Code exclusively            | P1       | 2–4 hr      | **Done 2026-03-26**                                                                                 |
 
 ---
 
@@ -813,3 +816,226 @@ Builds on the `_shared/llmProvider.ts` abstraction (P16 S0). Three stories:
 | PROD-10 | **Geography Mode ("Format Passport")** — when a job description targets a specific country (detected from JD text or user-selected), run a parallel format-check pass against that country's recruiter norms (photo inclusion, length, personal details, section naming, tone register). Produce a "Format Passport" — a short checklist of what to add, remove, or adjust to meet local expectations. Initial markets: US, UK, DE, BR, AU/NZ. Unlocked on Pro tier.                                                                                            | `buildATSPrompt()` enrichment + geography detection from JD          | High      | 2–3 stories | Open   |
 | PROD-11 | **Industry Lens (Vertical Classifier)** — classify the job description by industry vertical (Tech, Finance, Healthcare, Legal, Creative, Academic, Startup) and overlay industry-specific format rules as a second scoring pass. Produces targeted advice: e.g. "Healthcare roles expect a CV with a Publications and Licensure section — yours is formatted as a standard résumé." Vertical classification is inferred from JD text with no extra user input. Unlocked on Pro tier.                                                                            | JD text + `domain_fit` dimension in existing rubric                  | High      | 2–3 stories | Open   |
 | PROD-12 | **Cultural Tone Advisor** — LLM analysis of the résumé's writing register (first-person vs. third, personal narrative vs. functional, formal vs. conversational) flagged against the cultural norms of the target market. Example: a BR-style narrative résumé sent to a UK/US recruiter reads as boilerplate; a Japanese structured format sent to a US startup reads as rigid. Surfaces as "Tone & Style" recommendations beneath the format score. Strongest differentiator vs. all current competitors — no tool does this today. Max/C-Level moat feature. | Geography Mode (PROD-10) + LLM tone classification                   | Very High | 3–4 stories | Open   |
+
+---
+
+## WAF Review Items — 2026-03-31 (AWS Well-Architected Framework Full Review)
+
+Source: `docs/improvements/CODE-REVIEW-2026-03-31.md`
+
+### P0 — CRITICAL (do immediately)
+
+#### WAF-1 · Migrate `linkedin-profile-ingest` to `callLLM()` — raw provider body exposed
+
+**Area:** Security / LLM Layer
+**Effort:** 2–3 hours
+**File:** `supabase/functions/linkedin-profile-ingest/index.ts` (lines 381–447)
+**Pillar:** Security (SEC-1), Performance (PERF-1), Sustainability (SUS-2)
+
+`runNormalizationWithSchema()` makes direct OpenAI HTTP calls and exposes `providerBody` in error strings returned to the client. This bypasses `mapProviderError()`, `callLLM()` fallback logic, cost tracking, and `logContext`. Resolves three WAF findings simultaneously.
+
+**Fix:** Replace with `callLLM({ modelCandidates: [OPENAI_MODEL_LINKEDIN_INGEST, OPENAI_MODEL_LINKEDIN_INGEST_FALLBACK], ... })`.
+
+---
+
+### P1 — MAJOR (next 2 sprints)
+
+#### WAF-2 · Add env validation guards to `delete-account` and `cancel-account-deletion` (503 not TypeError)
+
+**Area:** Reliability / Security
+**Effort:** 30 min
+**Files:** `supabase/functions/delete-account/index.ts` (lines 35–36), `supabase/functions/cancel-account-deletion/index.ts` (lines 30–31)
+**Pillar:** Security (SEC-2), Reliability (REL-4 pattern)
+
+Both functions use non-null assertion `!` on env vars inside a try/catch. Missing config produces a 400 TypeError instead of 503. Must return 503 for misconfiguration (coding-conventions.md).
+
+#### WAF-3 · Add `logContext` to `callLLM()` in all 5 affected edge functions
+
+**Area:** Cost Governance / Observability
+**Effort:** 1 hour
+**Files:** `ats-analysis-direct`, `async-ats-scorer`, `enrich-experiences`, `generate-upskill-roadmap` (all `callLLM()` call sites)
+**Pillar:** Reliability (REL-1), Cost Optimization (COST-1)
+
+`sats_llm_call_logs` table exists but only `classify-skill-profile` writes to it. Add `logContext: { userId, functionName, analysisId? }` to every `callLLM()` call.
+
+#### WAF-4 · Add `staleTime` to all TanStack Query hooks
+
+**Area:** Performance / Reliability
+**Effort:** 2 hours
+**Files:** All hooks in `src/hooks/`
+**Pillar:** Performance (PERF-2), Reliability (REL-2)
+
+`staleTime: 0` (default) causes every component mount to trigger a Supabase refetch. Set domain-appropriate stale times: 30–60s for user data, 5min for reference data.
+
+#### WAF-5 · Add idempotency check in `async-ats-scorer` before LLM call
+
+**Area:** Reliability / Cost
+**Effort:** 1 hour
+**File:** `supabase/functions/async-ats-scorer/index.ts` (lines 612–637)
+**Pillar:** Reliability (REL-3), Sustainability (SUS-1)
+
+Upsert with `ignoreDuplicates: false` overwrites completed analyses on each cron run. Check `status = 'completed'` before running LLM call to prevent re-scoring.
+
+#### WAF-6 · Set milestone to make CI lint and UPDATE LOG checks blocking
+
+**Area:** CI / Operational Excellence
+**Effort:** 1 sprint to clear debt; 15 min to flip gate
+**File:** `.github/workflows/quality-gates.yml`
+**Pillar:** Operational Excellence (OE-1)
+
+Both checks have `continue-on-error: true`. Create a lint-baseline file and set a sprint target to remove the flag.
+
+#### WAF-7 · Replace mock data in `fetch-market-jobs` with real job aggregator API
+
+**Area:** Product Feature Completeness
+**Effort:** 1–2 sprints
+**File:** `supabase/functions/fetch-market-jobs/index.ts`
+**Pillar:** Operational Excellence (OE-2)
+
+Hardcoded 3 mock jobs means the proactive match feature is non-functional in production. The deduplication hash prevents the same jobs from being re-inserted after the first run.
+
+---
+
+### P2 — MINOR (backlog)
+
+#### WAF-8 · Scope `sats_outbox_events` RLS to service_role only
+
+**File:** `supabase/migrations/20260328070000_p21_s6_outbox_events.sql` (line 38)
+**Pillar:** Security (SEC-3)
+Change `FOR ALL USING (true)` to `FOR ALL TO service_role USING (true)`.
+
+#### WAF-9 · Fix conflicting RLS policies on `sats_rate_limit_counters`
+
+**File:** `supabase/migrations/20260328080000_p21_s6_rate_limits.sql` (lines 37–44)
+**Pillar:** Security (SEC-4)
+The `FOR ALL USING (true)` policy overrides the per-user SELECT restriction via OR composition. Scope to `TO service_role`.
+
+#### WAF-10 · Replace `console.log` in deletion edge functions with structured `logEvent()`
+
+**Files:** `supabase/functions/delete-account/index.ts`, `supabase/functions/cancel-account-deletion/index.ts`
+**Pillar:** Operational Excellence (OE-3)
+
+#### WAF-11 · Import `getEnvNumber` from `_shared/env.ts` in `centralized-logging`
+
+**File:** `supabase/functions/centralized-logging/index.ts` (lines 14–19)
+**Pillar:** Operational Excellence (OE-4)
+
+#### WAF-12 · Route `AuthContext.tsx` logging through `authEvents.*` consistently
+
+**File:** `src/contexts/AuthContext.tsx` (~20 console.log/error calls)
+**Pillar:** Operational Excellence (OE-5)
+
+#### WAF-13 · Move env validation in `generate-upskill-roadmap` to before handler try/catch
+
+**File:** `supabase/functions/generate-upskill-roadmap/index.ts` (lines 255–268)
+**Pillar:** Reliability (REL-4)
+
+#### WAF-14 · Pre-fetch user baselines with `Promise.all()` in `async-ats-scorer`
+
+**File:** `supabase/functions/async-ats-scorer/index.ts` (lines 582–658)
+**Pillar:** Performance (PERF-3)
+Currently 2 serial DB queries per (job, resume) pair. For 8 jobs × 10 users = 160 sequential queries. Pre-fetch all baselines once using batch queries.
+
+#### WAF-15 · Add `SATS_FETCH_MARKET_JOBS_MAX` budget cap for job aggregator integration
+
+**File:** `supabase/functions/fetch-market-jobs/index.ts`
+**Pillar:** Cost Optimization (COST-2)
+
+#### WAF-16 · Add `STORE_LLM_PROMPTS` / `STORE_LLM_RAW_RESPONSE` flags to all LLM edge functions
+
+**Files:** `async-ats-scorer`, `enrich-experiences`, `generate-upskill-roadmap`, `classify-skill-profile`
+**Pillar:** Cost Optimization (COST-3)
+
+#### WAF-17 · Enforce stagger 10-item cap in animation wrapper or convention check
+
+**File:** `src/lib/animations.ts` (line 51)
+**Pillar:** Sustainability (SUS-3)
+
+#### WAF-18 · Remove `console.log('TODO: email...')` lines exposing email addresses in logs
+
+**Files:** `supabase/functions/delete-account/index.ts` (line 228), `supabase/functions/cancel-account-deletion/index.ts` (line 137)
+**Pillar:** Sustainability (SUS-4), Operational Excellence (OE-3)
+Track email notification as a proper P1 in this backlog.
+
+---
+
+## Infrastructure Decisions (INFRA)
+
+### INFRA-1 · LinkedIn scraper hosting — review at scale (MVP-TEMPORARY)
+
+**Area:** Infrastructure / Hosting
+**Status:** MVP decision made 2026-03-31. Must be revisited before public launch / scale-up.
+**Priority:** BACKLOG (review trigger: >100 MAU or first enterprise customer)
+
+**Current state (MVP):** The LinkedIn profile scraper (`scripts/playwright-linkedin/`) is
+deployed on **Railway** (Hobby plan, $5 credit/month — covers all MVP scrape volume).
+Fly.io was attempted on 2026-03-31 but blocked (requires payment method; Docker auth callback
+broken). Decision reversed on 2026-04-01: Railway for MVP, Fly.io at Growth stage.
+See full comparison: `docs/audits/linkedin-scraper-hosting-comparison-2026-04-01.md`.
+
+**Why this is flagged temporary:**
+Fly.io free tier has hard limits (160 GB-hours/month, no SLA, auto-stop cold starts of ~30s).
+At scale, Playwright/Chromium-based scraping also raises LinkedIn ToS and rate-limit concerns
+that need a proper architectural decision.
+
+**Options to evaluate at scale:**
+
+| Option                                           | Upside                         | Downside                                    |
+| ------------------------------------------------ | ------------------------------ | ------------------------------------------- |
+| Fly.io paid tier                                 | Same codebase, just upgrade    | Still a managed scraper — LinkedIn ToS risk |
+| Browserless.io API                               | No infrastructure to manage    | External dependency, ~$10–49/mo             |
+| LinkedIn Official API (LinkedIn Partner Program) | ToS-safe, reliable             | Requires LinkedIn partnership application   |
+| Drop the feature                                 | Zero cost and risk             | LinkedIn import UX removed                  |
+| Self-hosted VPS                                  | Full control, predictable cost | Ops burden                                  |
+
+**Trigger to revisit:** Before any of these events:
+
+1. Scaling beyond MVP / first 100 MAU
+2. LinkedIn login starts failing consistently (bot detection)
+3. Enterprise customer with LinkedIn enrichment as a hard requirement
+4. Monthly Fly.io bill exceeds $10 (means usage has grown beyond free tier)
+
+**Files affected when revisiting:**
+
+- `scripts/playwright-linkedin/fly.toml` (replace or remove)
+- `supabase/functions/linkedin-profile-ingest/index.ts` (update `PLAYWRIGHT_SERVICE_URL`)
+- `CLAUDE.md` Architecture section
+- This entry
+
+---
+
+## UX / File Ingestion
+
+### UX-FILE-1 · Detect and handle cloud-synced stub files (OneDrive, GDrive, iCloud)
+
+**Area:** File ingestion / UX
+**Priority:** P1 — **Done 2026-04-01**
+**Effort:** ~1 day
+**Reported:** 2026-04-01 — user could not upload a DOCX from OneDrive mapped on macOS; file was a cloud-only stub (not locally materialised), resulting in a generic "Failed to fetch" network error.
+
+**Problem:**
+When a user selects a file from a cloud-synced folder (OneDrive, Google Drive for Desktop, iCloud Drive, Dropbox) that has not been downloaded locally, the browser receives a `File` object with `size > 0` but the read fails mid-stream with a network/fetch error. There is no user-friendly message explaining _why_ it failed, and the current error (`Failed to fetch`) gives no actionable guidance.
+
+This affects all file ingestion entry points:
+
+- Resume upload (`/resumes`)
+- Job description file upload (`/jobs`)
+- Cover letter or any future document upload
+
+**Affected file types:** DOCX, PDF, TXT, HTML (any format accepted by `documentProcessor.ts`).
+
+**Investigation tasks:**
+
+1. Reproduce the failure path by selecting a cloud-only OneDrive/GDrive stub file in the file picker.
+2. Determine the earliest point where the failure can be detected client-side (e.g. `file.arrayBuffer()` rejection, `FileReader` error, or zero-byte read on a non-zero-size file).
+3. Consider reading a small header chunk first to validate the file is physically present before dispatching the upload.
+4. Add a user-facing error message with actionable advice: _"This file appears to be stored in the cloud and hasn't been downloaded. Open the file in its app first, or download it locally, then try again."_
+5. Optionally: detect known cloud-stub patterns (e.g. `.url` placeholder files, macOS `com.apple.icloud` xattrs) to show a proactive warning before the user hits the error.
+
+**Files likely to change:**
+
+- `src/services/documentProcessor.ts` — add pre-read validation
+- Upload component(s) in `src/components/` — surface better error messaging
+- Relevant hooks (`useResumes`, job description upload logic)
+
+**Non-goals:** Automatically downloading the file from the cloud provider — that requires OAuth scopes beyond the current app scope.

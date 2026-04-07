@@ -60,12 +60,12 @@ npm install
 
 ## Timeline
 
-| Time (NZDT) | Event |
-|-------------|-------|
-| ~20:26 | `fileproviderd` launched (normal startup) |
-| ~20:58 | High resource usage observed; `sample` diagnostic captured |
-| 20:58 | Root cause identified: OneDrive + node_modules burst reads |
-| 2026-03-26 | `node_modules` removed; `npm install` to restore when needed |
+| Time (NZDT) | Event                                                        |
+| ----------- | ------------------------------------------------------------ |
+| ~20:26      | `fileproviderd` launched (normal startup)                    |
+| ~20:58      | High resource usage observed; `sample` diagnostic captured   |
+| 20:58       | Root cause identified: OneDrive + node_modules burst reads   |
+| 2026-03-26  | `node_modules` removed; `npm install` to restore when needed |
 
 ---
 

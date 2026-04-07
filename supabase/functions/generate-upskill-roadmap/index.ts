@@ -2,6 +2,11 @@
  * UPDATE LOG
  * 2026-02-25 01:10:00 | P15 Story 2: Added generate-upskill-roadmap edge function with schema-locked LLM output and DB persistence.
  * 2026-03-01 00:00:00 | P16 Story 0: Removed duplicated CORS, env, mapProviderError, isSchemaUnsupportedError, and OpenAI fetch loop; replaced with _shared/ imports and callLLM().
+ * 2026-04-05 22:00:00 | P26 S5-1 — Add gap_snapshot_id optional input. When provided, reads
+ *   critical + important gap items from sats_gap_items and uses their signal_values as the
+ *   missing_skills list; derives target_role from the snapshot's role family name. The
+ *   source_gap_snapshot_id is stored on the created sats_learning_roadmaps row for traceability.
+ *   Existing missing_skills + target_role path is fully backwards compatible.
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -34,7 +39,14 @@ const ROADMAP_JSON_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['skill_name', 'milestone_type', 'title', 'description', 'estimated_weeks', 'deliverable'],
+        required: [
+          'skill_name',
+          'milestone_type',
+          'title',
+          'description',
+          'estimated_weeks',
+          'deliverable',
+        ],
         properties: {
           skill_name: { type: 'string' },
           milestone_type: { type: 'string', enum: ['course', 'project', 'interview_prep'] },
@@ -49,9 +61,11 @@ const ROADMAP_JSON_SCHEMA = {
 }
 
 interface GenerateUpskillRoadmapRequest {
-  missing_skills: string[]
-  target_role: string
+  missing_skills?: string[]
+  target_role?: string
   source_ats_analysis_id?: string | null
+  // P26 S5-1: alternative input — derive skills + role from a gap snapshot
+  gap_snapshot_id?: string | null
   request_id?: string
 }
 
@@ -164,7 +178,10 @@ function parseRoadmapResponse(raw: string): GeneratedMilestone[] {
   let jsonText = raw.trim()
 
   if (jsonText.startsWith('```')) {
-    jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim()
+    jsonText = jsonText
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim()
   }
 
   try {
@@ -193,7 +210,10 @@ function parseRoadmapResponse(raw: string): GeneratedMilestone[] {
           milestone_type: milestoneType as GeneratedMilestone['milestone_type'],
           title,
           description,
-          estimated_weeks: Math.max(1, Math.min(16, Number.isFinite(estimatedWeeks) ? Math.round(estimatedWeeks) : 1)),
+          estimated_weeks: Math.max(
+            1,
+            Math.min(16, Number.isFinite(estimatedWeeks) ? Math.round(estimatedWeeks) : 1)
+          ),
           deliverable,
         }
       })
@@ -220,10 +240,10 @@ function ensureProjectMilestone(
       skill_name: anchorSkill,
       milestone_type: 'project',
       title: `Portfolio Project: ${targetRole} Capability Demo`,
-      description:
-        `Build an end-to-end project demonstrating ${anchorSkill} and publish the process, outcomes, and tradeoffs.`,
+      description: `Build an end-to-end project demonstrating ${anchorSkill} and publish the process, outcomes, and tradeoffs.`,
       estimated_weeks: 3,
-      deliverable: 'Public case study (repo or slide deck) with problem statement, implementation, and measurable outcomes',
+      deliverable:
+        'Public case study (repo or slide deck) with problem statement, implementation, and measurable outcomes',
     },
   ]
 }
@@ -277,29 +297,17 @@ serve(async (req) => {
     }
 
     const requestId = payload?.request_id
-    const targetRole = String(payload?.target_role || '').trim()
-    const missingSkills = normalizeMissingSkills(payload?.missing_skills)
 
-    if (!targetRole) {
-      return new Response(JSON.stringify({ success: false, error: 'target_role is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    if (missingSkills.length === 0) {
-      return new Response(JSON.stringify({ success: false, error: 'missing_skills must contain at least one skill' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
+    // ── Auth: resolve user before any ownership checks ───────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing Authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing Authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -320,6 +328,79 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // ── P26 S5-1: Resolve gap_snapshot_id input if provided ──────────────
+    let resolvedTargetRole = String(payload?.target_role || '').trim()
+    let resolvedMissingSkills = normalizeMissingSkills(payload?.missing_skills)
+    let resolvedGapSnapshotId: string | null = payload?.gap_snapshot_id || null
+
+    if (resolvedGapSnapshotId) {
+      const serviceSupabase = createClient(supabaseUrl!, supabaseServiceKey!)
+
+      // Verify ownership and fetch snapshot + role family name
+      const { data: snapshotRow, error: snapshotErr } = await serviceSupabase
+        .from('sats_gap_snapshots')
+        .select('id, role_family_id, user_id, sats_role_families(name)')
+        .eq('id', resolvedGapSnapshotId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (snapshotErr || !snapshotRow) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'gap_snapshot_id not found or not accessible' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Derive target_role from the role family name
+      const roleFamilyName = (snapshotRow as any).sats_role_families?.name
+      if (roleFamilyName) resolvedTargetRole = roleFamilyName
+
+      // Fetch critical + important gap items as the skills list
+      const { data: gapItemRows, error: gapItemsErr } = await serviceSupabase
+        .from('sats_gap_items')
+        .select('signal_value, priority_tier')
+        .eq('snapshot_id', resolvedGapSnapshotId)
+        .in('priority_tier', ['critical', 'important'])
+        .order('frequency_pct', { ascending: false })
+        .limit(20) // cap to avoid extremely long roadmaps
+
+      if (!gapItemsErr && gapItemRows && gapItemRows.length > 0) {
+        resolvedMissingSkills = (gapItemRows as Array<{ signal_value: string }>).map(
+          (r) => r.signal_value
+        )
+      }
+    }
+
+    const targetRole = resolvedTargetRole
+    const missingSkills = resolvedMissingSkills
+
+    if (!targetRole) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'target_role is required (or provide gap_snapshot_id)',
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    if (missingSkills.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            'missing_skills must contain at least one skill (or provide a gap_snapshot_id with actionable gaps)',
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const sourceAnalysisId = payload?.source_ats_analysis_id || null
@@ -396,13 +477,16 @@ serve(async (req) => {
         user_id: user.id,
         target_role: targetRole,
         source_ats_analysis_id: sourceAnalysisId,
+        source_gap_snapshot_id: resolvedGapSnapshotId,
         status: 'active',
       })
       .select('id')
       .single()
 
     if (roadmapError || !roadmapRow) {
-      throw new Error(`Failed to persist learning roadmap: ${roadmapError?.message || 'No row returned'}`)
+      throw new Error(
+        `Failed to persist learning roadmap: ${roadmapError?.message || 'No row returned'}`
+      )
     }
 
     const rows = milestones.map((milestone, index) => ({

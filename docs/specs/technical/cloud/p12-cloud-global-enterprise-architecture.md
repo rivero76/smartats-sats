@@ -35,20 +35,24 @@ Define implementation architecture for:
 ## 3. Multi-language Technical Plan
 
 1. Adopt i18n runtime:
+
 - `react-i18next` or equivalent.
 - Namespace strategy by domain (`dashboard`, `jobs`, `ats`, `settings`, `help`).
 
 2. String extraction:
+
 - Move literal strings into locale dictionaries.
 - Add lint/check that blocks newly added unlocalized literal UI copy in target surfaces.
 
 3. Locale handling:
+
 - Persist locale preference by user profile + browser fallback.
 - Apply `Intl` formatters for date/number/currency based on locale.
 
 ## 4. Cloud Migration Technical Plan
 
 1. Infrastructure-as-Code:
+
 - Define modules/stacks for:
   - web hosting + CDN
   - DNS + TLS
@@ -56,10 +60,12 @@ Define implementation architecture for:
   - secrets and environment configuration
 
 2. Environment model:
+
 - `dev`, `stage`, `prod` with strict promotion flow.
 - Drift detection comparing desired IaC state and actual deployed resources.
 
 3. Release controls:
+
 - Immutable artifact references.
 - Deployment manifest containing:
   - commit SHA
@@ -70,6 +76,7 @@ Define implementation architecture for:
 ## 5. Scalability and SRE Controls
 
 1. SLI/SLO definitions:
+
 - auth success rate
 - ingestion success rate
 - ATS completion latency
@@ -77,12 +84,14 @@ Define implementation architecture for:
 - dashboard API p95 latency
 
 2. Capacity protections:
+
 - request throttling by user/org/plan
 - queue depth alarms
 - worker concurrency caps
 - timeout/retry caps per workflow
 
 3. Reliability verification:
+
 - synthetic probes for critical flows
 - load tests for concurrent ingestion + analysis
 - chaos/failure injection for queue and function dependencies
@@ -90,14 +99,17 @@ Define implementation architecture for:
 ## 6. Enterprise Security and Tenant Isolation
 
 1. Identity:
+
 - SSO/SAML-ready auth abstraction.
 - SCIM-compatible user/org lifecycle mapping.
 
 2. Authorization:
+
 - Tenant-scoped RBAC checks in all read/write/report endpoints.
 - Entitlement checks for plan features and report export limits.
 
 3. Auditability:
+
 - Immutable admin/runtime change events.
 - Correlation IDs across user action -> edge function -> DB mutation.
 
@@ -108,4 +120,3 @@ Define implementation architecture for:
 3. Queue-backed ingestion worker with retry + dead-letter controls.
 4. SLO dashboards and alert rules for top 5 user journeys.
 5. Tenant-aware entitlement middleware and audit event capture.
-

@@ -1,4 +1,4 @@
-<!-- Status: IN PROGRESS — branch: p19-uiux -->
+<!-- Status: COMPLETED -->
 
 # P19 — UI/UX Excellence Programme
 

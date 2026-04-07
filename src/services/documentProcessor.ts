@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-02-20 23:29:40 | P2: Added request_id correlation and total-duration telemetry for document extraction.
+ * 2026-04-01 00:00:00 | UX-FILE-1: Add FILE_NOT_LOCAL error code, assertFileIsLocal() probe, and wrap arrayBuffer() to detect cloud-stub files (OneDrive, GDrive, iCloud, Dropbox).
  */
 import mammoth from 'mammoth'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -57,6 +58,7 @@ export interface ProcessingError {
     | 'FILE_TOO_LARGE'
     | 'CORRUPTED_FILE'
     | 'ENCRYPTED_FILE'
+    | 'FILE_NOT_LOCAL'
   message: string
   originalError?: Error
 }
@@ -326,6 +328,31 @@ async function extractFromText(buffer: ArrayBuffer, sessionId?: string): Promise
   }
 }
 
+const CLOUD_FILE_NOT_LOCAL_MESSAGE =
+  'This file appears to be stored only in the cloud (OneDrive, Google Drive, iCloud, or Dropbox) ' +
+  'and has not been downloaded to your device. Open it in its app first to download it locally, ' +
+  'then try uploading again.'
+
+/**
+ * Probes the first 16 bytes of a file to verify it is physically present on disk.
+ * Cloud-synced stub files (OneDrive, GDrive, iCloud, Dropbox) report file.size > 0
+ * but fail or return an empty buffer when read.
+ * Throws a FILE_NOT_LOCAL ProcessingError if the file cannot be read.
+ */
+export async function assertFileIsLocal(file: File | Blob): Promise<void> {
+  if (file.size === 0) return // empty file — let size/format validators handle it
+  try {
+    const probe = await file.slice(0, 16).arrayBuffer()
+    if (probe.byteLength === 0) throw new Error('probe returned empty buffer')
+  } catch {
+    const err: ProcessingError = {
+      code: 'FILE_NOT_LOCAL',
+      message: CLOUD_FILE_NOT_LOCAL_MESSAGE,
+    }
+    throw err
+  }
+}
+
 export async function extractTextFromDocument(
   file: File | Blob,
   filename?: string
@@ -351,7 +378,17 @@ export async function extractTextFromDocument(
       throw error
     }
 
-    const buffer = await file.arrayBuffer()
+    let buffer: ArrayBuffer
+    try {
+      buffer = await file.arrayBuffer()
+    } catch (readError) {
+      const err: ProcessingError = {
+        code: 'FILE_NOT_LOCAL',
+        message: CLOUD_FILE_NOT_LOCAL_MESSAGE,
+        originalError: readError instanceof Error ? readError : undefined,
+      }
+      throw err
+    }
     const detectedMimeType = detectFileType(buffer, filename || (file as File).name)
 
     documentProcessingLogger.info('File type detected', {

@@ -40,7 +40,10 @@ test.describe('Admin LogViewer — /admin', () => {
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(300)
     // Skip if LogViewer content didn't render (has_role() RPC broken — migration not pushed)
-    const timeWindowVisible = await page.getByText('Time Window').isVisible().catch(() => false)
+    const timeWindowVisible = await page
+      .getByText('Time Window')
+      .isVisible()
+      .catch(() => false)
     test.skip(
       !timeWindowVisible,
       'LogViewer content not rendered — has_role() RPC broken, push migration 20260327231000_fix_has_role_sats_user_roles_rename.sql'

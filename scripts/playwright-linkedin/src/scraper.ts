@@ -1,10 +1,11 @@
 // Created: 2026-03-01 00:00:00 - Playwright LinkedIn profile scraper with stealth, session management, and robust extraction.
 // Updated: 2026-03-02 00:00:00 - Wait for networkidle before scroll/extract to survive LinkedIn client-side redirects; wrap scrollPage in try/catch.
 // Updated: 2026-03-02 00:00:00 - Replace scrollPage page.evaluate loop with keyboard PageDown to avoid execution context destruction on SPA navigations.
+// Updated: 2026-04-07 00:00:00 - P28 S7 — Extract certifications and recommendation_count from LinkedIn profile pages.
 
 import { chromium, Browser, BrowserContext, Page } from 'playwright'
 import { loadCookies, saveCookies, StoredCookie } from './session'
-import { LinkedInProfile, LinkedInExperience } from './types'
+import { LinkedInProfile, LinkedInExperience, LinkedInCertification } from './types'
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
@@ -25,7 +26,10 @@ export function checkRateLimit(): void {
     requestTimestamps.shift()
   }
   if (requestTimestamps.length >= RATE_LIMIT) {
-    throw new Object({ message: 'RATE_LIMITED: Too many requests. Max 10 scrapes per hour.', code: 'RATE_LIMITED' })
+    throw new Object({
+      message: 'RATE_LIMITED: Too many requests. Max 10 scrapes per hour.',
+      code: 'RATE_LIMITED',
+    })
   }
   requestTimestamps.push(now)
 }
@@ -55,109 +59,189 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
   // Allow lazy-loaded content to settle
   await page.waitForTimeout(1500)
 
-  const data = await page.evaluate((): {
-    full_name: string
-    headline: string
-    location: string
-    summary: string
-    rawSkills: string[]
-    rawExperiences: Array<{
-      block: string
-    }>
-  } => {
-    function text(el: Element | null): string {
-      return el?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-    }
+  const data = await page.evaluate(
+    (): {
+      full_name: string
+      headline: string
+      location: string
+      summary: string
+      rawSkills: string[]
+      rawExperiences: Array<{ block: string }>
+      rawCertifications: Array<{ name: string; issuing_org: string; issued_date?: string }>
+      recommendation_count: number
+    } => {
+      function text(el: Element | null): string {
+        return el?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+      }
 
-    function textBySelector(selector: string, root: Element | Document = document): string {
-      return text(root.querySelector(selector))
-    }
+      function textBySelector(selector: string, root: Element | Document = document): string {
+        return text(root.querySelector(selector))
+      }
 
-    function allText(selector: string, root: Element | Document = document): string[] {
-      return Array.from(root.querySelectorAll(selector))
-        .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
-        .filter((t) => t.length > 0)
-    }
+      function allText(selector: string, root: Element | Document = document): string[] {
+        return Array.from(root.querySelectorAll(selector))
+          .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+          .filter((t) => t.length > 0)
+      }
 
-    // ── Name ──
-    const full_name =
-      textBySelector('h1') ||
-      textBySelector('.pv-top-card--list .t-24') ||
-      textBySelector('[data-generated-suggestion-target] h1') ||
-      ''
+      // ── Name ──
+      const full_name =
+        textBySelector('h1') ||
+        textBySelector('.pv-top-card--list .t-24') ||
+        textBySelector('[data-generated-suggestion-target] h1') ||
+        ''
 
-    // ── Headline ──
-    const headline =
-      textBySelector('.text-body-medium.break-words') ||
-      (() => {
-        const h1 = document.querySelector('h1')
-        const next = h1?.nextElementSibling
-        return next ? text(next) : ''
-      })() ||
-      ''
+      // ── Headline ──
+      const headline =
+        textBySelector('.text-body-medium.break-words') ||
+        (() => {
+          const h1 = document.querySelector('h1')
+          const next = h1?.nextElementSibling
+          return next ? text(next) : ''
+        })() ||
+        ''
 
-    // ── Location ──
-    const location =
-      textBySelector('.text-body-small.inline.t-black--light.break-words') ||
-      textBySelector('.pv-top-card--list-bullet .t-black--light') ||
-      ''
+      // ── Location ──
+      const location =
+        textBySelector('.text-body-small.inline.t-black--light.break-words') ||
+        textBySelector('.pv-top-card--list-bullet .t-black--light') ||
+        ''
 
-    // ── About / Summary ──
-    // LinkedIn wraps the about section in a <section> near an anchor with id "about"
-    const aboutSection =
-      document.querySelector('#about')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) =>
-        s.querySelector('div')?.textContent?.includes('About')
-      )
-
-    const summary = aboutSection
-      ? text(
-          aboutSection.querySelector('.pv-shared-text-with-see-more') ||
-            aboutSection.querySelector('.full-width') ||
-            aboutSection
+      // ── About / Summary ──
+      // LinkedIn wraps the about section in a <section> near an anchor with id "about"
+      const aboutSection =
+        document.querySelector('#about')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) =>
+          s.querySelector('div')?.textContent?.includes('About')
         )
-      : ''
 
-    // ── Skills ──
-    const skillsSection =
-      document.querySelector('#skills')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) =>
-        s.querySelector('span')?.textContent?.trim() === 'Skills'
-      )
-
-    const rawSkills: string[] = skillsSection
-      ? allText('.pvs-list__item--line-separated .t-bold span[aria-hidden="true"]', skillsSection)
-          .concat(
-            allText('span.mr1.t-bold span[aria-hidden="true"]', skillsSection),
-            allText('.pv-skill-category-entity__name-text', skillsSection)
+      const summary = aboutSection
+        ? text(
+            aboutSection.querySelector('.pv-shared-text-with-see-more') ||
+              aboutSection.querySelector('.full-width') ||
+              aboutSection
           )
-          .filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
-      : []
+        : ''
 
-    // ── Experience ──
-    const experienceSection =
-      document.querySelector('#experience')?.closest('section') ||
-      Array.from(document.querySelectorAll('section')).find((s) => {
-        const heading = s.querySelector('h2, [role="heading"]')
-        return heading?.textContent?.trim() === 'Experience'
-      })
+      // ── Skills ──
+      const skillsSection =
+        document.querySelector('#skills')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find(
+          (s) => s.querySelector('span')?.textContent?.trim() === 'Skills'
+        )
 
-    const rawExperiences: Array<{ block: string }> = []
+      const rawSkills: string[] = skillsSection
+        ? allText('.pvs-list__item--line-separated .t-bold span[aria-hidden="true"]', skillsSection)
+            .concat(
+              allText('span.mr1.t-bold span[aria-hidden="true"]', skillsSection),
+              allText('.pv-skill-category-entity__name-text', skillsSection)
+            )
+            .filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
+        : []
 
-    if (experienceSection) {
-      const items = Array.from(
-        experienceSection.querySelectorAll('li.artdeco-list__item, li.pvs-list__item--line-separated')
-      )
-      for (const item of items) {
-        const block = item.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-        if (block.length > 10) rawExperiences.push({ block })
+      // ── Experience ──
+      const experienceSection =
+        document.querySelector('#experience')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) => {
+          const heading = s.querySelector('h2, [role="heading"]')
+          return heading?.textContent?.trim() === 'Experience'
+        })
+
+      const rawExperiences: Array<{ block: string }> = []
+
+      if (experienceSection) {
+        const items = Array.from(
+          experienceSection.querySelectorAll(
+            'li.artdeco-list__item, li.pvs-list__item--line-separated'
+          )
+        )
+        for (const item of items) {
+          const block = item.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+          if (block.length > 10) rawExperiences.push({ block })
+        }
+      }
+
+      // ── Certifications ──
+      const certSection =
+        document.querySelector('#licenses_and_certifications')?.closest('section') ||
+        document.querySelector('#certifications')?.closest('section') ||
+        Array.from(document.querySelectorAll('section')).find((s) => {
+          const h = s.querySelector('h2, [role="heading"]')
+          return h?.textContent?.trim().toLowerCase().includes('license')
+        })
+
+      const rawCertifications: Array<{ name: string; issuing_org: string; issued_date?: string }> =
+        []
+      if (certSection) {
+        const items = Array.from(
+          certSection.querySelectorAll('li.artdeco-list__item, li.pvs-list__item--line-separated')
+        )
+        for (const item of items) {
+          const lines = Array.from(item.querySelectorAll('[aria-hidden="true"]'))
+            .map((el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+            .filter((t) => t.length > 0)
+          if (lines.length === 0) continue
+          const name = lines[0] ?? ''
+          const issuing_org = lines[1] ?? ''
+          // Lines[2] might be a date like "Issued Jan 2025" — extract it if present
+          const dateRaw = lines[2] ?? ''
+          const issued_date = dateRaw.match(/\d{4}/)
+            ? dateRaw.replace(/^Issued\s*/i, '').trim()
+            : undefined
+          if (name) rawCertifications.push({ name, issuing_org, issued_date })
+        }
+      }
+
+      // ── Recommendation count ──
+      let recommendation_count = 0
+      try {
+        const recSection =
+          document.querySelector('#recommendations')?.closest('section') ||
+          Array.from(document.querySelectorAll('section')).find((s) => {
+            const h = s.querySelector('h2, [role="heading"]')
+            return h?.textContent?.trim().toLowerCase().includes('recommendation')
+          })
+        if (recSection) {
+          const heading = recSection.querySelector('h2, [role="heading"]')
+          const headingText = heading?.textContent ?? ''
+          // LinkedIn renders "Recommendations (N)" or lists individual items
+          const countMatch = headingText.match(/\((\d+)\)/)
+          if (countMatch) {
+            recommendation_count = parseInt(countMatch[1], 10)
+          } else {
+            // Fall back to counting visible received recommendation items
+            const items = recSection.querySelectorAll(
+              'li.artdeco-list__item, li.pvs-list__item--line-separated'
+            )
+            recommendation_count = items.length
+          }
+        }
+      } catch {
+        // Soft failure — recommendation_count stays 0
+      }
+
+      return {
+        full_name,
+        headline,
+        location,
+        summary,
+        rawSkills,
+        rawExperiences,
+        rawCertifications,
+        recommendation_count,
       }
     }
-
-    return { full_name, headline, location, summary, rawSkills, rawExperiences }
-  })
+  )
 
   const experiences = parseExperienceBlocks(data.rawExperiences.map((e) => e.block))
+
+  const certifications: LinkedInCertification[] = data.rawCertifications
+    .map((c) => ({
+      name: cleanText(c.name),
+      issuing_org: cleanText(c.issuing_org),
+      issued_date: c.issued_date ? cleanText(c.issued_date) : undefined,
+    }))
+    .filter((c) => c.name.length > 0)
 
   return {
     full_name: cleanText(data.full_name),
@@ -166,6 +250,8 @@ async function extractProfileData(page: Page): Promise<LinkedInProfile> {
     summary: cleanText(data.summary),
     skills: data.rawSkills.map(cleanText).filter((s) => s.length > 0),
     experiences,
+    certifications: certifications.length > 0 ? certifications : undefined,
+    recommendation_count: data.recommendation_count > 0 ? data.recommendation_count : undefined,
   }
 }
 
@@ -184,16 +270,24 @@ function parseExperienceBlocks(blocks: string[]): LinkedInExperience[] {
       .filter((l) => l.length > 0)
 
     const title = lines[0] ?? ''
-    const company = (lines[1] ?? '').replace(/Full-time|Part-time|Contract|Freelance|Self-employed/gi, '').trim()
+    const company = (lines[1] ?? '')
+      .replace(/Full-time|Part-time|Contract|Freelance|Self-employed/gi, '')
+      .trim()
 
     // Look for a date range pattern like "Jan 2020 - Dec 2022" or "2020 - Present"
     const datePattern = /(\w{0,3}\s?\d{4})\s*[-–]\s*(\w{0,3}\s?\d{4}|Present)/i
     const dateMatch = block.match(datePattern)
     const start_date = dateMatch ? dateMatch[1].trim() : undefined
-    const end_date = dateMatch ? (dateMatch[2].trim().toLowerCase() === 'present' ? null : dateMatch[2].trim()) : undefined
+    const end_date = dateMatch
+      ? dateMatch[2].trim().toLowerCase() === 'present'
+        ? null
+        : dateMatch[2].trim()
+      : undefined
 
     // Description: everything after the date line, joined
-    const descStart = dateMatch ? block.indexOf(dateMatch[0]) + dateMatch[0].length : block.indexOf(company) + company.length
+    const descStart = dateMatch
+      ? block.indexOf(dateMatch[0]) + dateMatch[0].length
+      : block.indexOf(company) + company.length
     const description = block.slice(descStart).replace(/\s+/g, ' ').trim()
 
     return { title, company, start_date, end_date, description }
@@ -269,7 +363,10 @@ export class LinkedInScraper {
       await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15_000 })
     } catch {
       // If navigation didn't happen, check for error messages
-      const errorText = await page.locator('.alert-content, .form__label--error').textContent().catch(() => '')
+      const errorText = await page
+        .locator('.alert-content, .form__label--error')
+        .textContent()
+        .catch(() => '')
       throw new Error(`LOGIN_FAILED: ${errorText || 'Could not complete login'}`)
     }
 
@@ -279,7 +376,7 @@ export class LinkedInScraper {
         'VERIFICATION_REQUIRED: LinkedIn requires email/phone verification. ' +
           'Log in manually in a browser once, export the session cookies using ' +
           '"Copy cookies as JSON" (e.g. via EditThisCookie extension), base64-encode them, ' +
-          'and set LINKEDIN_COOKIES in Railway.'
+          'and set LINKEDIN_COOKIES in Railway environment variables.'
       )
     }
 
@@ -296,7 +393,9 @@ export class LinkedInScraper {
     try {
       await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
       // Wait for LinkedIn's client-side JS to finish any post-load redirects
-      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
+        /* ignore timeout */
+      })
       await randomDelay(800, 1500)
 
       // Detect session expiry / not logged in
@@ -305,7 +404,9 @@ export class LinkedInScraper {
         await this.ensureLoggedIn(page)
         // Re-navigate to the profile after login
         await page.goto(linkedinUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {/* ignore timeout */})
+        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
+          /* ignore timeout */
+        })
         await randomDelay(800, 1500)
       }
 
@@ -315,16 +416,22 @@ export class LinkedInScraper {
       }
 
       // scrollPage uses page.evaluate — wrap so a stray navigation doesn't abort the whole scrape
-      await scrollPage(page).catch(() => {/* ignore if page navigates during scroll */})
+      await scrollPage(page).catch(() => {
+        /* ignore if page navigates during scroll */
+      })
 
       // Try to expand "Show all skills" to get the full skills list
       try {
         const showAllSkills = page.locator('a[href*="/details/skills"]').first()
         if (await showAllSkills.isVisible({ timeout: 2000 })) {
           await showAllSkills.click()
-          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {/* ignore */})
+          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {
+            /* ignore */
+          })
           await randomDelay(800, 1200)
-          await scrollPage(page).catch(() => {/* ignore */})
+          await scrollPage(page).catch(() => {
+            /* ignore */
+          })
         }
       } catch {
         // Section may not exist — proceed with what's visible
@@ -333,7 +440,9 @@ export class LinkedInScraper {
       const profile = await extractProfileData(page)
 
       if (!profile.full_name) {
-        throw new Error('EXTRACTION_FAILED: Could not extract profile name — profile may be private or rate-limited')
+        throw new Error(
+          'EXTRACTION_FAILED: Could not extract profile name — profile may be private or rate-limited'
+        )
       }
 
       return profile

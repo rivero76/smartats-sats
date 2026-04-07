@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-03-18 00:00:00 | CR1-5: Extract auto-apply confidence cutoff 0.78 to AUTO_APPLY_CONFIDENCE_THRESHOLD named constant.
+ * 2026-04-01 00:00:00 | UX-FILE-1: Handle SPA shell pages from employer direct URLs — show warning banner, use URL slug title_hint, add warning variant to UrlFailureDetails.
  */
 import React, { useState } from 'react'
 import {
@@ -33,6 +34,7 @@ import {
   useCreateLocation,
   useIngestJobDescriptionUrl,
   JobDescription,
+  JsonLdJob,
 } from '@/hooks/useJobDescriptions'
 import { Plus, Edit, Building, MapPin, Info, Link2, ClipboardPaste, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -54,6 +56,7 @@ interface UrlFailureDetails {
   title: string
   reason: string
   action: string
+  variant?: 'destructive' | 'warning'
 }
 
 interface ExtractionMetaView {
@@ -225,6 +228,52 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     }
   }
 
+  /**
+   * Apply JSON-LD JobPosting structured data directly to the form.
+   * Higher priority than heuristic extraction — called after processContent() to override.
+   */
+  const applyExtractedDataFromJsonLd = (jsonLd: JsonLdJob) => {
+    if (jsonLd.title) setName(jsonLd.title)
+
+    if (jsonLd.company) {
+      const normalizedCompany = normalizeField(jsonLd.company)
+      const existingCompany = companies.find((c) => normalizeField(c.name) === normalizedCompany)
+      if (existingCompany) {
+        setCompanyId(existingCompany.id)
+        setShowNewCompany(false)
+      } else {
+        setNewCompanyName(jsonLd.company.trim())
+        setShowNewCompany(true)
+      }
+    }
+
+    if (jsonLd.location) {
+      const loc = {
+        city: sanitizeLocationField(jsonLd.location.city),
+        state: sanitizeLocationField(jsonLd.location.state),
+        country: sanitizeLocationField(jsonLd.location.country),
+      }
+      const locationStr = [loc.city, loc.state, loc.country].filter(Boolean).join(', ')
+      const existingLocation = locations.find(
+        (l) =>
+          normalizeField(l.city) === normalizeField(loc.city) &&
+          normalizeField(l.state) === normalizeField(loc.state) &&
+          normalizeField(l.country) === normalizeField(loc.country)
+      )
+      if (existingLocation) {
+        setLocationId(existingLocation.id)
+        setShowNewLocation(false)
+      } else if (locationStr) {
+        setNewLocationData({
+          city: loc.city || '',
+          state: loc.state || '',
+          country: loc.country || '',
+        })
+        setShowNewLocation(true)
+      }
+    }
+  }
+
   const processContent = (content: string) => {
     if (!content.trim()) return
 
@@ -322,23 +371,51 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     }
   }
 
+  /**
+   * Sites known to block automated fetches. Keyed by hostname substring.
+   * When the edge function returns blocked_host, we match against these for friendlier copy.
+   */
+  const KNOWN_BLOCKED_SITES: Array<{ host: string; name: string; hint: string }> = [
+    {
+      host: 'seek.com',
+      name: 'Seek',
+      hint: 'Seek actively blocks automated access. Open the job page, copy all the text, and paste it using Paste Text.',
+    },
+    {
+      host: 'indeed.com',
+      name: 'Indeed',
+      hint: 'Indeed blocks automated fetch. Open the job page, copy all the text, and paste it using Paste Text.',
+    },
+    {
+      host: 'glassdoor.com',
+      name: 'Glassdoor',
+      hint: 'Glassdoor blocks automated fetch. Open the job page, copy all the text, and paste it using Paste Text.',
+    },
+  ]
+
   const buildUrlFailureDetails = (error: unknown): UrlFailureDetails => {
     const message = error instanceof Error ? error.message : String(error || '')
     const lower = message.toLowerCase()
+    // The edge function injects blocked_host into the error data via the hook
+    const blockedHost: string =
+      (error as any)?.blocked_host || (error as any)?.data?.blocked_host || ''
 
     if (lower.includes('(403)')) {
+      const known = KNOWN_BLOCKED_SITES.find((s) => blockedHost.includes(s.host))
       return {
-        title: 'URL blocked by source site',
-        reason: 'The source site denied automated fetch access (HTTP 403).',
-        action: 'Use Paste Text or Upload File.',
+        title: known ? `${known.name} blocks automated access` : 'URL blocked by source site',
+        reason: known
+          ? `${known.name} denies automated fetch requests.`
+          : 'The source site denied automated fetch access (HTTP 403).',
+        action: known ? known.hint : 'Use Paste Text or Upload File.',
       }
     }
 
     if (lower.includes('(404)')) {
       return {
         title: 'URL not accessible',
-        reason: 'The job URL returned not found (HTTP 404) for the ingestion request.',
-        action: 'Verify the URL or use Paste Text.',
+        reason: 'The job URL returned not found (HTTP 404).',
+        action: 'Verify the URL is correct, or use Paste Text.',
       }
     }
 
@@ -384,14 +461,58 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
     try {
       const result = await ingestUrl.mutateAsync(sourceUrl)
       setPastedText(result.extracted_text)
-      if (!name.trim() && result.page_title) {
-        setName(result.page_title)
+
+      const hasJsonLd = !!result.jsonld_job
+
+      // --- Determine job title for the Name field ---
+      if (!name.trim()) {
+        if (result.jsonld_job?.title) {
+          setName(result.jsonld_job.title)
+        } else if (result.is_spa_shell && result.title_hint) {
+          setName(result.title_hint)
+        } else if (result.page_title) {
+          setName(result.page_title)
+        }
       }
-      processContent(result.extracted_text)
-      setUrlFailure(null)
+
+      // --- Warn only when SPA shell AND no JSON-LD fallback ---
+      if (result.is_spa_shell && !hasJsonLd) {
+        setUrlFailure({
+          title: 'Partial content — page uses JavaScript rendering',
+          reason:
+            'This employer career page loads content via JavaScript, so only the page shell was fetched. Fields may be incomplete.',
+          action: 'Copy the job description text and use Paste Text for best results.',
+          variant: 'warning',
+        })
+      } else {
+        setUrlFailure(null)
+      }
+
+      // SPA shell with no JSON-LD = pure navigation/footer garbage.
+      // Running heuristic extraction on it produces wrong title/company/location —
+      // skip it entirely and leave the slug title_hint already set above.
+      if (!result.is_spa_shell || hasJsonLd) {
+        // Run heuristic extraction (sets extractedData, extracts skills, shows panel)
+        processContent(result.extracted_text)
+      }
+
+      // --- If JSON-LD is present, override form fields with structured data ---
+      // This runs after processContent so it wins over heuristic extraction.
+      if (hasJsonLd) {
+        applyExtractedDataFromJsonLd(result.jsonld_job!)
+      }
+
       toast({
-        title: 'URL ingested',
-        description: 'Job content was fetched and extracted. Review fields before saving.',
+        title: hasJsonLd
+          ? 'Job data extracted from structured schema'
+          : result.is_spa_shell
+            ? 'Partial content fetched'
+            : 'URL ingested',
+        description: hasJsonLd
+          ? "Title, company, and location were read from the page's JobPosting schema. Review before saving."
+          : result.is_spa_shell
+            ? 'Page uses JavaScript rendering — review fields carefully or switch to Paste Text.'
+            : 'Job content was fetched and extracted. Review fields before saving.',
       })
     } catch (error) {
       setUrlFailure(buildUrlFailureDetails(error))
@@ -744,7 +865,10 @@ export const JobDescriptionModal: React.FC<JobDescriptionModalProps> = ({
                   </div>
                 )}
                 {urlFailure && (
-                  <Alert variant="destructive" className="py-3">
+                  <Alert
+                    variant={urlFailure.variant === 'warning' ? 'default' : 'destructive'}
+                    className={`py-3 ${urlFailure.variant === 'warning' ? 'border-amber-400 bg-amber-50 text-amber-900' : ''}`}
+                  >
                     <Info className="h-4 w-4" />
                     <AlertTitle className="text-sm">{urlFailure.title}</AlertTitle>
                     <AlertDescription className="text-xs space-y-1">

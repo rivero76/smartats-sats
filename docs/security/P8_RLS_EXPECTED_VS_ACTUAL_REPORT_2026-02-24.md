@@ -12,16 +12,16 @@
 
 ## Expected vs Actual Matrix
 
-| Control | Expected | Actual | Status |
-|---|---|---|---|
-| `account_deletion_logs` insert locked to owner | `TO authenticated` + `WITH CHECK (auth.uid() = user_id)` | `Users can insert own deletion logs` found exactly as expected | PASS |
-| `account_deletion_logs` admin read role hygiene | `Admins can view deletion logs` scoped to `authenticated` | Found as `FOR SELECT TO authenticated USING has_role(...)` | PASS |
-| `document_extractions` duplicate policy families removed | Only `Users can * for own resumes` policy set remains | Legacy `extraction_insert/select/update` policies absent; strict set present | PASS |
-| `document_extractions` update anti-escalation | Explicit `WITH CHECK` on UPDATE | `Users can update extractions for own resumes` has explicit `WITH CHECK` | PASS |
-| Owner/tenant policies moved from `public` to `authenticated` | Core owner policies should be `TO authenticated` | Verified for `ats_* owner`, `enriched_experiences`, `sats_*`, `work_experiences`, `resume_*` | PASS |
-| `resume_update` ownership lock | `USING user_id = auth.uid()` + explicit `WITH CHECK` | Found with explicit `WITH CHECK` | PASS |
-| `sats_users_public` update ownership lock | Explicit `WITH CHECK (auth.uid() = auth_user_id)` | Found with explicit `WITH CHECK` | PASS |
-| `enriched_experiences` update anti-escalation | Explicit `WITH CHECK (auth.uid() = user_id)` | Found with explicit `WITH CHECK` | PASS |
+| Control                                                      | Expected                                                  | Actual                                                                                       | Status |
+| ------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------ |
+| `account_deletion_logs` insert locked to owner               | `TO authenticated` + `WITH CHECK (auth.uid() = user_id)`  | `Users can insert own deletion logs` found exactly as expected                               | PASS   |
+| `account_deletion_logs` admin read role hygiene              | `Admins can view deletion logs` scoped to `authenticated` | Found as `FOR SELECT TO authenticated USING has_role(...)`                                   | PASS   |
+| `document_extractions` duplicate policy families removed     | Only `Users can * for own resumes` policy set remains     | Legacy `extraction_insert/select/update` policies absent; strict set present                 | PASS   |
+| `document_extractions` update anti-escalation                | Explicit `WITH CHECK` on UPDATE                           | `Users can update extractions for own resumes` has explicit `WITH CHECK`                     | PASS   |
+| Owner/tenant policies moved from `public` to `authenticated` | Core owner policies should be `TO authenticated`          | Verified for `ats_* owner`, `enriched_experiences`, `sats_*`, `work_experiences`, `resume_*` | PASS   |
+| `resume_update` ownership lock                               | `USING user_id = auth.uid()` + explicit `WITH CHECK`      | Found with explicit `WITH CHECK`                                                             | PASS   |
+| `sats_users_public` update ownership lock                    | Explicit `WITH CHECK (auth.uid() = auth_user_id)`         | Found with explicit `WITH CHECK`                                                             | PASS   |
+| `enriched_experiences` update anti-escalation                | Explicit `WITH CHECK (auth.uid() = user_id)`              | Found with explicit `WITH CHECK`                                                             | PASS   |
 
 ## Residual Gaps (Post-P8.1)
 

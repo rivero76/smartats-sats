@@ -52,7 +52,10 @@ export const LoggingControlPanel = () => {
   const { data: logSettings, isLoading } = useQuery({
     queryKey: ['log-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('sats_log_settings').select('*').order('script_name')
+      const { data, error } = await supabase
+        .from('sats_log_settings')
+        .select('*')
+        .order('script_name')
 
       if (error) throw error
       return data as LogSetting[]
