@@ -3,6 +3,7 @@
      2026-03-30 00:00:00 | End-user landing page — standalone HTML
      2026-04-08 00:00:00 | Wired all 19 placeholder links to real URLs; fixed billing copy conflict; copied to marketing/ for Vercel static deployment
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features
+     2026-04-08 00:00:00 | Update ATS Match Score card to Recruiter Searchability Score; add Knock Knock Outreach Coach feature card; update FAQ copy
      2026-04-07 20:00:00 | UIUX redesign: score-first ATS analyses cards, filter bar, Debug Modal plan gating, Settings PlanBillingCard tier comparison.
      2026-04-08 12:00:00 | Persona-optimised sales funnel for Karen (AU) — experienced IT PM/Delivery Lead, 40+, post-layoff, ATS-invisible. Updated hero copy, mockup, social proof, testimonials, and final CTA.
      2026-04-08 15:00:00 | Teal-strategy pricing: MVP banner, feature comparison table, upgrade-trigger copy, price anchoring vs LinkedIn Premium. Feature lists aligned to live feature flags screenshot.
@@ -1142,7 +1143,7 @@
       </ul>
       <div class="nav-actions">
         <a href="https://smartats-sats.vercel.app/auth" class="btn-ghost">Sign in</a>
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get my ATS score — free</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get my searchability score — free</a>
       </div>
     </nav>
 
@@ -1418,20 +1419,18 @@
           <div class="feature-card">
             <div class="feature-icon-wrap" style="background: rgba(123, 94, 167, 0.12)">🎯</div>
             <div>
-              <h3>ATS Match Score</h3>
+              <h3>Recruiter Searchability Score</h3>
               <p>
-                Your score is the hero. Every analysis opens with a large percentage front and
-                centre, a colour-coded left border (green for 80%+, amber for 60–79%, red below
-                60%), and signal badges — all visible at a glance in the collapsed card. Click to
-                expand and see matched skills, missing skills, and the full AI breakdown. Score
-                sub-dimensions (Skills Alignment, Experience Relevance, Domain Fit, Format Quality)
-                are available on Pro+.
+                See exactly how easy it is for a recruiter to find your résumé in their ATS — and
+                whether it will survive the 6-second human first impression. Every analysis shows a
+                score with four sub-dimensions (Skills Alignment, Experience Relevance, Domain Fit,
+                Format Quality) and a First-Impression Summary badge (Strong / Needs Attention /
+                Format Issues Found) aggregating format, tone, and industry signals.
               </p>
               <div class="feature-pills">
-                <span class="fpill">Score-first design</span>
-                <span class="fpill">Colour-coded status</span>
-                <span class="fpill">Filter bar</span>
-                <span class="fpill">Detail on Pro+</span>
+                <span class="fpill">Two-barrier visibility</span>
+                <span class="fpill">Score breakdown</span>
+                <span class="fpill">First-impression badge</span>
               </div>
             </div>
           </div>
@@ -1490,6 +1489,23 @@
               <div class="feature-pills">
                 <span class="fpill">Smart alerts</span>
                 <span class="fpill">60%+ match only</span>
+              </div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background: rgba(34, 197, 94, 0.12)">💬</div>
+            <div>
+              <h3>Knock Knock Outreach Coach</h3>
+              <p>
+                The highest-ROI job search move is direct outreach to the hiring manager — not
+                applying to job boards. For every high-match opportunity, SmartATS generates a
+                personalised LinkedIn message using Bryan Creely's Knock Knock technique: genuine
+                interest → specific connection → low-ask close. Edit and send in seconds.
+              </p>
+              <div class="feature-pills">
+                <span class="fpill">Skip the recruiter queue</span>
+                <span class="fpill">Knock Knock technique</span>
+                <span class="fpill">Editable + copyable</span>
               </div>
             </div>
           </div>
@@ -1658,7 +1674,7 @@
               <li><span class="ck">✓</span> 0–100 compatibility score</li>
             </ul>
             <p class="p-upgrade-hint">Good for a first look</p>
-            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get my free ATS score</a>
+            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get my free searchability score</a>
           </div>
           <!-- PRO -->
           <div class="pricing-card popular">
@@ -1887,9 +1903,10 @@
           <div class="faq-item">
             <h3>What data can I see on the Free plan?</h3>
             <p>
-              Free users see the ATS compatibility score, matched skills, missing skills, extraction
-              warnings, and error details. Score sub-dimensions, CV Optimisation, AI prompts, raw
-              model output, and token usage are available on Pro and Max respectively.
+              Free users see the Recruiter Searchability Score, score breakdown (all four
+              sub-dimensions), First-Impression Summary badge, matched skills, missing skills,
+              and extraction warnings. CV Optimisation, AI prompts, raw model output, and token
+              usage are available on Pro and Max respectively.
             </p>
           </div>
           <div class="faq-item">

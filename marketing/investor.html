@@ -4,6 +4,7 @@
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features; promote four features to Live status
      2026-04-07 20:00:00 | Product update: score-first ATS analysis UX, tier-gated debug modal, Settings plan management card.
      2026-04-08 00:00:00 | Copied to marketing/ for Vercel static deployment; added title attributes to placeholder footer links.
+     2026-04-08 00:00:00 | Update ATS Scoring card to Recruiter Searchability Score + score breakdown; add Knock Knock Outreach Coach as Live feature.
 -->
 <html lang="en">
   <head>
@@ -941,9 +942,12 @@
         <div class="product-grid">
           <div class="product-card">
             <div class="product-card-icon" style="background: rgba(34, 197, 94, 0.1)">🎯</div>
-            <h3>ATS Resume Scoring <span class="badge-live">Live</span></h3>
+            <h3>Recruiter Searchability Score <span class="badge-live">Live</span></h3>
             <p>
-              AI scores any résumé against any job description on a 0–100% scale. Results are
+              AI scores any résumé against any job description on a 0–100% recruiter searchability
+              scale — with four sub-dimensions (Skills Alignment, Experience Relevance, Domain Fit,
+              Format Quality) and a First-Impression Summary badge surfacing the human-review
+              barrier. Results are
               displayed in score-first collapsed cards with colour-coded status borders — green for
               80%+, amber for 60–79%, red below 60%. Score sub-dimensions (Skills Alignment,
               Experience Relevance, Domain Fit, Format Quality) are gated to Pro+ to drive upgrade
@@ -964,6 +968,16 @@
             <p>
               Background async scorer surfaces only high-fit (≥60%) jobs via push notifications. No
               more doomscrolling job boards.
+            </p>
+          </div>
+          <div class="product-card">
+            <div class="product-card-icon" style="background: rgba(34, 197, 94, 0.1)">💬</div>
+            <h3>Knock Knock Outreach Coach <span class="badge-live">Live</span></h3>
+            <p>
+              For every high-match opportunity, generates a personalised LinkedIn outreach message
+              using Bryan Creely's Knock Knock technique (genuine interest → observation → low-ask
+              close). The highest-ROI job search channel — direct hiring manager contact — now
+              inside the product.
             </p>
           </div>
           <div class="product-card">
