@@ -164,7 +164,9 @@ const JobDescriptions = () => {
       {/* Job Descriptions List */}
       <Card>
         <CardHeader>
-          <h2 className="text-2xl font-semibold leading-none tracking-tight">Your Job Descriptions</h2>
+          <h2 className="text-2xl font-semibold leading-none tracking-tight">
+            Your Job Descriptions
+          </h2>
           <CardDescription>
             Manage your job descriptions and analyze ATS compatibility.
           </CardDescription>

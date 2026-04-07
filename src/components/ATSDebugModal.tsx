@@ -267,7 +267,9 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                         ))}
                       </>
                     ) : (
-                      <p className="text-xs text-muted-foreground">No breakdown data — analysis may predate P10.</p>
+                      <p className="text-xs text-muted-foreground">
+                        No breakdown data — analysis may predate P10.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -282,7 +284,10 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Enrichments used:</span>
-                      <Badge variant={enrichmentsUsedCount > 0 ? 'secondary' : 'outline'} className="font-mono">
+                      <Badge
+                        variant={enrichmentsUsedCount > 0 ? 'secondary' : 'outline'}
+                        className="font-mono"
+                      >
                         {enrichmentsUsedCount}
                       </Badge>
                     </div>
@@ -297,8 +302,12 @@ export default function ATSDebugModal({ open, onOpenChange, analysis }: ATSDebug
                     {cvOptimisationScore != null && analysis.ats_score != null && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Delta:</span>
-                        <span className={`font-mono text-sm font-medium ${Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0 ? '+' : ''}
+                        <span
+                          className={`font-mono text-sm font-medium ${Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                        >
+                          {Math.round(cvOptimisationScore * 100) - analysis.ats_score >= 0
+                            ? '+'
+                            : ''}
                           {Math.round(cvOptimisationScore * 100) - analysis.ats_score}pp
                         </span>
                       </div>

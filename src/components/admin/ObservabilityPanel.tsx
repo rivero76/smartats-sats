@@ -211,7 +211,9 @@ export const ObservabilityPanel = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.errorRate24h.toFixed(1)}%</div>
-            <CardDescription>{data.errors24h} errors / {data.totalLogs24h} logs</CardDescription>
+            <CardDescription>
+              {data.errors24h} errors / {data.totalLogs24h} logs
+            </CardDescription>
           </CardContent>
         </Card>
 
@@ -236,8 +238,12 @@ export const ObservabilityPanel = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm">ATS failures: <span className="font-semibold">{data.atsFailures24h}</span></div>
-            <div className="text-sm">Enrichment failures: <span className="font-semibold">{data.enrichFailures24h}</span></div>
+            <div className="text-sm">
+              ATS failures: <span className="font-semibold">{data.atsFailures24h}</span>
+            </div>
+            <div className="text-sm">
+              Enrichment failures: <span className="font-semibold">{data.enrichFailures24h}</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -264,7 +270,10 @@ export const ObservabilityPanel = () => {
             <div className="text-sm text-muted-foreground">No logs in the selected window.</div>
           ) : (
             data.topScripts.map(([script, count]) => (
-              <div key={script} className="flex items-center justify-between border rounded px-3 py-2">
+              <div
+                key={script}
+                className="flex items-center justify-between border rounded px-3 py-2"
+              >
                 <span className="font-mono text-xs">{script}</span>
                 <Badge variant="secondary">{count}</Badge>
               </div>
@@ -283,7 +292,10 @@ export const ObservabilityPanel = () => {
         </CardHeader>
         <CardContent className="space-y-2">
           {data.alertRules.map((rule) => (
-            <div key={rule.key} className="flex items-center justify-between border rounded px-3 py-2">
+            <div
+              key={rule.key}
+              className="flex items-center justify-between border rounded px-3 py-2"
+            >
               <div>
                 <div className="text-sm font-medium">{rule.title}</div>
                 <div className="text-xs text-muted-foreground">

@@ -111,7 +111,9 @@ export default function UpskillingRoadmap({
                     </div>
                     <p
                       className={`text-sm leading-relaxed ${
-                        milestone.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'
+                        milestone.is_completed
+                          ? 'text-muted-foreground line-through'
+                          : 'text-foreground'
                       }`}
                     >
                       {milestone.description}

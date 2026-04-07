@@ -72,7 +72,8 @@ const average = (values: number[]): number | null => {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
-const formatPct = (value: number | null): string => (value === null ? 'N/A' : `${value.toFixed(1)}%`)
+const formatPct = (value: number | null): string =>
+  value === null ? 'N/A' : `${value.toFixed(1)}%`
 
 const formatMinutes = (value: number | null): string =>
   value === null ? 'N/A' : `${value.toFixed(1)} min`
@@ -136,7 +137,10 @@ const EnrichedExperiences = () => {
       .filter((x) => x.user_action === 'accepted' || x.user_action === 'edited')
       .map((x) => {
         const source = asSource(x)
-        if (typeof source.ats_score_before !== 'number' || typeof source.ats_score_after !== 'number') {
+        if (
+          typeof source.ats_score_before !== 'number' ||
+          typeof source.ats_score_after !== 'number'
+        ) {
           return null
         }
         return source.ats_score_after - source.ats_score_before
@@ -252,7 +256,9 @@ const EnrichedExperiences = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Acceptance Rate</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatPct(metrics.acceptanceRate)}</CardContent>
+          <CardContent className="text-2xl font-semibold">
+            {formatPct(metrics.acceptanceRate)}
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -395,8 +401,8 @@ const EnrichedExperiences = () => {
                     Node.js, and PostgreSQL, serving 100K+ daily active users
                   </li>
                   <li>
-                    - Reduced production bugs by 40% through implementation of comprehensive
-                    testing strategies and code review processes
+                    - Reduced production bugs by 40% through implementation of comprehensive testing
+                    strategies and code review processes
                   </li>
                   <li>
                     - Led cross-functional team of 6 developers, designers, and QA engineers to
@@ -416,11 +422,17 @@ const EnrichedExperiences = () => {
             <div className="grid gap-2 md:grid-cols-2 text-sm">
               <div>
                 <span className="font-medium">Keywords Added:</span>
-                <span className="text-blue-600"> React, Node.js, PostgreSQL, Python, JavaScript, AWS</span>
+                <span className="text-blue-600">
+                  {' '}
+                  React, Node.js, PostgreSQL, Python, JavaScript, AWS
+                </span>
               </div>
               <div>
                 <span className="font-medium">Metrics Added:</span>
-                <span className="text-blue-600"> 100K+ users, 40% reduction, 25% faster, 60% improvement</span>
+                <span className="text-blue-600">
+                  {' '}
+                  100K+ users, 40% reduction, 25% faster, 60% improvement
+                </span>
               </div>
             </div>
           </div>
@@ -459,7 +471,8 @@ const EnrichedExperiences = () => {
                           {interviewSafe && <Badge variant="outline">Interview-safe</Badge>}
                         </CardTitle>
                         <CardDescription>
-                          {experience.resume?.name || 'Resume'} · {experience.job?.name || 'Job Description'}
+                          {experience.resume?.name || 'Resume'} ·{' '}
+                          {experience.job?.name || 'Job Description'}
                         </CardDescription>
                         <p className="text-xs text-muted-foreground mt-1">
                           ID: {experience.id.slice(0, 8)} · Created:{' '}
@@ -484,7 +497,9 @@ const EnrichedExperiences = () => {
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         {experience.confidence_score !== null &&
                           experience.confidence_score !== undefined && (
-                            <span>Confidence {(experience.confidence_score * 100).toFixed(0)}%</span>
+                            <span>
+                              Confidence {(experience.confidence_score * 100).toFixed(0)}%
+                            </span>
                           )}
                         {experience.explanation && (
                           <span className="flex items-center gap-1">

@@ -26,7 +26,11 @@ const UpskillingRoadmaps = () => {
   const [showHelp, setShowHelp] = useState(false)
   const helpContent = getHelpContent('upskillingRoadmaps')
 
-  const { data: roadmaps, isLoading: roadmapsLoading, refetch: refetchRoadmaps } = useLearningRoadmaps()
+  const {
+    data: roadmaps,
+    isLoading: roadmapsLoading,
+    refetch: refetchRoadmaps,
+  } = useLearningRoadmaps()
   const roadmapIds = useMemo(() => roadmaps?.map((roadmap) => roadmap.id) || [], [roadmaps])
 
   const {

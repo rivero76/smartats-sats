@@ -34,12 +34,18 @@ const TIME_WINDOWS = [
 function getWindowStart(window: string): string | null {
   const now = new Date()
   switch (window) {
-    case '5m':  return subMinutes(now, 5).toISOString()
-    case '15m': return subMinutes(now, 15).toISOString()
-    case '1h':  return subHours(now, 1).toISOString()
-    case '6h':  return subHours(now, 6).toISOString()
-    case '24h': return subHours(now, 24).toISOString()
-    default:    return null
+    case '5m':
+      return subMinutes(now, 5).toISOString()
+    case '15m':
+      return subMinutes(now, 15).toISOString()
+    case '1h':
+      return subHours(now, 1).toISOString()
+    case '6h':
+      return subHours(now, 6).toISOString()
+    case '24h':
+      return subHours(now, 24).toISOString()
+    default:
+      return null
   }
 }
 
@@ -193,7 +199,9 @@ export const LogViewer = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {TIME_WINDOWS.map((w) => (
-                    <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
+                    <SelectItem key={w.value} value={w.value}>
+                      {w.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
