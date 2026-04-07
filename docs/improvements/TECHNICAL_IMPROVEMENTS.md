@@ -22,6 +22,7 @@
 <!-- Updated: 2026-04-07 — WAF review 2 (2026-04-07_waf-review.md): added WAF2-1 through WAF2-10; OE-2/REL-1/REL-2 already fixed in fix/waf-critical-findings branch -->
 <!-- Updated: 2026-04-08 — added P1-14 (deletion confirmation email via Resend); implemented in fix/waf-critical-findings -->
 <!-- Updated: 2026-04-08 — added P0-4 (cross-language skill canonical normalization for pt-BR testing); added P0-5 (LGPD compliance for Brazilian users) -->
+<!-- Updated: 2026-04-08 — added P0-6 (Auth emails in Portuguese), P0-7 (ATS prompt for Brazilian CV), P0-8 (UTF-8 smoke test), P0-9 (DD/MM/YYYY date format) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -104,6 +105,7 @@ git commit -m "chore(p14): track playwright scraper lockfile"
 1. **Migration:** Add `canonical_name TEXT` and `detected_language TEXT` to `sats_user_skills` and `sats_skill_profiles`.
 
 2. **`classify-skill-profile` prompt update:** Ask the LLM to return both the original name and a canonical English form:
+
    ```
    For each skill, return:
    - "original_name": the skill as written by the user
@@ -116,6 +118,7 @@ git commit -m "chore(p14): track playwright scraper lockfile"
 **Also:** Move `SKILL_SYNONYMS` from hardcoded TypeScript into `sats_translations` (namespace: `skill_names`) so the synonym table can be updated without a redeploy.
 
 **Files to change:**
+
 - New migration: `sats_user_skills.canonical_name`, `sats_user_skills.detected_language`, same on `sats_skill_profiles`
 - `supabase/functions/classify-skill-profile/index.ts` — LLM prompt + response schema
 - `supabase/functions/generate-gap-matrix/index.ts` — matching logic
@@ -135,24 +138,118 @@ git commit -m "chore(p14): track playwright scraper lockfile"
 
 **Key LGPD requirements vs. current state:**
 
-| Requirement | Status |
-|---|---|
-| Lawful basis for processing (consent or legitimate interest) | ❌ No consent banner or terms acceptance at sign-up |
-| Privacy policy in Portuguese | ❌ No privacy policy exists |
-| Right to access personal data | ❌ No data export/download feature |
-| Right to deletion | ✅ Delete Account implemented (p20) |
-| Right to correction | ⚠️ Partial — users can edit profiles but no formal correction request flow |
-| Data breach notification (72h) | ❌ No incident response SLA documented |
-| DPA (Data Processing Agreement) with sub-processors | ❌ Not documented (Supabase, OpenAI, Resend are sub-processors) |
-| ANPD registration (if processing sensitive data at scale) | ❓ Not assessed |
+| Requirement                                                  | Status                                                                     |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Lawful basis for processing (consent or legitimate interest) | ❌ No consent banner or terms acceptance at sign-up                        |
+| Privacy policy in Portuguese                                 | ❌ No privacy policy exists                                                |
+| Right to access personal data                                | ❌ No data export/download feature                                         |
+| Right to deletion                                            | ✅ Delete Account implemented (p20)                                        |
+| Right to correction                                          | ⚠️ Partial — users can edit profiles but no formal correction request flow |
+| Data breach notification (72h)                               | ❌ No incident response SLA documented                                     |
+| DPA (Data Processing Agreement) with sub-processors          | ❌ Not documented (Supabase, OpenAI, Resend are sub-processors)            |
+| ANPD registration (if processing sensitive data at scale)    | ❓ Not assessed                                                            |
 
 **Minimum for testing cohort:**
+
 1. Add a plain-language consent checkbox at sign-up: "By creating an account you agree to our [Privacy Policy] and consent to processing your career data to provide the SmartATS service."
 2. Draft a minimal privacy policy (English + Portuguese) covering: what data is collected, why, who it's shared with, how to delete.
 3. Document your sub-processors (Supabase, OpenAI, Resend, Railway) in the privacy policy.
 4. Add a "Download my data" export button to Settings (can be a CSV of resumes + analyses).
 
 **Status:** Open — required before any data collection from Brazilian users.
+
+---
+
+### P0-6 · Configure Supabase Auth emails in Portuguese for pt-BR users
+
+**Area:** User communication / Brazilian testing
+**Effort:** 15 minutes (dashboard config only — no code change)
+**Priority trigger:** Brazilian end-user testing cohort beginning 2026-04
+
+Supabase Auth sends emails (confirm signup, reset password, magic link) using its built-in English templates. Brazilian users receiving English confirmation emails may be confused, mark them as spam, or fail to complete signup.
+
+**Fix (Supabase Dashboard — no code change):**
+
+1. Go to Supabase Dashboard → Authentication → Email Templates
+2. For each template (Confirm signup, Reset password, Magic Link, Change Email): create a Portuguese (pt-BR) variant
+3. Or at minimum: translate the subject line and first sentence to Portuguese
+
+**Note:** If Supabase does not support per-locale templates in your plan tier, add a plain-English note in the app's sign-up flow: "Check your email for a confirmation link."
+
+**Status:** Open — config-only, do before handing device to first Brazilian tester.
+
+---
+
+### P0-7 · ATS scorer prompt calibration for Brazilian CV format
+
+**Area:** Core accuracy / ATS scoring / Brazilian testing
+**Effort:** 1 story (~half day)
+**File:** `supabase/functions/ats-analysis-direct/index.ts`
+
+Brazilian _currículos_ contain sections and conventions that are standard in Brazil but non-standard (or actively penalised) by US/UK ATS norms:
+
+- Headshot photo (standard in Brazil, discouraged in US/UK)
+- CPF (Brazilian tax ID) on the CV
+- "Objetivo" (Objective) section
+- Age, marital status, nationality
+- "Formação Acadêmica" instead of "Education"
+
+The ATS scorer's system prompt is calibrated for US/UK conventions. It may flag photo inclusion as ATS risk, or fail to recognise "Formação Acadêmica" as an education section.
+
+**Fix:** Detect the document language/region (either from user's `preferred_locale` or LLM language detection on the first 500 chars of the CV) and conditionally append a Brazilian CV context block to the system prompt:
+
+```
+[If pt-BR detected]:
+"This is a Brazilian currículo. Standard sections include: Objetivo, Formação Acadêmica,
+Experiência Profissional, Habilidades, Idiomas, Informações Adicionais. Photo inclusion
+and personal data (CPF, age, marital status) are culturally standard — do not penalise.
+Score based on Brazilian hiring norms, not US/UK conventions."
+```
+
+**Status:** Open — required for accurate ATS scores on Brazilian CVs.
+
+---
+
+### P0-8 · UTF-8 / special character smoke test for Portuguese content
+
+**Area:** Data integrity / Brazilian testing
+**Effort:** 2 hours (testing only — no code change expected)
+
+Portuguese uses accented characters: ã, ç, é, ê, ô, ú, à, etc. The full pipeline must handle them without corruption: PDF upload → text extraction → skill classification → gap analysis → database storage → UI display.
+
+**Test script (manual):**
+
+1. Upload a PDF résumé containing: "Análise de Dados", "Gestão de Projetos", "Comunicação", "Programação"
+2. Verify skills appear correctly in Skill Profile (no question marks, no mojibake)
+3. Upload a JD in Portuguese with the same skills
+4. Run ATS analysis — verify skill names match correctly in results
+5. Check database: `SELECT skill_name FROM sats_user_skills WHERE user_id = '<test_user_id>'`
+
+**No code change expected** — the stack uses UTF-8 throughout (Postgres, Deno, React). This is a validation gate before handing to testers, not an implementation task.
+
+**Status:** Open — smoke test required before first Brazilian tester session.
+
+---
+
+### P0-9 · Date format handling for DD/MM/YYYY (Brazilian CV dates)
+
+**Area:** Core accuracy / ATS scoring / Brazilian testing
+**Effort:** 1 story (~half day)
+**File:** `supabase/functions/ats-analysis-direct/index.ts`
+
+Brazil uses DD/MM/YYYY. A CV stating "01/03/2026" means March 1st in pt-BR but January 3rd in en-US. The ATS scorer parses employment dates to calculate tenure and recency. Misinterpreting dates leads to wrong tenure calculations (e.g., a 5-year tenure computed as ~0 months).
+
+**Fix:** Add date locale context to the ATS system prompt when pt-BR is detected:
+
+```
+[If pt-BR detected]:
+"Dates in this document are formatted DD/MM/YYYY (Brazilian standard).
+Parse all dates accordingly. Example: '01/03/2026' = March 1st, 2026."
+```
+
+This piggybacks on the same language detection introduced in P0-7 — implement together.
+
+**Status:** Open — implement alongside P0-7.
 
 ---
 

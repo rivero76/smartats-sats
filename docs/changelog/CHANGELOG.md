@@ -6,6 +6,10 @@ All notable changes to this project should be documented in this file.
 
 ### Fixed
 
+- 2026-04-08: Marketing website — created `marketing/` directory as a standalone Vercel static site. Fixed all 19 placeholder `href="#"` links in the landing page (CTAs → app auth, footer → real destinations), fixed billing copy conflict in FAQ, wired investor page footer. Ready to deploy as a separate Vercel project (Root Directory: `marketing`).
+
+- 2026-04-08: Brazilian testing backlog — added P0-6 (Supabase Auth emails in pt-BR), P0-7 (ATS prompt for Brazilian CV format), P0-8 (UTF-8 smoke test), P0-9 (DD/MM/YYYY date parsing) as P0 items in TECHNICAL_IMPROVEMENTS.md. P0-4 (cross-language skill normalization) and P0-5 (LGPD) were added earlier in this session.
+
 - 2026-04-08: P1-14 — Deletion confirmation email implemented in `delete-account` edge function via Resend (`RESEND_API_KEY` secret + `SATS_APP_URL`). Email includes permanent deletion date and a cancel link. Non-fatal — provider errors are logged but do not block the deletion flow.
 
 - 2026-04-08: Delete Account was failing with "Edge Function returned a non-2xx status code" — three root causes fixed. (1) `supabase.auth.admin.signOut` was called with `user.id` (a UUID) instead of `token` (the user's JWT) — admin.signOut expects a JWT and threw "invalid number of segments". (2) `soft_delete_user`, `cancel_account_deletion`, and `reactivate_soft_deleted_user` PL/pgSQL functions still referenced `public.account_deletion_logs`, renamed to `sats_account_deletion_logs` in P21. Migration `20260408000000` patches the `account_deletion_logs` reference; migration `20260408010000` patches the `enriched_experiences` reference (also renamed in P21 to `sats_enriched_experiences`, missed in the first pass).
