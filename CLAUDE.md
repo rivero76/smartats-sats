@@ -30,23 +30,24 @@ When delegating implementation to a sub-agent or starting a new implementation s
 
 Sub-agents available in `.claude/agents/` cover the full development lifecycle:
 
-| Phase       | Agents                                                                                                                                                                                                                             |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Product     | `product-analyst` — raw PM/user input → user stories + handoff brief                                                                                                                                                               |
-| Planning    | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions                                                                                                                                       |
-| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper`                                                                                                                                               |
-| Review      | `arch-reviewer`, `convention-auditor`, `security-auditor`                                                                                                                                                                          |
-| Testing     | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner`                                                                                                                                                                   |
-| Release     | `release-gatekeeper`                                                                                                                                                                                                               |
-| Operations  | `incident-responder`, `railway-deployer`, `dev-env-doctor`                                                                                                                                                                         |
-| Marketing   | `landing-page-writer` — public marketing pages (`/pricing`, `/features`, home) and `investor.html` + `landing.html` at repo root; `help-content-writer` — keep `/help` page content in sync with shipped features                  |
-| Advisory    | `saas-advisor` — Omer Khan / SaaS Podcast-style product advisor; searches saasclub.io for relevant founder episodes and applies lessons to SmartATS product questions (pricing, positioning, launch, ICP, churn, feature priority) |
+| Phase       | Agents                                                                                                                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product     | `product-analyst` — raw PM/user input → user stories + handoff brief                                                                                                                                                                                                |
+| Planning    | `plan-decomposer` — epic → stories + acceptance criteria; `adr-author` — technical decisions                                                                                                                                                                        |
+| Development | `migration-writer`, `edge-fn-scaffolder`, `component-scaffolder`, `changelog-keeper`                                                                                                                                                                                |
+| Review      | `arch-reviewer`, `convention-auditor`, `security-auditor`                                                                                                                                                                                                           |
+| Testing     | `test-writer`, `test-runner`, `e2e-validator`, `llm-eval-runner`                                                                                                                                                                                                    |
+| Release     | `release-gatekeeper`                                                                                                                                                                                                                                                |
+| Operations  | `incident-responder`, `railway-deployer`, `dev-env-doctor`                                                                                                                                                                                                          |
+| Marketing   | `landing-page-writer` — public marketing pages (`/pricing`, `/features`, home) and the static pages in `marketing/`; `help-content-writer` — keep `/help` page content in sync with shipped features                                                                |
+| Advisory    | `saas-advisor` — Omer Khan / SaaS Podcast-style product advisor; searches saasclub.io for relevant founder episodes and applies lessons to SmartATS product questions (pricing, positioning, launch, ICP, churn, feature priority)                                  |
+|             | `career-coach` — Bryan Creely / A Life After Layoff recruiter-insider advisor; applies his frameworks (CEO of Your Career, Parent/Child Resume, ATS Reality, Skip the Recruiter, Knock Knock Technique) to SmartATS feature decisions and job seeker-facing content |
 
-**Typical PM-to-developer flow:** `saas-advisor` → `product-analyst` → `plan-decomposer` → `arch-reviewer` → implement → `test-runner` → `release-gatekeeper`
+**Typical PM-to-developer flow:** `saas-advisor` → `career-coach` (for job seeker feature validation) → `product-analyst` → `plan-decomposer` → `arch-reviewer` → implement → `test-runner` → `release-gatekeeper`
 
 **After every feature ships:** `help-content-writer` — update `/help` content to match the new workflow. This is part of the Definition of Done for every user-facing feature.
 
-**When adding or updating marketing pages:** `landing-page-writer` — ensures copy reflects the current tier structure and only markets RUNTIME-VERIFIED features. This includes `investor.html` (investor pitch) and `landing.html` (end-user landing page) at the repo root — both must be kept in sync with shipped features and current pricing tiers.
+**When adding or updating marketing pages:** `landing-page-writer` — ensures copy reflects the current tier structure and only markets RUNTIME-VERIFIED features. The canonical marketing pages live in `marketing/` (deployed as a standalone Vercel static site via `marketing/vercel.json`): `index.html` (end-user landing, English), `br.html` (Brazilian Portuguese variant), and `investor.html` (investor pitch). All three must be kept in sync with shipped features and current pricing tiers. Copies at repo root (`landing.html`, `investor.html`) are kept for reference but `marketing/` is the deployed source of truth.
 
 ## Product Planning Standards
 
@@ -80,6 +81,19 @@ Run the `saas-advisor` agent **before implementation begins** for any plan that:
 - Targets a new buyer persona (career coaches, university career centers)
 
 Record the saas-advisor findings in the plan's Advisory Checkpoint section before marking the plan IN PROGRESS.
+
+### When to consult `career-coach`
+
+Run the `career-coach` agent **before implementation begins** for any plan that:
+
+- Changes how resume scores, gap analysis, or ATS feedback are explained to users
+- Adds or modifies resume analysis logic, keyword scoring, or bullet point evaluation
+- Introduces LinkedIn intelligence, profile scoring, or networking guidance features
+- Changes how job descriptions are matched against resumes
+- Designs interview coaching, salary negotiation, or job search workflow features
+- Needs a recruiter-reality check on whether a feature reflects how hiring actually works
+
+`career-coach` and `saas-advisor` can be run in parallel — they answer different questions. `saas-advisor` answers "should we build this and how do we price it?"; `career-coach` answers "does this reflect what actually happens in hiring and will it help job seekers?".
 
 ### SaaS Advisory Guide
 
@@ -231,22 +245,25 @@ These principles were established during the ATSAnalyses redesign (2026-04-07) a
 
 **Edge functions** live in `supabase/functions/`. Every function must use the three shared utilities in `supabase/functions/_shared/` (see table below). Direct OpenAI SDK calls or inline CORS logic are not permitted.
 
-| Domain        | Function                     | Role                                                                                           |
-| ------------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| ATS / Scoring | `ats-analysis-direct`        | Synchronous ATS scoring (single resume + JD)                                                   |
-|               | `async-ats-scorer`           | Async scoring queue worker                                                                     |
-| Profile       | `enrich-experiences`         | LLM enrichment of work experience bullets                                                      |
-|               | `linkedin-profile-ingest`    | Parse and store LinkedIn profile data                                                          |
-|               | `classify-skill-profile`     | Classify skills against taxonomy                                                               |
-|               | `reset-profile-data`         | Wipe career data for a user (dev + user self-service)                                          |
-| Roadmaps      | `generate-upskill-roadmap`   | Generate learning roadmap from skill gaps                                                      |
-| Jobs          | `job-description-url-ingest` | Fetch + parse job description from URL                                                         |
-|               | `fetch-market-jobs`          | Pull external job board listings                                                               |
-| Inbound       | `inbound-email-ingest`       | Process inbound emails (e.g. forwarded JDs)                                                    |
-| Logging       | `centralized-logging`        | Receive and persist structured log events                                                      |
-| Account       | `delete-account`             | Hard-delete user account and all data                                                          |
-|               | `cancel-account-deletion`    | Cancel a pending deletion request                                                              |
-| Profile Fit   | `analyze-profile-fit`        | Score user skill profile vs. market signals for a role; persists to `sats_profile_fit_reports` |
+| Domain        | Function                     | Role                                                                                            |
+| ------------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| ATS / Scoring | `ats-analysis-direct`        | Synchronous ATS scoring (single resume + JD)                                                    |
+|               | `async-ats-scorer`           | Async scoring queue worker                                                                      |
+| Profile       | `enrich-experiences`         | LLM enrichment of work experience bullets                                                       |
+|               | `linkedin-profile-ingest`    | Parse and store LinkedIn profile data                                                           |
+|               | `classify-skill-profile`     | Classify skills against taxonomy                                                                |
+|               | `reset-profile-data`         | Wipe career data for a user (dev + user self-service)                                           |
+| Roadmaps      | `generate-upskill-roadmap`   | Generate learning roadmap from skill gaps                                                       |
+| Jobs          | `job-description-url-ingest` | Fetch + parse job description from URL                                                          |
+|               | `fetch-market-jobs`          | Pull external job board listings                                                                |
+| Inbound       | `inbound-email-ingest`       | Process inbound emails (e.g. forwarded JDs)                                                     |
+| Logging       | `centralized-logging`        | Receive and persist structured log events                                                       |
+| Account       | `delete-account`             | Hard-delete user account and all data                                                           |
+|               | `cancel-account-deletion`    | Cancel a pending deletion request                                                               |
+|               | `request-plan-upgrade`       | Capture upgrade intent, persist to `sats_upgrade_requests`, notify admin via Resend (non-fatal) |
+| Profile Fit   | `analyze-profile-fit`        | Score user skill profile vs. market signals for a role; persists to `sats_profile_fit_reports`  |
+|               | `generate-gap-matrix`        | Build skill gap matrix from profile vs. target role requirements                                |
+|               | `aggregate-market-signals`   | Aggregate and normalise market signals (job postings, trends) for gap analysis                  |
 
 All edge functions share three utilities in `supabase/functions/_shared/`:
 
@@ -352,13 +369,15 @@ Always branch off `main` unless the work is explicitly scoped to a feature branc
 
 ### Environment variables
 
-| Scope                | Pattern                                                 |
-| -------------------- | ------------------------------------------------------- |
-| Global SATS config   | `SATS_<NOUN>`                                           |
-| Task-specific model  | `OPENAI_MODEL_<TASK>`                                   |
-| Task-specific params | `OPENAI_<PARAM>_<TASK>` (e.g. `OPENAI_TEMPERATURE_ATS`) |
-| Feature flags        | `SATS_<FEATURE>_ENABLED`                                |
-| Storage flags        | `STORE_LLM_<NOUN>`                                      |
+| Scope                | Pattern                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Global SATS config   | `SATS_<NOUN>`                                                                   |
+| Task-specific model  | `OPENAI_MODEL_<TASK>`                                                           |
+| Task-specific params | `OPENAI_<PARAM>_<TASK>` (e.g. `OPENAI_TEMPERATURE_ATS`)                         |
+| Feature flags        | `SATS_<FEATURE>_ENABLED`                                                        |
+| Storage flags        | `STORE_LLM_<NOUN>`                                                              |
+| Frontend (Vite)      | `VITE_<NOUN>` (only `VITE_*` vars are browser-visible)                          |
+| Job API keys         | `RAPID_API_KEY`, `ADZUNA_APP_ID`, `ADZUNA_API_KEY` (P14/P16 live job discovery) |
 
 ### Changelog updates
 
@@ -424,6 +443,7 @@ Never delete a plan file — archive it.
   - `scripts/ops/` — operational scripts (smoke tests, type generation, etc.)
 - `plans/` — active feature and implementation plans (see Plan Lifecycle above)
 - `plans/archive/` — completed plans
+- `marketing/` — standalone Vercel static site (`index.html` EN, `br.html` pt-BR, `investor.html`); has its own `vercel.json`
 - `docs/` — architecture, decisions, runbooks, releases, compliance
   - `docs/improvements/` — technical improvement backlog + periodic code review findings
   - `docs/bugs/` — active code defects

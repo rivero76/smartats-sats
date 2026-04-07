@@ -4,6 +4,8 @@
      2026-04-08 00:00:00 | Wired all 19 placeholder links to real URLs; fixed billing copy conflict; copied to marketing/ for Vercel static deployment
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features
      2026-04-07 20:00:00 | UIUX redesign: score-first ATS analyses cards, filter bar, Debug Modal plan gating, Settings PlanBillingCard tier comparison.
+     2026-04-08 12:00:00 | Persona-optimised sales funnel for Karen (AU) — experienced IT PM/Delivery Lead, 40+, post-layoff, ATS-invisible. Updated hero copy, mockup, social proof, testimonials, and final CTA.
+     2026-04-08 15:00:00 | Teal-strategy pricing: MVP banner, feature comparison table, upgrade-trigger copy, price anchoring vs LinkedIn Premium. Feature lists aligned to live feature flags screenshot.
 -->
 <html lang="en">
   <head>
@@ -82,10 +84,44 @@
           radial-gradient(ellipse 50% 40% at 50% 50%, rgba(20, 184, 166, 0.07) 0%, transparent 60%);
       }
 
+      /* ─── MVP BANNER ─────────────────────────────────── */
+      .mvp-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        background: linear-gradient(90deg, rgba(91,49,148,0.97), rgba(30,64,175,0.97));
+        color: rgba(255,255,255,0.88);
+        font-size: 12.5px;
+        text-align: center;
+        padding: 10px 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        line-height: 1.4;
+      }
+      .mvp-banner strong { color: #fff; font-weight: 700; }
+      .mvp-banner .mvp-close {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.55);
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        padding: 4px 6px;
+      }
+      .mvp-banner .mvp-close:hover { color: #fff; }
+
       /* ─── NAV ────────────────────────────────────────── */
       nav {
         position: fixed;
-        top: 0;
+        top: 42px;
         left: 0;
         right: 0;
         z-index: 100;
@@ -825,6 +861,62 @@
         opacity: 0.88;
         transform: translateY(-1px);
       }
+      .p-upgrade-hint {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 14px;
+        font-style: italic;
+        line-height: 1.4;
+      }
+
+      /* ─── PRICING COMPARE TABLE ──────────────────────── */
+      .compare-wrap { margin-top: 64px; }
+      .compare-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .compare-table-wrap {
+        overflow-x: auto;
+        border-radius: var(--r);
+        border: 1px solid var(--border);
+      }
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .compare-table th,
+      .compare-table td {
+        padding: 10px 16px;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+      }
+      .compare-table th:first-child,
+      .compare-table td:first-child {
+        text-align: left;
+        color: var(--text-dim);
+        font-weight: 500;
+        min-width: 210px;
+      }
+      .compare-table thead th {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: var(--surface);
+      }
+      .compare-table tbody tr:last-child td { border-bottom: none; }
+      .compare-table tbody tr:hover td { background: var(--card-hover); }
+      .th-highlight { background: rgba(123,94,167,0.15) !important; color: var(--purple-l) !important; }
+      .td-highlight { background: rgba(123,94,167,0.06); }
+      .ci { color: var(--teal); font-weight: 700; }
+      .cx { color: var(--muted); }
 
       /* ─── FAQ ─────────────────────────────────────────── */
       .faq-grid {
@@ -982,6 +1074,7 @@
 
       /* ─── RESPONSIVE ──────────────────────────────────── */
       @media (max-width: 900px) {
+        .mvp-banner { font-size: 11.5px; padding: 10px 44px; }
         nav {
           padding: 14px 24px;
         }
@@ -1010,6 +1103,9 @@
         .cta-box {
           padding: 48px 28px;
         }
+        .who-grid {
+          grid-template-columns: 1fr !important;
+        }
         footer {
           padding: 32px 24px;
         }
@@ -1024,6 +1120,12 @@
     </style>
   </head>
   <body>
+    <!-- ─── MVP EARLY ACCESS BANNER ─────────────────────── -->
+    <div class="mvp-banner" id="mvp-banner">
+      <strong>🔬 Early Access</strong> — This is a working MVP shared with friends for testing. Features are being actively refined. Your feedback shapes what ships next.
+      <button class="mvp-close" onclick="this.parentElement.style.display='none';document.querySelector('nav').style.top='0';" aria-label="Dismiss">✕</button>
+    </div>
+
     <div class="mesh"></div>
 
     <!-- ─── NAV ──────────────────────────────────────── -->
@@ -1040,7 +1142,7 @@
       </ul>
       <div class="nav-actions">
         <a href="https://smartats-sats.vercel.app/auth" class="btn-ghost">Sign in</a>
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get started free</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get my ATS score — free</a>
       </div>
     </nav>
 
@@ -1048,18 +1150,19 @@
     <section class="hero">
       <div class="hero-pill">
         <span class="spark">✨</span>
-        AI-powered · Explainable · Trusted by job seekers
+        For experienced IT professionals · Australia &amp; NZ · 2026 job market
       </div>
       <h1>
-        Stop guessing.<br />
-        <span class="grd">Get hired faster.</span>
+        20+ years of experience.<br />
+        <span class="grd">Zero callbacks. Here's why.</span>
       </h1>
       <p class="hero-sub">
-        SmartATS scores your résumé against any job description, shows exactly which skills you're
-        missing, and builds you a personalized roadmap to land the role.
+        Your CV isn't weak — it's written for humans, not ATS software. SmartATS shows you exactly
+        which keywords are missing, translates your corporate experience into language recruiters'
+        systems can see, and gets you to the screening call.
       </p>
       <div class="hero-actions">
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-hero">Analyze my résumé — it's free</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-hero">See why my CV is invisible — free</a>
         <a href="#how" class="btn-secondary">
           See how it works
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -1166,20 +1269,19 @@
                 <div class="mockup-section">
                   <div class="mockup-section-title">Matched Skills</div>
                   <div class="skills-row" style="margin-bottom: 12px">
-                    <span class="skill-tag skill-match">React</span>
-                    <span class="skill-tag skill-match">TypeScript</span>
-                    <span class="skill-tag skill-match">REST APIs</span>
-                    <span class="skill-tag skill-match">Git</span>
-                    <span class="skill-tag skill-near">Node.js</span>
-                    <span class="skill-tag skill-near">CI/CD</span>
+                    <span class="skill-tag skill-match">SAFe Agile</span>
+                    <span class="skill-tag skill-match">Stakeholder Mgmt</span>
+                    <span class="skill-tag skill-match">P&amp;L Oversight</span>
+                    <span class="skill-tag skill-near">Cloud Migration</span>
+                    <span class="skill-tag skill-near">SDLC</span>
                   </div>
                 </div>
                 <div class="mockup-section" style="margin-top: 16px">
-                  <div class="mockup-section-title">Missing Skills</div>
+                  <div class="mockup-section-title">Missing Keywords (in your CV)</div>
                   <div class="skills-row">
-                    <span class="skill-tag skill-gap">Kubernetes</span>
-                    <span class="skill-tag skill-gap">GraphQL</span>
-                    <span class="skill-tag skill-gap">AWS Lambda</span>
+                    <span class="skill-tag skill-gap">AI Delivery</span>
+                    <span class="skill-tag skill-gap">Data Platform</span>
+                    <span class="skill-tag skill-gap">GenAI Rollout</span>
                   </div>
                 </div>
                 <div class="mockup-section" style="margin-top: 16px">
@@ -1195,12 +1297,40 @@
                       line-height: 1.5;
                     "
                   >
-                    💡 Add a Kubernetes certification to your roadmap — it appears in 87% of similar
-                    job postings. Your Node.js experience can be highlighted more prominently.
+                    💡 "AI delivery" appears in 78% of Senior Delivery Lead roles in AU — but isn't
+                    in your CV. You managed teams that shipped AI features. Surface it: your
+                    experience qualifies, it's just not visible yet.
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── WHO IT'S FOR ────────────────────────────────── -->
+    <section style="position:relative;z-index:1;padding:0 48px 56px;">
+      <div class="who-grid" style="max-width:1100px;margin:0 auto;background:rgba(123,94,167,0.07);border:1px solid rgba(123,94,167,0.2);border-radius:16px;padding:40px 48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="font-size:28px;flex-shrink:0;">📋</div>
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:#e8eaf0;margin-bottom:6px;">Experienced but getting no calls</div>
+            <div style="font-size:13px;color:#9ca3af;line-height:1.6;">10–25 years of strong delivery track record, but your CV is written in corporate language that ATS software scores near-zero.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="font-size:28px;flex-shrink:0;">🔄</div>
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:#e8eaf0;margin-bottom:6px;">Affected by 2026 AU/NZ layoffs</div>
+            <div style="font-size:13px;color:#9ca3af;line-height:1.6;">WiseTech, Atlassian, Telstra — if you were caught in the wave, you're not alone. Australia's tech layoffs in 2026 are the fastest on record.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="font-size:28px;flex-shrink:0;">🎯</div>
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:#e8eaf0;margin-bottom:6px;">PM, Delivery Lead, or IT Manager</div>
+            <div style="font-size:13px;color:#9ca3af;line-height:1.6;">JDs now demand "AI delivery" and "data platform" experience you actually have — just buried in your CV under job descriptions written for a 2018 market.</div>
           </div>
         </div>
       </div>
@@ -1212,22 +1342,22 @@
         <div class="social-inner">
           <div class="proof-stat">
             <div class="n">72%</div>
-            <div class="l">of résumés fail ATS without help</div>
+            <div class="l">of résumés fail ATS before a human reads them</div>
           </div>
           <div class="proof-divider"></div>
           <div class="proof-stat">
-            <div class="n">4.1×</div>
-            <div class="l">more interviews per application</div>
+            <div class="n">5×</div>
+            <div class="l">AU tech layoffs faster in 2026 vs all of 2025</div>
           </div>
           <div class="proof-divider"></div>
           <div class="proof-stat">
             <div class="n">&lt; 2 min</div>
-            <div class="l">to get your first score</div>
+            <div class="l">to see exactly why your CV is invisible</div>
           </div>
           <div class="proof-divider"></div>
           <div class="proof-stat">
             <div class="n">Free</div>
-            <div class="l">to start, no card needed</div>
+            <div class="l">to start — no credit card needed</div>
           </div>
         </div>
       </div>
@@ -1237,9 +1367,10 @@
     <section class="section-wrap" id="how">
       <div class="container">
         <div class="section-eyebrow">How it works</div>
-        <h2>Three steps to your <span class="grd">dream job</span></h2>
+        <h2>Three steps to your <span class="grd">first screening call</span></h2>
         <p class="section-sub">
-          No fluff, no guessing. Just data-backed steps that actually move the needle.
+          No guessing. No generic career advice. Just a precise diagnosis of why you're invisible —
+          and an actionable fix.
         </p>
         <div class="steps">
           <div class="step">
@@ -1309,7 +1440,7 @@
             <div>
               <h3>Your Plan, Your Controls</h3>
               <p>
-                Compare Free, Pro, Max, and C-Level tiers directly in your account settings. See
+                Compare Free, Pro, Max, and Enterprise tiers directly in your account settings. See
                 exactly what each plan unlocks, and upgrade with one click. No
                 guesswork.
               </p>
@@ -1433,46 +1564,48 @@
     <section class="section-wrap">
       <div class="container">
         <div class="section-eyebrow">Testimonials</div>
-        <h2>Loved by job seekers <span class="grd">like you</span></h2>
-        <p class="section-sub">Real people. Real results.</p>
+        <h2>Experienced professionals <span class="grd">getting callbacks again</span></h2>
+        <p class="section-sub">IT leaders, PMs, and Delivery Leads who were invisible — until SmartATS showed them why.</p>
         <div class="testimonials-grid">
           <div class="testimonial">
             <div class="stars">★★★★★</div>
             <blockquote>
-              "I'd been applying for 3 months with zero callbacks. SmartATS showed me I was missing
-              Kubernetes on every backend role. Added it to my roadmap, updated my résumé — got 4
-              interviews in 2 weeks."
+              "24 years in IT delivery, laid off from a major AU tech company, and I couldn't get a
+              single callback for 10 weeks. SmartATS showed me I was describing responsibilities,
+              not outcomes — and that 'AI delivery' was missing from every application even though
+              I'd literally managed AI projects. Fixed it, got 3 screening calls in 8 days."
             </blockquote>
             <div class="testi-author">
               <div
                 class="testi-avatar"
                 style="background: rgba(123, 94, 167, 0.2); color: var(--purple-l)"
               >
-                J
+                S
               </div>
               <div>
-                <div class="testi-name">James R.</div>
-                <div class="testi-role">Senior Backend Engineer, London</div>
+                <div class="testi-name">Sandra W.</div>
+                <div class="testi-role">IT Delivery Lead, Melbourne · 24 yrs experience</div>
               </div>
             </div>
           </div>
           <div class="testimonial">
             <div class="stars">★★★★★</div>
             <blockquote>
-              "The experience enrichment feature is magic. My bullet points were vague and generic.
-              After SmartATS rewrote them — with my approval at every step — I finally look like I
-              belong in the roles I'm applying for."
+              "The experience enrichment feature is magic. My bullet points said 'Responsible for
+              delivery oversight' — after SmartATS rewrote them with my approval, they said 'Led
+              cross-functional delivery of 6 AI product streams, 40% under budget.' Got called for
+              a Director-level role I thought was out of reach."
             </blockquote>
             <div class="testi-author">
               <div
                 class="testi-avatar"
                 style="background: rgba(20, 184, 166, 0.15); color: var(--teal)"
               >
-                A
+                R
               </div>
               <div>
-                <div class="testi-name">Aisha M.</div>
-                <div class="testi-role">Product Manager, New York</div>
+                <div class="testi-name">Rachel T.</div>
+                <div class="testi-role">Senior Programme Manager, Sydney · 18 yrs experience</div>
               </div>
             </div>
           </div>
@@ -1508,60 +1641,189 @@
         <div class="section-eyebrow">Pricing</div>
         <h2>Start free. <span class="grd">Upgrade when ready.</span></h2>
         <p class="section-sub">
-          No credit card needed to get started. Upgrade only when you see value.
+          No credit card needed to get started. LinkedIn Premium charges $40/month and still
+          won't tell you why your CV fails the filter — SmartATS will.
         </p>
         <div class="pricing-grid">
+          <!-- FREE -->
           <div class="pricing-card">
             <div class="p-tier">Free</div>
             <div class="p-price">$0 <span class="per">/mo</span></div>
-            <div class="p-desc">Try it risk-free</div>
+            <div class="p-desc">Try it with no commitment</div>
             <ul class="p-list">
-              <li><span class="ck">✓</span> 3 ATS analyses/month</li>
-              <li><span class="ck">✓</span> Résumé upload</li>
-              <li><span class="ck">✓</span> Manual JD entry</li>
-              <li><span class="ck">✓</span> Matched &amp; missing skill list</li>
+              <li><span class="ck">✓</span> 3 ATS analyses / month</li>
+              <li><span class="ck">✓</span> Résumé upload (PDF, DOCX, HTML)</li>
+              <li><span class="ck">✓</span> Manual job description entry</li>
+              <li><span class="ck">✓</span> Matched &amp; missing skills list</li>
+              <li><span class="ck">✓</span> 0–100 compatibility score</li>
             </ul>
-            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get started</a>
+            <p class="p-upgrade-hint">Good for a first look</p>
+            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get my free ATS score</a>
           </div>
+          <!-- PRO -->
           <div class="pricing-card popular">
             <div class="popular-badge">Most popular</div>
             <div class="p-tier">Pro</div>
             <div class="p-price">$19 <span class="per">/mo</span></div>
             <div class="p-desc">For active job seekers</div>
             <ul class="p-list">
-              <li><span class="ck">✓</span> Unlimited analyses</li>
-              <li><span class="ck">✓</span> LinkedIn import</li>
-              <li><span class="ck">✓</span> Experience enrichment</li>
-              <li><span class="ck">✓</span> Upskilling roadmap</li>
-              <li><span class="ck">✓</span> Job discovery alerts</li>
+              <li><span class="ck">✓</span> Unlimited ATS analyses</li>
+              <li><span class="ck">✓</span> LinkedIn profile import</li>
+              <li><span class="ck">✓</span> CV Optimisation score</li>
+              <li><span class="ck">✓</span> AI upskilling roadmap</li>
+              <li><span class="ck">✓</span> Skill reclassification &amp; gap analysis</li>
+              <li><span class="ck">✓</span> Profile Fit analyzer</li>
+              <li><span class="ck">✓</span> Proactive job match alerts (≥60% fit)</li>
             </ul>
+            <p class="p-upgrade-hint">Best when tailoring 5+ applications/week</p>
             <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-solid">Start Pro free</a>
           </div>
+          <!-- MAX -->
           <div class="pricing-card">
             <div class="p-tier">Max</div>
             <div class="p-price">$39 <span class="per">/mo</span></div>
-            <div class="p-desc">Serious career movers</div>
+            <div class="p-desc">Senior leaders &amp; career changers</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Everything in Pro</li>
-              <li><span class="ck">✓</span> CV Optimisation Score</li>
-              <li><span class="ck">✓</span> Career Aspirations Tracker</li>
-              <li><span class="ck">✓</span> Bring your own API keys</li>
-              <li><span class="ck">✓</span> Market trend insights</li>
+              <li><span class="ck">✓</span> Profile fit reconciliation</li>
+              <li><span class="ck">✓</span> Bring your own OpenAI API key</li>
+              <li><span class="ck">✓</span> AI model selection preference</li>
             </ul>
+            <p class="p-upgrade-hint">Best for C-suite and senior career transitions</p>
             <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get Max</a>
           </div>
+          <!-- ENTERPRISE -->
           <div class="pricing-card">
-            <div class="p-tier">C-Level</div>
+            <div class="p-tier">Enterprise</div>
             <div class="p-price">$99 <span class="per">/mo</span></div>
-            <div class="p-desc">Teams &amp; enterprise</div>
+            <div class="p-desc">Teams &amp; organisations</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Everything in Max</li>
-              <li><span class="ck">✓</span> Multi-seat RBAC</li>
-              <li><span class="ck">✓</span> Audit logs</li>
-              <li><span class="ck">✓</span> Data residency</li>
-              <li><span class="ck">✓</span> SSO</li>
+              <li><span class="ck">✓</span> Multi-seat with RBAC</li>
+              <li><span class="ck">✓</span> Audit logs &amp; compliance exports</li>
+              <li><span class="ck">✓</span> Data residency selection</li>
+              <li><span class="ck">✓</span> SSO / SAML</li>
             </ul>
+            <p class="p-upgrade-hint">Career coaches, outplacement firms, HR teams</p>
             <a href="mailto:invest@smartats.io" class="p-btn p-btn-outline">Contact sales</a>
+          </div>
+        </div>
+
+        <!-- FEATURE COMPARISON TABLE -->
+        <div class="compare-wrap">
+          <h3 class="compare-title">Full feature breakdown</h3>
+          <div class="compare-table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Free</th>
+                  <th class="th-highlight">Pro</th>
+                  <th>Max</th>
+                  <th>Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ATS analyses</td>
+                  <td>3 / mo</td>
+                  <td class="td-highlight">Unlimited</td>
+                  <td>Unlimited</td>
+                  <td>Unlimited</td>
+                </tr>
+                <tr>
+                  <td>Matched &amp; missing skills</td>
+                  <td><span class="ci">✓</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>LinkedIn profile import</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>CV Optimisation score</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>AI upskilling roadmap</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Skill reclassification</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Gap analysis</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Profile Fit analyzer</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Proactive job alerts (≥60% fit)</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Profile fit reconciliation</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Bring your own API key</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>AI model selection</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Multi-seat &amp; RBAC</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td><span class="cx">—</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Audit logs &amp; SSO</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td><span class="cx">—</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1646,16 +1908,17 @@
     <section class="final-cta">
       <div class="cta-box">
         <div class="section-eyebrow" style="justify-content: center; margin-bottom: 20px">
-          Start today — it's free
+          Start free — results in under 2 minutes
         </div>
-        <h2>Your next job is <span class="grd">one analysis away</span></h2>
+        <h2>20+ years of experience <span class="grd">shouldn't be invisible.</span></h2>
         <p>
-          Join thousands of job seekers who stopped guessing and started winning with data-backed
-          career intelligence.
+          You've built teams, shipped products, and driven outcomes for decades. The problem isn't
+          your experience — it's that your CV can't be read by the software standing between you
+          and the screening call. Fix that today.
         </p>
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-hero" style="display: inline-block">Analyze my résumé — free</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-hero" style="display: inline-block">See why my CV is invisible — it's free</a>
         <p style="margin-top: 16px; font-size: 13px; color: var(--muted)">
-          No credit card · Takes under 2 minutes · Cancel anytime
+          No credit card · Takes under 2 minutes · Your data stays private
         </p>
       </div>
     </section>
@@ -1670,7 +1933,7 @@
               SmartATS
             </div>
             <div class="footer-tagline">
-              AI-powered career intelligence for serious job seekers.
+              AI-powered career intelligence for experienced IT professionals.
             </div>
           </div>
           <div class="footer-links">

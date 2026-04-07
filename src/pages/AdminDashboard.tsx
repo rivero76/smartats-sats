@@ -4,6 +4,8 @@
  * 2026-04-07 15:00:00 | Story 7 — Add "Feature Flags" and "Plan Overrides" admin tabs
  *   wiring FeatureFlagsPanel and PlanOverridePanel for admin-controlled feature gating
  *   and per-user plan elevation.
+ * 2026-04-08 | P29 — Add "Upgrade Requests" tab wiring UpgradeRequestsPanel.
+ *   Tab trigger shows a live pending-count badge from useUpgradeRequests().
  */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,13 +22,19 @@ import {
   Briefcase,
   Flag,
   UserCog,
+  TrendingUp,
 } from 'lucide-react'
 import { LoggingControlPanel } from '@/components/admin/LoggingControlPanel'
 import { AdminJobDescriptionsPanel } from '@/components/admin/AdminJobDescriptionsPanel'
 import { FeatureFlagsPanel } from '@/components/admin/FeatureFlagsPanel'
 import { PlanOverridePanel } from '@/components/admin/PlanOverridePanel'
+import { UpgradeRequestsPanel } from '@/components/admin/UpgradeRequestsPanel'
+import { useUpgradeRequests } from '@/hooks/useUpgradeRequests'
 
 const AdminDashboard = () => {
+  const { data: upgradeRequests = [] } = useUpgradeRequests()
+  const pendingUpgradeCount = upgradeRequests.filter((r) => r.status === 'pending').length
+
   const systemStats = [
     {
       title: 'Total Users',
@@ -124,6 +132,15 @@ const AdminDashboard = () => {
           <TabsTrigger value="plan-overrides" className="flex items-center gap-2">
             <UserCog className="h-4 w-4" />
             Plan Overrides
+          </TabsTrigger>
+          <TabsTrigger value="upgrade-requests" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Upgrade Requests
+            {pendingUpgradeCount > 0 && (
+              <Badge className="ml-0.5 bg-orange-500 text-white text-[10px] px-1.5 py-0 h-4">
+                {pendingUpgradeCount}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -358,6 +375,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="plan-overrides">
           <PlanOverridePanel />
+        </TabsContent>
+
+        <TabsContent value="upgrade-requests">
+          <UpgradeRequestsPanel />
         </TabsContent>
       </Tabs>
     </div>

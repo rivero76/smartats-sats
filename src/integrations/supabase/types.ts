@@ -3942,6 +3942,36 @@ export type Database = {
           },
         ]
       }
+      sats_upgrade_requests: {
+        Row: {
+          created_at: string
+          current_tier: string
+          id: string
+          requested_tier: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_tier: string
+          id?: string
+          requested_tier: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_tier?: string
+          id?: string
+          requested_tier?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sats_user_notifications: {
         Row: {
           created_at: string
@@ -4463,6 +4493,10 @@ export type Database = {
       }
       reset_career_data: { Args: { target_user_id: string }; Returns: Json }
       run_log_cleanup_policies: { Args: never; Returns: Json }
+      sats_approve_upgrade_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       sats_has_permission: {
         Args: { p_action: string; p_resource: string; p_scope?: string }
         Returns: boolean

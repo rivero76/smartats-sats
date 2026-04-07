@@ -1,6 +1,7 @@
 /**
  * UPDATE LOG
  * 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
+ * 2026-04-08 | P29 — Updated profileSettings: upgrade request flow (modal → confirmation), fixed stale "billing coming soon" troubleshooting entry. Updated adminLogging: Upgrade Requests admin tab.
  * 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for the new /profile-fit page (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for the Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
  * 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
  * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics.
@@ -460,7 +461,8 @@ export const helpContentData: Record<string, HelpContent> = {
       'Notification preferences (coming soon)',
       'Security and privacy settings',
       'Account data management',
-      'Your Plan section: see your current tier, compare all plans, and request early access to Pro or Max',
+      'Your Plan section: see your current tier, compare all plans, and submit an upgrade request',
+      "Upgrade request flow: click any paid tier's Upgrade button to open the request modal, submit, and an admin will activate your plan — usually within 24 hours",
       "Upgrade path: clicking 'Upgrade' from any locked feature takes you directly to the Your Plan section",
     ],
     steps: [
@@ -532,9 +534,14 @@ export const helpContentData: Record<string, HelpContent> = {
           "Profile information provides context but doesn't directly affect analysis. The main factors are resume content and job description matching.",
       },
       {
-        problem: "The Upgrade button says 'billing coming soon'",
+        problem: 'How do I upgrade my plan?',
         solution:
-          "Billing via Stripe is launching in an upcoming release (P22). Click 'Request early access' in the upgrade dialog to be notified and get early access at your chosen tier.",
+          "Go to Settings → Plan & Billing and click the Upgrade button on any paid tier (Pro, Max, or Enterprise). A modal shows the features included in that tier. Click 'Request access' and your request is submitted immediately. An admin will review and activate your plan — usually within 24 hours. You'll receive a confirmation in the modal when the request is submitted successfully.",
+      },
+      {
+        problem: 'I submitted an upgrade request but my plan has not changed',
+        solution:
+          'Upgrade requests are reviewed manually during the MVP period. Allow up to 24 hours. If your plan still shows as Free after 24 hours, contact support.',
       },
     ],
     relatedTopics: ['Dashboard Overview', 'Resume Management', 'Account Security'],
@@ -1064,14 +1071,15 @@ export const helpContentData: Record<string, HelpContent> = {
     id: 'adminLogging',
     title: 'Admin Panel',
     description:
-      'Learn how to use the Admin Panel to view application logs, manage feature flags, set per-user plan overrides, and observe job description data across all users.',
+      'Learn how to use the Admin Panel to view application logs, manage feature flags, set per-user plan overrides, review upgrade requests, and observe job description data across all users.',
     overview:
-      'The Admin Panel gives authorized users full visibility and control over the application. It includes a Log Viewer for diagnosing issues, a Feature Flags panel for toggling capabilities per plan tier, a Plan Overrides panel for granting individual users elevated access, and a Job Descriptions panel showing all user-submitted JDs. This panel is only visible to admin-role accounts.',
+      'The Admin Panel gives authorized users full visibility and control over the application. It includes a Log Viewer for diagnosing issues, a Feature Flags panel for toggling capabilities per plan tier, a Plan Overrides panel for granting individual users elevated access, an Upgrade Requests panel for approving or denying tier upgrade requests, and a Job Descriptions panel showing all user-submitted JDs. This panel is only visible to admin-role accounts.',
     keyFeatures: [
       'Log Viewer with level filter (ERROR, WARN, INFO, DEBUG, TRACE) and time window filter',
       'Per-script logging toggle and retention policy management',
       'Feature Flags panel — toggle any feature on or off per plan tier',
       'Plan Overrides panel — set a specific plan tier for individual users',
+      'Upgrade Requests panel — review, approve, or deny user-submitted tier upgrade requests; orange badge shows pending count',
       'Job Descriptions panel — cross-user JD table with search and source filters',
       'ATS Debug Modal is plan-gated: Score Breakdown (Pro+), CV Optimisation (Pro+), Model Details/Prompts/AI Output/Usage (Max+). Free users see score, skills, and errors.',
     ],
@@ -1113,6 +1121,13 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         step: 6,
+        title: 'Review Upgrade Requests',
+        description:
+          "Open the Upgrade Requests tab to see all user-submitted plan upgrade requests. Use the All / Pending / Approved / Denied filter bar to focus on pending items. Click Approve to atomically update the user's plan tier and mark the request approved, or Deny to reject without changing the tier.",
+        tip: 'The Upgrade Requests tab shows an orange badge with the pending count. Approve or deny promptly — users are told to expect a response within 24 hours.',
+      },
+      {
+        step: 7,
         title: 'Inspect Job Descriptions',
         description:
           'Open the Job Descriptions tab to view a filterable table of all user-submitted job descriptions across the platform. Filter by source type, date range, or search by keyword.',
@@ -1489,6 +1504,7 @@ export const helpContentData: Record<string, HelpContent> = {
 // 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
 // 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for /profile-fit (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
 // 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
+// 2026-04-08 | P29 — Updated profileSettings: upgrade request flow (modal → confirmation), fixed stale "billing coming soon" troubleshooting entry. Updated adminLogging: Upgrade Requests tab (step 6, keyFeature, troubleshooting).
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null

@@ -4,20 +4,17 @@
  *   Shows current plan tier, tier comparison cards, and upgrade CTAs.
  *   Billing not yet live (P22); upgrade buttons show a "coming soon" dialog with
  *   a contact-us path. C-Level tier uses Contact Sales mailto CTA.
+ * 2026-04-08 | P29 — Replace "coming soon" mailto dialog with UpgradeRequestModal.
+ *   Upgrade CTAs now submit a request via the request-plan-upgrade edge function.
+ *   Admin is notified by email (server-side only); user sees confirmation. Enterprise unchanged.
  */
 import { useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
 import { CheckCircle2, CreditCard, Sparkles, Zap, Building2 } from 'lucide-react'
 import { usePlanFeature, type PlanTier } from '@/hooks/usePlanFeature'
+import { UpgradeRequestModal } from '@/components/settings/UpgradeRequestModal'
 
 // ─── Tier definitions ─────────────────────────────────────────────────────────
 
@@ -253,50 +250,7 @@ export function PlanBillingCard() {
         </CardContent>
       </Card>
 
-      {/* Upgrade coming-soon dialog */}
-      <Dialog open={!!upgradingTo} onOpenChange={(open) => !open && setUpgradingTo(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-600" />
-              Upgrade to {upgradingTo?.label}
-            </DialogTitle>
-            <DialogDescription>
-              Billing is launching very soon. In the meantime, reach out to get early access at the{' '}
-              <span className="font-medium">{upgradingTo?.label}</span> tier — including all its
-              features today.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 pt-1">
-            <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
-              <p className="font-medium">What you get on {upgradingTo?.label}:</p>
-              <ul className="space-y-1">
-                {upgradingTo?.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0 text-green-600" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={() =>
-                  window.open(
-                    `mailto:hello@smartats.app?subject=Early%20Access%20%E2%80%94%20${upgradingTo?.label}%20Plan&body=Hi%2C%20I%27d%20like%20early%20access%20to%20the%20${upgradingTo?.label}%20plan.`
-                  )
-                }
-              >
-                Request early access
-              </Button>
-              <Button variant="outline" onClick={() => setUpgradingTo(null)}>
-                Later
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <UpgradeRequestModal tier={upgradingTo} onClose={() => setUpgradingTo(null)} />
     </>
   )
 }

@@ -170,6 +170,17 @@
 
 ---
 
+### ✅ P29 — MVP Upgrade Request Flow
+
+**Priority:** HIGH | **Tier:** Free (submit) / Admin (approve) | **Plan:** `plans/p29-mvp-upgrade-requests.md`
+
+|            |                                                                                                                                                                                                                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status** | COMPLETED — CODE-VERIFIED 2026-04-08. E2E runtime validation pending migration deploy.                                                                                                                                                                                            |
+| **Scope**  | `sats_upgrade_requests` table + RLS, atomic `sats_approve_upgrade_request()` RPC, `request-plan-upgrade` edge function (Resend email), `UpgradeRequestModal` user-facing component, `UpgradeRequestsPanel` admin panel with approve/deny, Admin Dashboard tab with pending badge. |
+
+---
+
 ## Later — Post-Launch Growth
 
 > **Goal:** 100 paying customers. ICP defined. One repeatable acquisition channel. Enterprise motion beginning.
