@@ -1,5 +1,6 @@
 // UPDATE LOG
 // 2026-03-26 | S3-1: add aria-label to SelectTrigger + fix CardTitle heading-order (P19-S3-1)
+// 2026-04-07 | Remove stale N8N reference — N8N integration removed, ATS analysis is direct
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -126,7 +127,7 @@ export const ResumePreview = () => {
           Resume Content Preview
         </h2>
         <CardDescription>
-          Parse and preview resume content to verify text quality before sending to N8N.
+          Parse and preview resume content to verify text quality before ATS analysis.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
