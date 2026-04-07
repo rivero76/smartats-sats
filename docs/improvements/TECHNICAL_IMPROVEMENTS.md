@@ -21,6 +21,7 @@
 <!-- Updated: 2026-04-01 — added UX-FILE-1 (cloud-synced file upload detection — OneDrive/GDrive stub files) -->
 <!-- Updated: 2026-04-07 — WAF review 2 (2026-04-07_waf-review.md): added WAF2-1 through WAF2-10; OE-2/REL-1/REL-2 already fixed in fix/waf-critical-findings branch -->
 <!-- Updated: 2026-04-08 — added P1-14 (deletion confirmation email via Resend); implemented in fix/waf-critical-findings -->
+<!-- Updated: 2026-04-08 — added P0-4 (cross-language skill canonical normalization for pt-BR testing); added P0-5 (LGPD compliance for Brazilian users) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -85,6 +86,73 @@ Full context: `docs/bugs/bug-railway-up-path-as-root-timeout.md`
 git add scripts/playwright-linkedin/package-lock.json
 git commit -m "chore(p14): track playwright scraper lockfile"
 ```
+
+---
+
+### P0-4 · Cross-language skill canonical normalization (pt-BR ↔ en-US)
+
+**Area:** Core accuracy / Gap Analysis / Brazilian user testing
+**Effort:** 2–3 stories (~3 days)
+**Priority trigger:** Brazilian end-user testing cohort beginning 2026-04
+
+**Problem:** Skills captured in pt-BR ("Gestão de Projetos", "Aprendizado de Máquina") and skills from en-US job descriptions ("Project Management", "Machine Learning") are treated as entirely different skills. Gap Analysis reports false gaps; ATS scoring misses real matches. This breaks the product's core value proposition for any non-English user.
+
+**Root cause:** `classify-skill-profile`, `generate-gap-matrix`, and `SKILL_SYNONYMS` in `src/utils/linkedin-import-merge.ts` operate exclusively in English. No canonical normalization layer exists across languages.
+
+**Fix — three-part:**
+
+1. **Migration:** Add `canonical_name TEXT` and `detected_language TEXT` to `sats_user_skills` and `sats_skill_profiles`.
+
+2. **`classify-skill-profile` prompt update:** Ask the LLM to return both the original name and a canonical English form:
+   ```
+   For each skill, return:
+   - "original_name": the skill as written by the user
+   - "canonical_name": lowercase English form (e.g. "gestão de projetos" → "project management")
+   - "detected_language": BCP 47 code (e.g. "pt-BR", "en-US")
+   ```
+
+3. **`generate-gap-matrix` matching:** Match on `canonical_name` instead of `skill_name`. Users see their original language; the engine operates on the canonical space.
+
+**Also:** Move `SKILL_SYNONYMS` from hardcoded TypeScript into `sats_translations` (namespace: `skill_names`) so the synonym table can be updated without a redeploy.
+
+**Files to change:**
+- New migration: `sats_user_skills.canonical_name`, `sats_user_skills.detected_language`, same on `sats_skill_profiles`
+- `supabase/functions/classify-skill-profile/index.ts` — LLM prompt + response schema
+- `supabase/functions/generate-gap-matrix/index.ts` — matching logic
+- `src/utils/linkedin-import-merge.ts` — SKILL_SYNONYMS → DB lookup
+
+**Status:** Open — P0 for pt-BR testing cohort.
+
+---
+
+### P0-5 · LGPD compliance for Brazilian users
+
+**Area:** Legal / Privacy / Compliance
+**Effort:** 1–2 days (legal review separate)
+**Priority trigger:** Brazilian end-user testing cohort beginning 2026-04
+
+**Problem:** Brazil's Lei Geral de Proteção de Dados (LGPD — Law 13,709/2018) is the Brazilian equivalent of GDPR. It applies as soon as you process personal data of people located in Brazil, regardless of where your servers are. Testing with Brazilian users means LGPD applies now.
+
+**Key LGPD requirements vs. current state:**
+
+| Requirement | Status |
+|---|---|
+| Lawful basis for processing (consent or legitimate interest) | ❌ No consent banner or terms acceptance at sign-up |
+| Privacy policy in Portuguese | ❌ No privacy policy exists |
+| Right to access personal data | ❌ No data export/download feature |
+| Right to deletion | ✅ Delete Account implemented (p20) |
+| Right to correction | ⚠️ Partial — users can edit profiles but no formal correction request flow |
+| Data breach notification (72h) | ❌ No incident response SLA documented |
+| DPA (Data Processing Agreement) with sub-processors | ❌ Not documented (Supabase, OpenAI, Resend are sub-processors) |
+| ANPD registration (if processing sensitive data at scale) | ❓ Not assessed |
+
+**Minimum for testing cohort:**
+1. Add a plain-language consent checkbox at sign-up: "By creating an account you agree to our [Privacy Policy] and consent to processing your career data to provide the SmartATS service."
+2. Draft a minimal privacy policy (English + Portuguese) covering: what data is collected, why, who it's shared with, how to delete.
+3. Document your sub-processors (Supabase, OpenAI, Resend, Railway) in the privacy policy.
+4. Add a "Download my data" export button to Settings (can be a CSV of resumes + analyses).
+
+**Status:** Open — required before any data collection from Brazilian users.
 
 ---
 
