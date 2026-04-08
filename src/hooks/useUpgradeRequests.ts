@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-04-08 | fix — Use profiles FK name for PostgREST join (was auth.users FK which PostgREST cannot traverse).
  * 2026-04-08 | P29 — TanStack Query hooks for the admin Upgrade Requests panel.
  *   useUpgradeRequests: fetches all requests joined with profiles (name + email).
  *   useApproveUpgradeRequest: calls sats_approve_upgrade_request() RPC (atomic).
@@ -43,7 +44,7 @@ async function fetchUpgradeRequests(): Promise<UpgradeRequestRow[]> {
       status,
       created_at,
       updated_at,
-      profiles!sats_upgrade_requests_user_id_fkey (full_name, email)
+      profiles!sats_upgrade_requests_user_id_profiles_fkey (full_name, email)
     `
     )
     .order('created_at', { ascending: false })

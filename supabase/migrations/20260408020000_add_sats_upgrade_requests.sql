@@ -1,4 +1,5 @@
 -- UPDATE LOG
+-- 2026-04-08 | fix — Added FK to profiles.user_id so PostgREST can join for admin panel.
 -- 2026-04-08 | P29 — Create sats_upgrade_requests table for MVP upgrade intent capture.
 --   Stores upgrade requests from free-tier users during pre-billing phase.
 --   RLS: users can INSERT/SELECT own rows; admin can SELECT all + UPDATE status.
@@ -100,3 +101,8 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.sats_approve_upgrade_request(UUID) TO authenticated;
+
+-- ─── FK TO PROFILES (for PostgREST join in admin panel) ──────────────────────
+ALTER TABLE public.sats_upgrade_requests
+  ADD CONSTRAINT sats_upgrade_requests_user_id_profiles_fkey
+  FOREIGN KEY (user_id) REFERENCES public.profiles(user_id) ON DELETE CASCADE;
