@@ -4,6 +4,11 @@
  *   user's LinkedIn-sourced skill profile against market baselines for a target
  *   role. Displays fit score, gap breakdown (Pro+), reconciliation (Max+), and
  *   score history chart (Max+). Gated to Pro+ via hasFeature('profile_fit').
+ * 2026-04-08 | P30 S4 — Move reconciliation LockedPanel to "Pro plan required".
+ *   Fix coupling bug: score history section now gates on 'profile_fit_score_history'
+ *   (Max+) instead of 'profile_fit_reconciliation' (now Pro+).
+ * 2026-04-08 | P30 S5 — Add ConsistencyScoreDisplay above ReconciliationConflictList.
+ *   Renders a 0–100 score derived from computeConsistencyScore() with colour coding.
  */
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
@@ -16,6 +21,7 @@ import {
   Trash2,
   TrendingUp,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react'
 import { fadeIn, staggerContainer, listItem } from '@/lib/animations'
 import { usePlanFeature } from '@/hooks/usePlanFeature'
@@ -40,7 +46,14 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
-import type { ProfileFitGapItem, ProfileFitReport } from '@/hooks/useProfileFit'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useLinkedinImportAge } from '@/hooks/useLinkedinImportAge'
+import type {
+  ProfileFitGapItem,
+  ProfileFitReport,
+  ReconciliationConflict,
+} from '@/hooks/useProfileFit'
+import { computeConsistencyScore } from '@/lib/consistency-score'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -211,6 +224,34 @@ function TierSection({
   )
 }
 
+// ─── Consistency score display ────────────────────────────────────────────────
+
+function ConsistencyScoreDisplay({ conflicts }: { conflicts: ReconciliationConflict[] }) {
+  const score = computeConsistencyScore(conflicts)
+  const colourClass =
+    score >= 80 ? 'text-green-600' : score >= 60 ? 'text-amber-600' : 'text-red-600'
+  const borderClass =
+    score >= 80 ? 'border-l-green-500' : score >= 60 ? 'border-l-amber-400' : 'border-l-red-500'
+  const message =
+    score >= 80
+      ? 'Your LinkedIn profile and resume are highly consistent.'
+      : score >= 60
+        ? 'Some discrepancies detected — review the conflicts below.'
+        : 'Significant conflicts detected. Resolve these before applying.'
+
+  return (
+    <div
+      className={`flex items-center gap-4 mb-4 p-4 rounded-lg border border-l-4 bg-card ${borderClass}`}
+    >
+      <div className="text-center shrink-0">
+        <div className={`text-2xl font-bold tabular-nums ${colourClass}`}>{score}</div>
+        <p className="text-xs text-muted-foreground mt-0.5">Consistency Score</p>
+      </div>
+      <p className="text-sm text-muted-foreground flex-1">{message}</p>
+    </div>
+  )
+}
+
 // ─── Locked panel ─────────────────────────────────────────────────────────────
 
 function LockedPanel({ title, description }: { title: string; description: string }) {
@@ -247,6 +288,9 @@ export default function ProfileFit() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [selectedMarket, setSelectedMarket] = useState<string | null>(null)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
+  const [dismissedStaleAlert, setDismissedStaleAlert] = useState(false)
+
+  const { daysSinceImport, isStale } = useLinkedinImportAge()
 
   // Initialise selectors from career goals profile
   useEffect(() => {
@@ -395,6 +439,35 @@ export default function ProfileFit() {
         </Button>
       </motion.div>
 
+      {/* Stale LinkedIn data alert */}
+      {isStale && !dismissedStaleAlert && (
+        <Alert className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between gap-2 text-sm">
+            <span>
+              LinkedIn data is {daysSinceImport} days old — re-import for accurate results.
+            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => (window.location.href = '/settings')}
+              >
+                Re-import →
+              </Button>
+              <button
+                className="text-muted-foreground hover:text-foreground text-sm"
+                onClick={() => setDismissedStaleAlert(true)}
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Loading */}
       {historyLoading && !latestReport && (
         <div className="text-sm text-muted-foreground py-8 text-center">Loading fit data…</div>
@@ -510,9 +583,14 @@ export default function ProfileFit() {
                   </div>
                 )}
                 {latestReport.reconciliation_conflicts !== null ? (
-                  <ReconciliationConflictList
-                    conflicts={latestReport.reconciliation_conflicts ?? []}
-                  />
+                  <>
+                    <ConsistencyScoreDisplay
+                      conflicts={latestReport.reconciliation_conflicts ?? []}
+                    />
+                    <ReconciliationConflictList
+                      conflicts={latestReport.reconciliation_conflicts ?? []}
+                    />
+                  </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Run "Analyze with Reconciliation" to compare your LinkedIn profile against your
@@ -522,7 +600,7 @@ export default function ProfileFit() {
               </>
             ) : (
               <LockedPanel
-                title="Max plan required"
+                title="Pro plan required"
                 description="Detect inconsistencies between your LinkedIn profile and resume — job titles, dates, skill claims."
               />
             )}
@@ -537,7 +615,7 @@ export default function ProfileFit() {
                   Fit score over time for this role and market.
                 </p>
               </div>
-              {hasFeature('profile_fit_reconciliation') && history.length > 0 && (
+              {hasFeature('profile_fit_score_history') && history.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -549,7 +627,7 @@ export default function ProfileFit() {
                 </Button>
               )}
             </div>
-            {hasFeature('profile_fit_reconciliation') ? (
+            {hasFeature('profile_fit_score_history') ? (
               selectedRole && selectedMarket ? (
                 <FitScoreHistoryChart
                   reports={history}

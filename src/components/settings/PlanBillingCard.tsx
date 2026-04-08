@@ -5,6 +5,7 @@
  *   Billing not yet live (P22); upgrade buttons show a "coming soon" dialog with
  *   a contact-us path. C-Level tier uses Contact Sales mailto CTA.
  * 2026-04-08 | P29 — Replace "coming soon" mailto dialog with UpgradeRequestModal.
+ * 2026-04-08 | P30 S4 — Move reconciliation from Max features to Pro. Add fit score history as Max differentiator.
  *   Upgrade CTAs now submit a request via the request-plan-upgrade edge function.
  *   Admin is notified by email (server-side only); user sees confirmation. Enterprise unchanged.
  */
@@ -63,6 +64,7 @@ const TIERS: TierDef[] = [
       'Upskilling roadmaps',
       'Gap Analysis engine',
       'Profile Fit Analyzer',
+      'Profile vs resume consistency check',
       'Job discovery alerts',
     ],
   },
@@ -77,7 +79,7 @@ const TIERS: TierDef[] = [
     features: [
       'Everything in Pro',
       'CV Optimisation Score',
-      'Profile vs resume conflict detection',
+      'Fit score history & progress tracking',
       'AI prompt & output inspection',
       'Bring your own API key (BYOK)',
       'Custom model selection',

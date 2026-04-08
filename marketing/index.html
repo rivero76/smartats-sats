@@ -2,11 +2,12 @@
 <!-- UPDATE LOG
      2026-03-30 00:00:00 | End-user landing page — standalone HTML
      2026-04-08 00:00:00 | Wired all 19 placeholder links to real URLs; fixed billing copy conflict; copied to marketing/ for Vercel static deployment
+     2026-04-08 | P30 S4 — Move Profile fit reconciliation from Max to Pro tier. Replace with Fit score history in Max. Update comparison table.
      2026-03-30 12:00:00 | Add Resume Intelligence Suite and Skill Profile Engine features
-     2026-04-08 00:00:00 | Update ATS Match Score card to Recruiter Searchability Score; add Knock Knock Outreach Coach feature card; update FAQ copy
      2026-04-07 20:00:00 | UIUX redesign: score-first ATS analyses cards, filter bar, Debug Modal plan gating, Settings PlanBillingCard tier comparison.
      2026-04-08 12:00:00 | Persona-optimised sales funnel for Karen (AU) — experienced IT PM/Delivery Lead, 40+, post-layoff, ATS-invisible. Updated hero copy, mockup, social proof, testimonials, and final CTA.
      2026-04-08 15:00:00 | Teal-strategy pricing: MVP banner, feature comparison table, upgrade-trigger copy, price anchoring vs LinkedIn Premium. Feature lists aligned to live feature flags screenshot.
+     2026-04-06 00:00:00 | Rename ATS Compatibility Score to Recruiter Searchability Score throughout; add Knock Knock Outreach Coach feature card and compare table row.
 -->
 <html lang="en">
   <head>
@@ -1143,7 +1144,7 @@
       </ul>
       <div class="nav-actions">
         <a href="https://smartats-sats.vercel.app/auth" class="btn-ghost">Sign in</a>
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get my searchability score — free</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Get my Recruiter Searchability Score — free</a>
       </div>
     </nav>
 
@@ -1185,7 +1186,7 @@
             <div class="dot-r"></div>
             <div class="dot-y"></div>
             <div class="dot-g"></div>
-            <div class="mockup-url">app.smartats.io · ATS Analysis</div>
+            <div class="mockup-url">app.smartats.io · Recruiter Searchability</div>
           </div>
           <div class="mockup-body">
             <div
@@ -1193,7 +1194,7 @@
             >
               <div>
                 <div class="score-header">
-                  <div class="score-title">ATS Match Score</div>
+                  <div class="score-title">Recruiter Searchability Score</div>
                   <div class="score-badge">Analysis complete</div>
                 </div>
                 <div style="text-align: center; margin-bottom: 16px">
@@ -1421,16 +1422,19 @@
             <div>
               <h3>Recruiter Searchability Score</h3>
               <p>
-                See exactly how easy it is for a recruiter to find your résumé in their ATS — and
-                whether it will survive the 6-second human first impression. Every analysis shows a
-                score with four sub-dimensions (Skills Alignment, Experience Relevance, Domain Fit,
-                Format Quality) and a First-Impression Summary badge (Strong / Needs Attention /
-                Format Issues Found) aggregating format, tone, and industry signals.
+                Your score clears two barriers every application must pass: (1) keyword
+                searchability — can a recruiter's ATS search surface your résumé at all? (2)
+                first-impression — will they spend 6 seconds reading it and call? The score opens
+                with a large percentage front and centre, a colour-coded border (green for 80%+,
+                amber for 60–79%, red below 60%), and a First-Impression Summary badge (Strong /
+                Needs Attention / Format Issues Found). Pro+ users see the full sub-dimension
+                breakdown: Skills Alignment, Experience Relevance, Domain Fit, and Format Quality.
               </p>
               <div class="feature-pills">
-                <span class="fpill">Two-barrier visibility</span>
-                <span class="fpill">Score breakdown</span>
-                <span class="fpill">First-impression badge</span>
+                <span class="fpill">Two-barrier analysis</span>
+                <span class="fpill">First-Impression badge</span>
+                <span class="fpill">Colour-coded status</span>
+                <span class="fpill">Sub-dimensions on Pro+</span>
               </div>
             </div>
           </div>
@@ -1493,19 +1497,22 @@
             </div>
           </div>
           <div class="feature-card">
-            <div class="feature-icon-wrap" style="background: rgba(34, 197, 94, 0.12)">💬</div>
+            <div class="feature-icon-wrap" style="background: rgba(20, 184, 166, 0.12)">📩</div>
             <div>
               <h3>Knock Knock Outreach Coach</h3>
               <p>
-                The highest-ROI job search move is direct outreach to the hiring manager — not
-                applying to job boards. For every high-match opportunity, SmartATS generates a
-                personalised LinkedIn message using Bryan Creely's Knock Knock technique: genuine
-                interest → specific connection → low-ask close. Edit and send in seconds.
+                For every high-match opportunity in your dashboard, click "Reach Out" and SmartATS
+                generates a Bryan Creely-style LinkedIn message using the Knock Knock technique:
+                genuine interest in the company → a specific observation connecting your background
+                → a low-ask close (insight request, not a job ask). The message is editable and
+                copyable before you send. Direct recruiter and hiring manager outreach is the
+                highest-ROI channel in your job search — now built into SmartATS.
               </p>
               <div class="feature-pills">
-                <span class="fpill">Skip the recruiter queue</span>
-                <span class="fpill">Knock Knock technique</span>
-                <span class="fpill">Editable + copyable</span>
+                <span class="fpill">Bryan Creely method</span>
+                <span class="fpill">Editable &amp; copyable</span>
+                <span class="fpill">Per-opportunity</span>
+                <span class="fpill">Pro+</span>
               </div>
             </div>
           </div>
@@ -1671,10 +1678,10 @@
               <li><span class="ck">✓</span> Résumé upload (PDF, DOCX, HTML)</li>
               <li><span class="ck">✓</span> Manual job description entry</li>
               <li><span class="ck">✓</span> Matched &amp; missing skills list</li>
-              <li><span class="ck">✓</span> 0–100 compatibility score</li>
+              <li><span class="ck">✓</span> Recruiter Searchability Score (0–100)</li>
             </ul>
             <p class="p-upgrade-hint">Good for a first look</p>
-            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get my free searchability score</a>
+            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Get my free score</a>
           </div>
           <!-- PRO -->
           <div class="pricing-card popular">
@@ -1689,7 +1696,9 @@
               <li><span class="ck">✓</span> AI upskilling roadmap</li>
               <li><span class="ck">✓</span> Skill reclassification &amp; gap analysis</li>
               <li><span class="ck">✓</span> Profile Fit analyzer</li>
+              <li><span class="ck">✓</span> Profile vs resume consistency check</li>
               <li><span class="ck">✓</span> Proactive job match alerts (≥60% fit)</li>
+              <li><span class="ck">✓</span> Knock Knock Outreach Coach</li>
             </ul>
             <p class="p-upgrade-hint">Best when tailoring 5+ applications/week</p>
             <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-solid">Start Pro free</a>
@@ -1701,7 +1710,7 @@
             <div class="p-desc">Senior leaders &amp; career changers</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Everything in Pro</li>
-              <li><span class="ck">✓</span> Profile fit reconciliation</li>
+              <li><span class="ck">✓</span> Fit score history &amp; progress tracking</li>
               <li><span class="ck">✓</span> Bring your own OpenAI API key</li>
               <li><span class="ck">✓</span> AI model selection preference</li>
             </ul>
@@ -1804,9 +1813,16 @@
                   <td><span class="ci">✓</span></td>
                 </tr>
                 <tr>
+                  <td>Knock Knock Outreach Coach</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
                   <td>Profile fit reconciliation</td>
                   <td><span class="cx">—</span></td>
-                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
                   <td><span class="ci">✓</span></td>
                   <td><span class="ci">✓</span></td>
                 </tr>
@@ -1857,8 +1873,10 @@
             <h3>How does SmartATS score my résumé?</h3>
             <p>
               We use a schema-locked AI pipeline that compares your résumé content against the job
-              description. The score reflects skill coverage, experience alignment, and keyword
-              relevance — with a full breakdown so you can see exactly why.
+              description. The Recruiter Searchability Score reflects two barriers: keyword
+              searchability (can an ATS search surface you?) and first-impression (will a recruiter
+              read past the 6-second filter?). A full breakdown shows exactly why your score is
+              what it is.
             </p>
           </div>
           <div class="faq-item">
@@ -1903,10 +1921,9 @@
           <div class="faq-item">
             <h3>What data can I see on the Free plan?</h3>
             <p>
-              Free users see the Recruiter Searchability Score, score breakdown (all four
-              sub-dimensions), First-Impression Summary badge, matched skills, missing skills,
-              and extraction warnings. CV Optimisation, AI prompts, raw model output, and token
-              usage are available on Pro and Max respectively.
+              Free users see the Recruiter Searchability Score, matched skills, missing skills,
+              extraction warnings, and error details. Score sub-dimensions, CV Optimisation, AI
+              prompts, raw model output, and token usage are available on Pro and Max respectively.
             </p>
           </div>
           <div class="faq-item">

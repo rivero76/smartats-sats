@@ -5,6 +5,7 @@
  * 2026-03-18 00:00:00 | CR1-2: Replace inline CORS block with shared _shared/cors.ts import.
  * 2026-04-07 00:00:00 | P28 S7 — Forward certifications and recommendation_count from scraper;
  *   update LINKEDIN_NORMALIZATION_SCHEMA to include certifications array in output.
+ * 2026-04-08 | P30 S7 — Add top-level 'about' field to success response (profile.summary passthrough).
  */
 import 'https://deno.land/x/xhr@0.1.0/mod.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -611,6 +612,7 @@ serve(async (req) => {
         linkedin_url: linkedinUrl,
         provider_payload: rawProviderPayload,
         normalized_preview: normalizationResult.normalized,
+        about: rawProviderPayload.profile?.summary ?? null,
         recommendation_count: rawProviderPayload.recommendation_count ?? null,
         metadata: {
           model: normalizationResult.modelUsed,

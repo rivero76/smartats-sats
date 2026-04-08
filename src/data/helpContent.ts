@@ -2,6 +2,8 @@
  * UPDATE LOG
  * 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
  * 2026-04-08 | P29 — Updated profileSettings: upgrade request flow (modal → confirmation), fixed stale "billing coming soon" troubleshooting entry. Updated adminLogging: Upgrade Requests admin tab.
+ * 2026-04-08 | P30 S2 — Updated linkedinProfileImport: step 2 now references the Import button location, added certifications+About to keyFeatures, added 2 troubleshooting items.
+ * 2026-04-08 | P30 S3 — Updated profileFitAnalyzer: reconciliation now Pro+ (not Max+), added Consistency Score explanation, updated step 6 and troubleshooting.
  * 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for the new /profile-fit page (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for the Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
  * 2026-04-06 00:00:00 | P26 — Added gapAnalysis help topic for the new /gap Gap Analysis page (Pro+ gated).
  * 2026-03-18 00:00:00 | CR3-1–CR3-4: Added linkedinProfileImport, resumePersonas, adminLogging, accountDeletion topics.
@@ -924,7 +926,7 @@ export const helpContentData: Record<string, HelpContent> = {
       'LinkedIn Profile Import lets you bring your LinkedIn professional data into Smart ATS without manual data entry. The system fetches your public profile, parses it into structured skills and experience, and presents a review modal where you approve or reject each suggested addition before anything is saved.',
     keyFeatures: [
       'Automatic profile fetch from a LinkedIn URL',
-      'Structured parsing of skills and work experience',
+      'Extracts skills, work experience, certifications, and About section text',
       'Human-in-the-loop review — nothing is saved without your approval',
       'Fuzzy deduplication against existing resume data',
       'Provenance tagging so imported items are traceable',
@@ -933,15 +935,15 @@ export const helpContentData: Record<string, HelpContent> = {
       {
         step: 1,
         title: 'Go to Profile Settings',
-        description: 'Navigate to Profile Settings and find the LinkedIn section.',
-        tip: 'Your LinkedIn profile must be set to Public for the import to succeed.',
+        description: 'Open Settings and locate the LinkedIn URL field under Profile Settings.',
+        tip: 'Your LinkedIn profile visibility must be set to Public — the importer cannot access private profiles.',
       },
       {
         step: 2,
-        title: 'Enter Your LinkedIn Profile URL',
+        title: 'Enter Your LinkedIn Profile URL and Click Import',
         description:
-          'Paste your full LinkedIn profile URL (e.g. https://www.linkedin.com/in/yourname) into the field and click Import.',
-        tip: 'Use the URL from your browser address bar when viewing your own profile page.',
+          'Paste your full LinkedIn profile URL (e.g. https://www.linkedin.com/in/yourname) into the field. An "Import" button appears next to the field — click it to start the import. This button is available on Pro and above.',
+        tip: 'Use the URL from your browser address bar when viewing your own LinkedIn profile page.',
       },
       {
         step: 3,
@@ -986,6 +988,16 @@ export const helpContentData: Record<string, HelpContent> = {
         problem: 'The review modal shows no items',
         solution:
           'Your LinkedIn profile may not have structured skill or experience data, or all detected items were already in your resume. Try adding more detail to your LinkedIn profile.',
+      },
+      {
+        problem: 'The Import button is not visible next to the LinkedIn URL field',
+        solution:
+          'LinkedIn import requires a Pro plan or above. Upgrade from Settings → Your Plan to unlock the Import button.',
+      },
+      {
+        problem: 'Import takes longer than 30 seconds or times out',
+        solution:
+          'The scraper service may be restarting after inactivity. Wait a minute and try again. If the issue persists, check that your LinkedIn URL is in the correct format (https://www.linkedin.com/in/yourname).',
       },
     ],
     relatedTopics: ['Resume Management', 'Experience Enrichment', 'Profile & Settings Management'],
@@ -1327,12 +1339,13 @@ export const helpContentData: Record<string, HelpContent> = {
     description:
       'Get a 0–100 fit score showing how well your LinkedIn profile and skills match real market demand for your target role. Available on Pro and above.',
     overview:
-      'Profile Fit Analyzer compares your imported LinkedIn profile against live job market signals for your target role and market. It produces a weighted fit score, a gap breakdown sorted by tier (Critical, Important, Nice-to-Have), and AI-generated recommended actions for each gap. Max plan users also get a Reconciliation view that highlights conflicts between your LinkedIn data and your uploaded resume, plus a score history chart to track improvement over time.',
+      'Profile Fit Analyzer compares your imported LinkedIn profile against live job market signals for your target role and market. It produces a weighted fit score, a gap breakdown sorted by tier (Critical, Important, Nice-to-Have), and AI-generated recommended actions for each gap. Pro plan users also get a Reconciliation view that highlights conflicts between your LinkedIn data and your uploaded resume, including a Consistency Score (0–100) that quantifies how coherent your two profiles are. Max plan users additionally get a score history chart to track improvement over time.',
     keyFeatures: [
       'Weighted 0–100 fit score based on signal coverage across your profile',
       'Gap breakdown by tier: Critical, Important, and Nice-to-Have',
       'AI-generated recommended action and rationale for each gap',
-      'Reconciliation view — highlights conflicts between LinkedIn profile and resume (Max+)',
+      'Consistency Score (0–100) — quantifies how coherent your LinkedIn profile and resume are',
+      'Reconciliation view — highlights conflicts between LinkedIn profile and resume (Pro+)',
       'Score history chart to track your fit score over time (Max+)',
       'Requires LinkedIn Profile Import and career goals to be set in Settings',
     ],
@@ -1374,10 +1387,10 @@ export const helpContentData: Record<string, HelpContent> = {
       },
       {
         step: 6,
-        title: 'Review Reconciliation Conflicts (Max plan)',
+        title: 'Review Reconciliation & Consistency Score (Pro plan)',
         description:
-          'If you are on the Max plan, the Reconciliation section highlights discrepancies between your LinkedIn profile and your uploaded resume. Resolve conflicts by updating the weaker source.',
-        tip: 'Reconciliation conflicts indicate your two data sources are telling different stories — recruiters who check both will notice.',
+          'On Pro and above, the Reconciliation section shows a Consistency Score from 0–100. Scores of 80+ are green (strong consistency), 60–79 amber (some discrepancies), below 60 red (significant conflicts). Each conflict is listed with its source (LinkedIn vs Resume) so you know which document to correct.',
+        tip: 'A Consistency Score below 70 is worth addressing before applying — inconsistencies between LinkedIn and resume are a top recruiter red flag.',
       },
     ],
     bestPractices: [
@@ -1386,6 +1399,7 @@ export const helpContentData: Record<string, HelpContent> = {
       'Use the score history chart (Max plan) to confirm your profile improvements are moving the needle',
       'Combine Profile Fit with Gap Analysis to get both a profile-level score and a skill-level action plan',
       'Resolve reconciliation conflicts before applying — consistency between your resume and LinkedIn profile builds recruiter confidence',
+      'A Consistency Score below 70 suggests your LinkedIn profile and resume are telling different career stories — resolve conflicts before applying to senior roles',
     ],
     troubleshooting: [
       {
@@ -1404,9 +1418,9 @@ export const helpContentData: Record<string, HelpContent> = {
           'The analyzer requires job posting data for your selected role and market. Forward a few job alert emails to your Smart ATS inbound address via Settings → Email Job Alerts to populate the signal database.',
       },
       {
-        problem: 'Reconciliation and score history sections are locked',
+        problem: 'Reconciliation section is locked',
         solution:
-          'Reconciliation and score history are Max plan features. The gap breakdown and recommended actions are available on Pro.',
+          'Reconciliation and the Consistency Score are available on Pro and above. Score history is a Max plan feature. Upgrade from Settings → Your Plan.',
       },
     ],
     relatedTopics: ['gapAnalysis', 'linkedinProfileImport', 'skillProfile', 'upskillingRoadmaps'],

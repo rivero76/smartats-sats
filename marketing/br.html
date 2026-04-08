@@ -1,10 +1,11 @@
 <!doctype html>
 <!-- UPDATE LOG
      2026-04-08 15:00:00 | Teal-strategy pricing: banner MVP, tabela comparativa, copy de upgrade, âncora de preço vs LinkedIn Premium. Funcionalidades alinhadas com feature flags reais.
+     2026-04-08 | P30 S4 — Mover reconciliação de fit de perfil do Max para o Pro. Substituir por histórico de score no Max. Atualizar tabela comparativa.
      2026-04-08 13:00:00 | Página de marketing em português para persona Marcelo-BR —
-     2026-04-08 00:00:00 | Atualizar card Score ATS para Recruiter Searchability Score; adicionar Knock Knock Outreach Coach como novo recurso.
                            Arquiteto de Soluções Sênior, 47 anos, São Paulo, demitido em fintech,
                            problema de ATS bilingue (CV em PT-BR vs palavras-chave em inglês nos JDs).
+     2026-04-06 00:00:00 | Renomear "Score de Compatibilidade ATS" para "Score de Visibilidade para Recrutadores"; adicionar funcionalidade Knock Knock Outreach Coach.
 -->
 <html lang="pt-BR">
   <head>
@@ -453,7 +454,7 @@
       </ul>
       <div class="nav-actions">
         <a href="https://smartats-sats.vercel.app/auth" class="btn-ghost">Entrar</a>
-        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Ver meu score de ATS — grátis</a>
+        <a href="https://smartats-sats.vercel.app/auth" class="btn-primary">Ver meu Score de Visibilidade — grátis</a>
       </div>
     </nav>
 
@@ -489,13 +490,13 @@
             <div class="dot-r"></div>
             <div class="dot-y"></div>
             <div class="dot-g"></div>
-            <div class="mockup-url">app.smartats.io · Análise ATS</div>
+            <div class="mockup-url">app.smartats.io · Visibilidade para Recrutadores</div>
           </div>
           <div class="mockup-body">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
               <div>
                 <div class="score-header">
-                  <div class="score-title">Score de Compatibilidade ATS</div>
+                  <div class="score-title">Score de Visibilidade para Recrutadores</div>
                   <div class="score-badge">Análise concluída</div>
                 </div>
                 <div style="text-align:center;margin-bottom:16px">
@@ -642,8 +643,8 @@
           <div class="step">
             <div class="step-num">02</div>
             <div class="step-icon" style="background:rgba(59,130,246,0.12)">🤖</div>
-            <h3>IA pontua a compatibilidade</h3>
-            <p>Nossa IA gera um score explicável — não só um número, mas um detalhamento completo: skills encontradas, lacunas, e recomendações contextuais em português e inglês.</p>
+            <h3>IA pontua a visibilidade</h3>
+            <p>Nossa IA gera um Score de Visibilidade para Recrutadores — não só um número, mas um detalhamento completo: skills encontradas, lacunas, e recomendações contextuais em português e inglês.</p>
             <div class="step-arrow">→</div>
           </div>
           <div class="step">
@@ -668,12 +669,13 @@
           <div class="feature-card">
             <div class="feature-icon-wrap" style="background:rgba(123,94,167,0.12)">🎯</div>
             <div>
-              <h3>Score de Visibilidade para Recrutador</h3>
-              <p>Seu score mostra exatamente quão fácil é para um recrutador encontrar seu currículo no ATS — e se ele sobreviverá à leitura de 6 segundos do recrutador humano. Inclui quatro subdimensões (Alinhamento de Skills, Relevância de Experiência, Fit de Domínio, Qualidade de Formato) e um badge de Primeira Impressão. Termos em PT-BR e EN são mapeados para máxima visibilidade em multinacionais.</p>
+              <h3>Score de Visibilidade para Recrutadores</h3>
+              <p>Seu score supera duas barreiras que toda candidatura precisa vencer: (1) busca por palavras-chave — o sistema ATS da empresa consegue encontrar seu currículo? (2) primeira impressão — o recrutador vai parar para ler nos 6 segundos iniciais? O score exibe bilingualmente os termos em PT-BR e os equivalentes em inglês exigidos pelos sistemas ATS de multinacionais, com detalhamento completo de sub-dimensões no Pro+.</p>
               <div class="feature-pills">
                 <span class="fpill">PT-BR + EN</span>
-                <span class="fpill">Detalhamento completo</span>
+                <span class="fpill">Análise de duas barreiras</span>
                 <span class="fpill">Badge de primeira impressão</span>
+                <span class="fpill">Detalhamento no Pro+</span>
               </div>
             </div>
           </div>
@@ -711,14 +713,15 @@
             </div>
           </div>
           <div class="feature-card">
-            <div class="feature-icon-wrap" style="background:rgba(34,197,94,0.12)">💬</div>
+            <div class="feature-icon-wrap" style="background:rgba(20,184,166,0.12)">📩</div>
             <div>
               <h3>Coach de Abordagem Knock Knock</h3>
-              <p>O canal de busca de emprego com maior ROI é a abordagem direta ao hiring manager — não candidaturas em job boards. Para cada oportunidade com alto match, o SmartATS gera uma mensagem personalizada para LinkedIn usando a técnica Knock Knock: interesse genuíno → conexão específica → pedido de baixo risco. Edite e envie em segundos.</p>
+              <p>Para cada vaga de alto match no seu painel, clique em "Entrar em Contato" e o SmartATS gera uma mensagem de LinkedIn no estilo Bryan Creely usando a técnica Knock Knock: interesse genuíno na empresa → observação específica conectando seu background → fechamento de baixo impacto (pedido de insight, não de emprego). A mensagem é editável e copiável antes de enviar. Contato direto com recrutadores e gerentes de contratação é o canal de maior ROI — agora integrado no SmartATS.</p>
               <div class="feature-pills">
-                <span class="fpill">Fura a fila do recrutador</span>
                 <span class="fpill">Técnica Knock Knock</span>
                 <span class="fpill">Editável e copiável</span>
+                <span class="fpill">Por oportunidade</span>
+                <span class="fpill">Pro+</span>
               </div>
             </div>
           </div>
@@ -809,7 +812,7 @@
     <section class="section-wrap" id="precos">
       <div class="container">
         <div class="section-eyebrow">Preços</div>
-        <h2>Comece grátis. <span class="grd">Upgrade quando quiser.</span></h2>
+        <h2>Comece grátis. <span class="grd">Faça upgrade quando estiver pronto.</span></h2>
         <p class="section-sub">Sem cartão de crédito para começar. O LinkedIn Premium cobra $40/mês e ainda assim não te diz por que seu currículo é reprovado no filtro — o SmartATS diz.</p>
         <div class="pricing-grid">
           <!-- GRÁTIS -->
@@ -822,10 +825,10 @@
               <li><span class="ck">✓</span> Upload de currículo (PDF, DOCX, HTML)</li>
               <li><span class="ck">✓</span> Entrada manual de vaga</li>
               <li><span class="ck">✓</span> Lista de skills encontradas e ausentes</li>
-              <li><span class="ck">✓</span> Score de compatibilidade 0–100</li>
+              <li><span class="ck">✓</span> Score de Visibilidade para Recrutadores (0–100)</li>
             </ul>
             <p class="p-upgrade-hint">Ótimo para uma primeira avaliação</p>
-            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Ver meu score ATS grátis</a>
+            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Ver meu score grátis</a>
           </div>
           <!-- PRO -->
           <div class="pricing-card popular">
@@ -840,7 +843,9 @@
               <li><span class="ck">✓</span> Roadmap de upskilling com IA</li>
               <li><span class="ck">✓</span> Reclassificação de skills &amp; análise de gaps</li>
               <li><span class="ck">✓</span> Analisador de Fit de Perfil</li>
+              <li><span class="ck">✓</span> Verificação de consistência perfil vs currículo</li>
               <li><span class="ck">✓</span> Alertas de vagas com ≥60% de fit</li>
+              <li><span class="ck">✓</span> Coach de Abordagem Knock Knock</li>
             </ul>
             <p class="p-upgrade-hint">Ideal para quem envia 5+ candidaturas/semana</p>
             <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-solid">Começar Pro grátis</a>
@@ -852,18 +857,18 @@
             <div class="p-desc">Líderes sênior &amp; transições de carreira</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Tudo do Pro</li>
-              <li><span class="ck">✓</span> Reconciliação de fit de perfil</li>
-              <li><span class="ck">✓</span> Traga sua própria chave de API (BYOK)</li>
+              <li><span class="ck">✓</span> Histórico de score e rastreamento de progresso</li>
+              <li><span class="ck">✓</span> Traga sua própria chave de API OpenAI</li>
               <li><span class="ck">✓</span> Preferência de modelo de IA</li>
             </ul>
-            <p class="p-upgrade-hint">Ideal para C-level e transições sênior</p>
-            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Assinar Max</a>
+            <p class="p-upgrade-hint">Melhor para C-suite e transições de carreira sênior</p>
+            <a href="https://smartats-sats.vercel.app/auth" class="p-btn p-btn-outline">Obter Max</a>
           </div>
           <!-- ENTERPRISE -->
           <div class="pricing-card">
             <div class="p-tier">Enterprise</div>
             <div class="p-price">$99 <span class="per">/mês</span></div>
-            <div class="p-desc">Times &amp; empresas</div>
+            <div class="p-desc">Times &amp; organizações</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Tudo do Max</li>
               <li><span class="ck">✓</span> Multi-usuário com RBAC</li>
@@ -955,9 +960,16 @@
                   <td><span class="ci">✓</span></td>
                 </tr>
                 <tr>
+                  <td>Coach de Abordagem Knock Knock</td>
+                  <td><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                  <td><span class="ci">✓</span></td>
+                </tr>
+                <tr>
                   <td>Reconciliação de fit de perfil</td>
                   <td><span class="cx">—</span></td>
-                  <td class="td-highlight"><span class="cx">—</span></td>
+                  <td class="td-highlight"><span class="ci">✓</span></td>
                   <td><span class="ci">✓</span></td>
                   <td><span class="ci">✓</span></td>
                 </tr>
@@ -1006,7 +1018,7 @@
         <div class="faq-grid">
           <div class="faq-item">
             <h3>Como o SmartATS pontua meu currículo?</h3>
-            <p>Usamos um pipeline de IA com schema travado que compara o conteúdo do seu currículo com a descrição da vaga. O score reflete cobertura de skills, alinhamento de experiência e relevância de palavras-chave — com detalhamento completo em português e inglês.</p>
+            <p>Usamos um pipeline de IA com schema travado que compara o conteúdo do seu currículo com a descrição da vaga. O Score de Visibilidade para Recrutadores supera duas barreiras: busca por palavras-chave (o ATS consegue encontrar você?) e primeira impressão (o recrutador vai parar para ler?). O detalhamento é apresentado em português e inglês.</p>
           </div>
           <div class="faq-item">
             <h3>A IA muda meu currículo sem eu saber?</h3>

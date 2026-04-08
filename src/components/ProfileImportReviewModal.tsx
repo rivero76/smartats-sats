@@ -3,6 +3,8 @@
  * 2026-03-01 00:00:00 | P13 Story 3: Created HITL review modal for LinkedIn import with skill/experience selection and sequential DB save flow.
  * 2026-03-17 00:00:00 | Fix scroll clipping: moved pr-3 from ScrollArea wrapper to inner content div so scrollbar does not overlap content.
  * 2026-03-18 00:00:00 | CR2-3: Updated import path from linkedinImportMerge to linkedin-import-merge.
+ * 2026-04-08 | P30 S7 — Add optional `about` prop. Renders read-only About section preview
+ *   (capped at 400 chars) at the top of the ScrollArea before the skills list.
  */
 
 import { useState } from 'react'
@@ -33,6 +35,8 @@ interface ProfileImportReviewModalProps {
   onSuccess: () => void
   mergeResult: LinkedinImportMergeResult
   importDate: string
+  /** Optional About/summary text from the LinkedIn profile. Display-only — not saved to DB. */
+  about?: string | null
 }
 
 export function ProfileImportReviewModal({
@@ -41,6 +45,7 @@ export function ProfileImportReviewModal({
   onSuccess,
   mergeResult,
   importDate,
+  about,
 }: ProfileImportReviewModalProps) {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -227,6 +232,22 @@ export function ProfileImportReviewModal({
 
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-6 pr-3">
+                {/* About section — read-only preview, not saved to DB */}
+                {about && (
+                  <>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold">About</h3>
+                      <p className="text-sm text-muted-foreground bg-muted/40 rounded-lg p-3 leading-relaxed">
+                        {about.length > 400 ? `${about.slice(0, 400)}\u2026` : about}
+                      </p>
+                      <p className="text-xs text-muted-foreground italic">
+                        Read-only preview — About text is not saved to your profile.
+                      </p>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
                 {/* Skills Section */}
                 {(mergeResult.skills_to_insert.length > 0 ||
                   mergeResult.skills_to_merge.length > 0 ||

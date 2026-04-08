@@ -12,6 +12,9 @@
  *   live feature flags from sats_feature_flags via useFeatureFlags().
  *   Falls back to hardcoded PLAN_FEATURES if flags not loaded or errored.
  * 2026-04-07 18:30:00 | ATSDebugModal redesign — add 'ats_score_breakdown' PlanFeatureKey (Pro+).
+ * 2026-04-08 | P30 S4 — Move 'profile_fit_reconciliation' from Max+ to Pro+.
+ *   Add 'profile_fit_score_history' (Max+) to fix coupling bug in ProfileFit.tsx
+ *   where score history was gated by the reconciliation key.
  */
 
 // ---------------------------------------------------------------------------
@@ -29,7 +32,8 @@ export type PlanFeatureKey =
   | 'ats_analysis_unlimited' // Unlimited ATS analyses (Pro+; Free is limited to 5/mo)
   | 'gap_analysis' // Gap Analysis engine — market frequency vs. profile (Pro+)
   | 'profile_fit' // Profile Fit Analyzer — fit score + gap breakdown (Pro+)
-  | 'profile_fit_reconciliation' // Profile vs resume conflict detection (Max+)
+  | 'profile_fit_reconciliation' // Profile vs resume conflict detection (Pro+)
+  | 'profile_fit_score_history' // Profile fit score history chart (Max+)
   | 'ats_score_breakdown' // ATS score sub-dimension breakdown (Pro+)
   | 'byok' // Bring your own API key (Max+)
   | 'model_selection' // Custom model selection (Max+)
@@ -52,7 +56,8 @@ export const PLAN_FEATURES: Record<PlanFeatureKey, PlanTier[]> = {
   ats_analysis_unlimited: ['pro', 'max', 'enterprise'],
   gap_analysis: ['pro', 'max', 'enterprise'],
   profile_fit: ['pro', 'max', 'enterprise'],
-  profile_fit_reconciliation: ['max', 'enterprise'],
+  profile_fit_reconciliation: ['pro', 'max', 'enterprise'],
+  profile_fit_score_history: ['max', 'enterprise'],
   ats_score_breakdown: ['pro', 'max', 'enterprise'],
   byok: ['max', 'enterprise'],
   model_selection: ['max', 'enterprise'],

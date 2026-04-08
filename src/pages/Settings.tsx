@@ -6,6 +6,10 @@
 // 2026-04-02 04:00:00 | ADR-0007 — Added Email Job Alerts integration card (Postmark inbound).
 // 2026-04-05 20:30:00 | P26 S3-2 — Added CareerGoalsCard section (target markets + primary role family).
 // 2026-04-07 20:30:00 | Added PlanBillingCard as first section — shows current plan + tier comparison with upgrade CTAs.
+// 2026-04-08 | P30 S1+S7 — Add "Import from LinkedIn" button next to LinkedIn URL field.
+//   Triggers useLinkedinScrape → ProfileImportReviewModal (with About section preview).
+//   Button gated on hasFeature('linkedin_import'); Pro-gating note shown to Free users.
+// 2026-04-08 | P30 S6 — Add dismissible stale LinkedIn import Alert when last import > 30 days.
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +39,7 @@ import {
   Mail,
   Copy,
   Check,
+  RefreshCw,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -51,6 +56,10 @@ import { HelpButton } from '@/components/help/HelpButton'
 import { HelpModal } from '@/components/help/HelpModal'
 import { getHelpContent } from '@/data/helpContent'
 import { PlanBillingCard } from '@/components/settings/PlanBillingCard'
+import { useLinkedinScrape } from '@/hooks/useLinkedinScrape'
+import { useLinkedinImportAge } from '@/hooks/useLinkedinImportAge'
+import { usePlanFeature } from '@/hooks/usePlanFeature'
+import { ProfileImportReviewModal } from '@/components/ProfileImportReviewModal'
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -69,6 +78,18 @@ const profileFormSchema = z.object({
 
 const Settings = () => {
   const { loading, saving, getFormData, saveProfile } = useProfile()
+  const { hasFeature, isLoading: planIsLoading } = usePlanFeature()
+  const {
+    scrape,
+    isPending: isScraping,
+    error: scrapeError,
+    mergeResult,
+    importDate,
+    about,
+    reset: resetScrape,
+  } = useLinkedinScrape()
+  const { daysSinceImport, isStale } = useLinkedinImportAge()
+  const [dismissedStaleAlert, setDismissedStaleAlert] = useState(false)
   const {
     deletionStatus,
     isLoading: isDeletionLoading,
@@ -253,10 +274,79 @@ const Settings = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>LinkedIn URL (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
-                      </FormControl>
+                      <div className="flex gap-2 items-start">
+                        <FormControl>
+                          <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                        </FormControl>
+                        {!planIsLoading && hasFeature('linkedin_import') && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-10 shrink-0"
+                            disabled={isScraping || !field.value}
+                            onClick={async () => {
+                              const valid = await form.trigger('linkedin_url')
+                              if (valid && field.value) scrape(field.value)
+                            }}
+                          >
+                            {isScraping ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 mr-1.5" />
+                            )}
+                            {isScraping ? 'Importing…' : 'Import'}
+                          </Button>
+                        )}
+                      </div>
                       <FormMessage />
+                      {!planIsLoading && !hasFeature('linkedin_import') && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          LinkedIn import requires a{' '}
+                          <a
+                            href="#plan-billing"
+                            className="text-primary underline hover:no-underline"
+                          >
+                            Pro plan
+                          </a>
+                          .
+                        </p>
+                      )}
+                      {scrapeError && (
+                        <Alert variant="destructive" className="mt-2">
+                          <AlertDescription>{scrapeError}</AlertDescription>
+                        </Alert>
+                      )}
+                      {isStale && !dismissedStaleAlert && !isScraping && (
+                        <Alert className="mt-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription className="flex items-center justify-between gap-2">
+                            <span>
+                              Your LinkedIn data was last imported {daysSinceImport} days ago.{' '}
+                              <button
+                                type="button"
+                                className="text-primary underline hover:no-underline"
+                                disabled={!form.getValues('linkedin_url')}
+                                onClick={async () => {
+                                  const url = form.getValues('linkedin_url')
+                                  const valid = await form.trigger('linkedin_url')
+                                  if (valid && url) scrape(url)
+                                }}
+                              >
+                                Re-import Now →
+                              </button>
+                            </span>
+                            <button
+                              type="button"
+                              className="shrink-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => setDismissedStaleAlert(true)}
+                              aria-label="Dismiss"
+                            >
+                              ✕
+                            </button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </FormItem>
                   )}
                 />
@@ -604,6 +694,17 @@ WHERE key = 'inbound_email_allowlist';`}
           <Button disabled>Generate API Key</Button>
         </CardContent>
       </Card>
+
+      {mergeResult && importDate && (
+        <ProfileImportReviewModal
+          isOpen={true}
+          onClose={resetScrape}
+          onSuccess={resetScrape}
+          mergeResult={mergeResult}
+          importDate={importDate}
+          about={about}
+        />
+      )}
 
       <DeleteAccountModal
         isOpen={showDeleteModal}
