@@ -50,7 +50,12 @@ All edge function secrets are set per-project in the Supabase Dashboard:
 
 ### First-time setup checklist
 
-1. **Supabase Dashboard → Edge Functions → Secrets** — add all "Yes" and "Recommended" secrets above.
+1. **Supabase Auth config** — Critical after any new deployment target. Go to **Supabase Dashboard → Authentication → URL Configuration** and set:
+   - **Site URL** → `https://your-production-domain.vercel.app` (controls where confirmation + reset emails redirect)
+   - **Redirect URLs (allow list)** → add `https://your-production-domain.vercel.app/**` and `http://localhost:8080/**`
+   - ⚠️ Failure to do this causes all sign-up confirmation emails and password reset links to redirect to the wrong domain. This happened when the project was migrated from Lovable.dev — see `docs/incidents/incident-2026-04-09-auth-redirects-lovable.md`.
+
+2. **Supabase Dashboard → Edge Functions → Secrets** — add all "Yes" and "Recommended" secrets above.
 2. Verify `SATS_ALLOWED_ORIGINS` includes your Vercel deployment URL and any preview URLs.
 3. Set `SATS_ADMIN_NOTIFICATION_EMAIL` to the email address where you want to receive upgrade request notifications.
 4. Set `RESEND_API_KEY` from [resend.com](https://resend.com) to enable transactional emails.
