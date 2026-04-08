@@ -1,5 +1,7 @@
 /**
  * UPDATE LOG
+ * 2026-04-08 | fix — Make SATS_ADMIN_NOTIFICATION_EMAIL optional; 503 was blocking
+ *   all upgrade requests when env var was not set in Supabase secrets.
  * 2026-04-08 | P29 — New edge function: captures upgrade intent from users,
  *   persists to sats_upgrade_requests, and sends admin notification via Resend.
  *   Admin email read from SATS_ADMIN_NOTIFICATION_EMAIL (server-side only — never
@@ -42,13 +44,7 @@ serve(async (req) => {
     })
   }
 
-  const adminEmail = Deno.env.get('SATS_ADMIN_NOTIFICATION_EMAIL')
-  if (!adminEmail) {
-    return new Response(JSON.stringify({ error: 'Service misconfigured' }), {
-      status: 503,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
+  const adminEmail = Deno.env.get('SATS_ADMIN_NOTIFICATION_EMAIL') // optional — skips email if unset
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
   const authHeader = req.headers.get('Authorization')
