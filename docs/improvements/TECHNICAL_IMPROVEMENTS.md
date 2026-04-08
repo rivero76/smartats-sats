@@ -23,6 +23,7 @@
 <!-- Updated: 2026-04-08 — added P1-14 (deletion confirmation email via Resend); implemented in fix/waf-critical-findings -->
 <!-- Updated: 2026-04-08 — added P0-4 (cross-language skill canonical normalization for pt-BR testing); added P0-5 (LGPD compliance for Brazilian users) -->
 <!-- Updated: 2026-04-08 — added P0-6 (Auth emails in Portuguese), P0-7 (ATS prompt for Brazilian CV), P0-8 (UTF-8 smoke test), P0-9 (DD/MM/YYYY date format) -->
+<!-- Updated: 2026-04-08 — added LINKEDIN-1 (cookie rotation), LINKEDIN-2 (residential proxy), LINKEDIN-3 (public profile UX warning), OPS-1 (Supabase migration auto-apply) -->
 
 This document captures prioritised technical improvements identified during a full codebase review on 2026-03-16. Items are not product features — they are developer experience, robustness, and maintainability improvements.
 
@@ -1297,3 +1298,71 @@ When a user triggers account deletion the edge function currently has a `TODO` c
 The send call must be wrapped in `try/catch` so a mail provider outage cannot prevent the deletion from completing.
 
 **Status:** Implemented in `fix/waf-critical-findings` (2026-04-08). Uses Resend via `RESEND_API_KEY` secret + `SATS_APP_URL` for the cancellation link. ✅
+
+---
+
+### LINKEDIN-1 · LinkedIn session cookie rotation
+
+**Area:** LinkedIn scraper / Operations
+**Effort:** 30 min per rotation (manual); ~1 day to automate
+**File:** Railway → `smartats-linkedin-scraper` → Variables → `LINKEDIN_COOKIES`
+
+LinkedIn session cookies stored in Railway expire every few weeks. When they expire the scraper returns `EXTRACTION_FAILED: Could not extract profile name — profile may be private or rate-limited` for every profile URL, even public ones. Currently requires manual intervention: log in to LinkedIn in a browser, export fresh cookies via Cookie-Editor extension, paste into Railway variable.
+
+**Fix options (pick one):**
+1. **Manual rotation (current):** Set a calendar reminder every 3–4 weeks to refresh `LINKEDIN_COOKIES` via Cookie-Editor extension.
+2. **Automated rotation:** Add a `/refresh-session` endpoint to the Railway scraper that logs in with `LINKEDIN_EMAIL`/`LINKEDIN_PASSWORD`, captures fresh cookies, and writes them back to the Railway variable via the Railway API. Trigger via cron.
+3. **Headless login on startup:** On every container start, if cookies fail a validation probe, automatically re-authenticate using stored credentials.
+
+**Status:** Pending. Currently causing all LinkedIn imports to fail (2026-04-08).
+
+---
+
+### LINKEDIN-2 · Residential proxy to avoid LinkedIn bot detection
+
+**Area:** LinkedIn scraper / Infrastructure
+**Effort:** 2–4 hours + proxy subscription cost (~$50–100/mo)
+**File:** `scripts/playwright-linkedin/` — Playwright launch options
+
+Railway runs on datacenter IPs (AWS `us-west-2`). LinkedIn detects these and may serve restricted pages or trigger `EXTRACTION_FAILED` even with valid cookies. A residential proxy routes scraper traffic through real ISP IPs, making it indistinguishable from normal browser traffic.
+
+**Recommended providers:** BrightData (Scraping Browser), Oxylabs, Smartproxy.
+
+**Fix:** Add proxy configuration to Playwright launch options in the Railway scraper. Inject proxy credentials via Railway environment variables (`PROXY_SERVER`, `PROXY_USERNAME`, `PROXY_PASSWORD`). This also unlocks the ability to scale to multiple concurrent scrapes without triggering LinkedIn rate limits.
+
+**Status:** Pending. Documented as INFRA-1. Review at 200 MAU or when cookie rotation alone becomes insufficient.
+
+---
+
+### LINKEDIN-3 · Show "profile must be public" warning before import
+
+**Area:** UX / Settings page
+**Effort:** 1–2 hours
+**File:** `src/pages/Settings.tsx`
+
+When a user's LinkedIn profile is set to Private, the scraper returns `EXTRACTION_FAILED`. The current error message says "LinkedIn import failed. Please try again." — which doesn't help the user understand the real cause.
+
+**Fix:** Add a persistent info note below the LinkedIn URL field in Settings explaining:
+- The profile must be set to **Public** on LinkedIn before importing
+- Link to LinkedIn's visibility settings: `linkedin.com/settings` → Visibility
+- Only show this note when the Import button is visible (Pro+ users)
+
+This is a one-line UX change that eliminates a common support question.
+
+**Status:** Pending.
+
+---
+
+### OPS-1 · Supabase migrations do not auto-apply to production
+
+**Area:** Operations / Deployment
+**Effort:** 2–4 hours
+**Files:** `.github/workflows/`, `supabase/`
+
+`supabase db push` only applies migrations that are not yet tracked in the remote migration history. If a migration was partially applied (e.g. table created but trigger already existed from a prior run), `db push` reports "up to date" even though RLS policies and functions from that migration were never applied. This caused the `sats_upgrade_requests` Upgrade Requests panel to fail in production (2026-04-08) — the table existed but lacked the `profiles` FK needed for the PostgREST join.
+
+**Fix:** 
+1. Add a GitHub Actions step to run `supabase db push --linked` on every push to `main`, using `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` as repository secrets.
+2. Alternatively, use idempotent migration SQL (`CREATE TABLE IF NOT EXISTS`, `DROP POLICY IF EXISTS` before each `CREATE POLICY`) so re-running a migration is always safe.
+
+**Status:** Pending. Currently migrations must be manually verified and applied via SQL Editor when automatic push misreports "up to date".
