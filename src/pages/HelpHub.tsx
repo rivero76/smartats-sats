@@ -13,6 +13,7 @@ import { helpContentData, type HelpContent } from '@/data/helpContent'
 // 2026-04-06 00:00:00 | P26 — Added gapAnalysis route mapping for /gap (Gap Analysis, Pro+ gated)
 // 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer route mapping for /profile-fit. Added emailJobAlerts route mapping for /settings (ADR-0007).
 // 2026-04-07 23:50:00 | WAF OE-2 — Added missing route mappings: skillProfile → /settings, resumeIntelligence → /analyses
+// 2026-04-12 12:00:00 | P-INTERVIEW S1+S2 — Added interviewPrep route mapping for /interview-prep.
 const HELP_ROUTE_MAP: Record<string, string> = {
   dashboard: '/',
   resumes: '/resumes',
@@ -31,6 +32,7 @@ const HELP_ROUTE_MAP: Record<string, string> = {
   emailJobAlerts: '/settings',
   skillProfile: '/settings',
   resumeIntelligence: '/analyses',
+  interviewPrep: '/interview-prep',
 }
 
 type HelpTopic = HelpContent & { route?: string }

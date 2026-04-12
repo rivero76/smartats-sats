@@ -3,6 +3,7 @@
  * 2026-03-01 00:00:00 | Removed disabled Advanced Reports button; updated Working/Planned feature lists
  * 2026-03-26 00:00:00 | S3-1: fix heading hierarchy — stat card labels → <p>, section card titles → <h2>
  * 2026-03-27 00:00:00 | P21: updated Supabase table references to sats_ prefix
+ * 2026-04-12 00:00:00 | Sync Available Features list — add Gap Analysis, Profile Fit, Interview Intelligence, LinkedIn Import, CV Optimisation, Email Job Ingestion (all shipped but unlisted).
  */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -309,7 +310,15 @@ const Dashboard = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>CV Optimisation Score</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                   <span>AI Experience Enrichment</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>LinkedIn Profile Import</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="h-3 w-3 text-green-600" />
@@ -318,6 +327,22 @@ const Dashboard = () => {
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="h-3 w-3 text-green-600" />
                   <span>Proactive Job Opportunities</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Gap Analysis</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Profile Fit Analyzer</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Interview Intelligence</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Email Job Ingestion</span>
                 </li>
               </ul>
             </div>

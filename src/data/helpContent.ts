@@ -1,5 +1,6 @@
 /**
  * UPDATE LOG
+ * 2026-04-12 12:00:00 | P-INTERVIEW S1+S2 — Added interviewPrep help topic for /interview-prep (Pro+ gated, RUNTIME-VERIFIED 2026-04-12). Audit confirmed no other shipped routes are missing help entries.
  * 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
  * 2026-04-08 | P29 — Updated profileSettings: upgrade request flow (modal → confirmation), fixed stale "billing coming soon" troubleshooting entry. Updated adminLogging: Upgrade Requests admin tab.
  * 2026-04-08 | P30 S2 — Updated linkedinProfileImport: step 2 now references the Import button location, added certifications+About to keyFeatures, added 2 troubleshooting items.
@@ -1508,6 +1509,89 @@ export const helpContentData: Record<string, HelpContent> = {
     ],
     relatedTopics: ['proactiveMatches', 'gapAnalysis', 'profileFitAnalyzer'],
   },
+
+  interviewPrep: {
+    id: 'interviewPrep',
+    title: 'Interview Intelligence',
+    description:
+      'Generate a tailored question bank, STAR scaffolds, company brief, and role decoder from any completed ATS analysis. Available on Pro and above.',
+    overview:
+      'Interview Intelligence turns a completed ATS analysis into a full interview preparation session. It runs a three-step AI pipeline — company research, job description decode, and question generation — to produce five question categories, each with STAR scaffolds pre-filled from your resume content and risk flags to highlight weak spots. Access it from the "Prepare for Interview" button on any completed analysis card.',
+    keyFeatures: [
+      'Five question categories: Behavioural, Gap-Bridge, Role-Specific, Company Values, and Technical Deep-Dive',
+      'STAR scaffold per question pre-populated from your resume evidence, with green/amber/red risk flags',
+      'Company Brief tab — AI-researched company overview, culture signals, and key facts',
+      'Role Decoder tab — seniority level, domain, core responsibilities, and candidate fit assessment',
+      '24-hour rate limit per job per user; regenerate button available after the window resets',
+    ],
+    steps: [
+      {
+        step: 1,
+        title: 'Open a Completed ATS Analysis',
+        description:
+          'Go to ATS Analyses, find a completed analysis, and expand the card by clicking on it.',
+        tip: 'The Prepare for Interview button only appears on analyses with a Completed status.',
+      },
+      {
+        step: 2,
+        title: 'Click "Prepare for Interview"',
+        description:
+          'Click the button in the action row at the bottom of the expanded card. You are taken to the Interview Prep page, which starts generating your session automatically.',
+        tip: 'Generation takes 20–40 seconds — the page shows progress as each of the three pipeline steps completes.',
+      },
+      {
+        step: 3,
+        title: 'Review Your Question Bank',
+        description:
+          'The Question Bank tab opens by default. Five collapsible categories list questions tailored to the role, your background, and your skill gaps.',
+        tip: 'Start with Gap-Bridge questions — these address skills flagged as missing in your ATS analysis and are the areas interviewers are most likely to probe.',
+      },
+      {
+        step: 4,
+        title: 'Use the STAR Scaffolds',
+        description:
+          'Expand any question to see a pre-filled S/T/A/R grid drawn from your resume. Edit each cell to refine your answer with specific figures and context.',
+        tip: 'Questions with a red risk flag have weak or missing evidence in your resume — spend extra preparation time on these.',
+      },
+      {
+        step: 5,
+        title: 'Explore the Company Brief and Role Decoder Tabs',
+        description:
+          "The Company Brief tab summarises the employer's background, values, and culture signals. The Role Decoder tab breaks down the job description into seniority level, domain, and core responsibilities.",
+        tip: 'If the company name could not be verified, the Company Brief shows a notice but all questions are still available.',
+      },
+    ],
+    bestPractices: [
+      'Run Interview Intelligence as soon as you decide to apply — use the STAR scaffolds to prepare answers before sending your application, not the night before the interview',
+      'Focus first on Gap-Bridge questions — these reveal exactly where your profile falls short of the job requirements, which is where most interview challenges originate',
+      'Edit STAR scaffold cells to include specific metrics and outcomes; generic answers score lower with both human interviewers and automated screening tools',
+      "Check the Company Brief tab for values language you can mirror in your answers — using a company's own framing signals genuine research",
+      'After improving your resume, re-run the ATS analysis and generate a new interview prep session — the question bank and STAR scaffolds update to reflect your new evidence',
+    ],
+    troubleshooting: [
+      {
+        problem: '"Prepare for Interview" button is not visible on my analysis card',
+        solution:
+          'The button only appears on analyses with a Completed status. If the analysis is still processing or in an error state, complete or re-run the analysis first.',
+      },
+      {
+        problem: 'Interview Prep page is locked with an upgrade prompt',
+        solution:
+          'Interview Intelligence is available on Pro and above. Upgrade from Settings → Your Plan.',
+      },
+      {
+        problem: 'Company Brief shows "Company information could not be retrieved"',
+        solution:
+          'This notice appears when the company name could not be verified or the research step encountered an issue. Your question bank is still fully generated from the job description — only the Company Brief content is affected. No action is needed.',
+      },
+      {
+        problem: 'The "Regenerate" button is greyed out',
+        solution:
+          'Each job has a 24-hour rate limit to prevent repeated generation. The button becomes active again once the 24-hour window resets. The timestamp shown next to the button indicates when regeneration becomes available.',
+      },
+    ],
+    relatedTopics: ['atsAnalysis', 'gapAnalysis', 'upskillingRoadmaps', 'resumeIntelligence'],
+  },
 }
 
 // UPDATE LOG
@@ -1519,6 +1603,7 @@ export const helpContentData: Record<string, HelpContent> = {
 // 2026-04-07 12:00:00 | P28 — Added profileFitAnalyzer help topic for /profile-fit (Pro+ gated, RUNTIME-VERIFIED 2026-04-07). Added emailJobAlerts help topic for Settings Email Job Alerts card (ADR-0007, RUNTIME-VERIFIED 2026-04-05). Updated adminLogging to cover Feature Flags and Plan Overrides admin tabs (shipped 2026-04-07).
 // 2026-04-07 20:00:00 | Updated atsAnalysis (collapsed cards, filter bar), profileSettings (Your Plan section), adminLogging (Debug Modal plan gating).
 // 2026-04-08 | P29 — Updated profileSettings: upgrade request flow (modal → confirmation), fixed stale "billing coming soon" troubleshooting entry. Updated adminLogging: Upgrade Requests tab (step 6, keyFeature, troubleshooting).
+// 2026-04-12 12:00:00 | P-INTERVIEW S1+S2 — Added interviewPrep help topic for /interview-prep (Pro+ gated, RUNTIME-VERIFIED 2026-04-12). Audit confirmed no other shipped routes are missing help entries.
 
 export const getHelpContent = (contentId: string): HelpContent | null => {
   return helpContentData[contentId] || null
