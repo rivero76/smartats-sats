@@ -15,6 +15,7 @@
  * 2026-04-08 | P30 S4 — Move 'profile_fit_reconciliation' from Max+ to Pro+.
  *   Add 'profile_fit_score_history' (Max+) to fix coupling bug in ProfileFit.tsx
  *   where score history was gated by the reconciliation key.
+ * 2026-04-12 | P-INTERVIEW S1 — Add 'interview_prep' (Pro+) feature key.
  */
 
 // ---------------------------------------------------------------------------
@@ -37,6 +38,7 @@ export type PlanFeatureKey =
   | 'ats_score_breakdown' // ATS score sub-dimension breakdown (Pro+)
   | 'byok' // Bring your own API key (Max+)
   | 'model_selection' // Custom model selection (Max+)
+  | 'interview_prep' // Interview Intelligence — question bank + STAR scaffolds (Pro+)
 
 export type PlanTier = 'free' | 'pro' | 'max' | 'enterprise'
 
@@ -61,6 +63,7 @@ export const PLAN_FEATURES: Record<PlanFeatureKey, PlanTier[]> = {
   ats_score_breakdown: ['pro', 'max', 'enterprise'],
   byok: ['max', 'enterprise'],
   model_selection: ['max', 'enterprise'],
+  interview_prep: ['pro', 'max', 'enterprise'],
 }
 
 // ---------------------------------------------------------------------------

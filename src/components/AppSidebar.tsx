@@ -3,6 +3,7 @@
  * 2026-04-02 00:00:00 | Add PM Dashboard nav item (/pm) to main navigation
  * 2026-04-05 22:30:00 | P26 S6-1 — Add Gap Analysis nav item (/gap).
  * 2026-04-07 00:00:00 | P28 S4 — Add Profile Fit Analyzer nav item (/profile-fit).
+ * 2026-04-12 00:00:00 | P-INTERVIEW S1 — Add Interview Intelligence nav item (/interview-prep).
  */
 import {
   LayoutDashboard,
@@ -20,6 +21,7 @@ import {
   ClipboardList,
   TrendingUp,
   Target,
+  BrainCircuit,
 } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,6 +52,7 @@ const navigationItems = [
   { title: 'Roadmaps', url: '/roadmaps', icon: GraduationCap },
   { title: 'Gap Analysis', url: '/gap', icon: TrendingUp },
   { title: 'Profile Fit', url: '/profile-fit', icon: Target },
+  { title: 'Interview Prep', url: '/interview-prep', icon: BrainCircuit },
   { title: 'Help Hub', url: '/help', icon: HelpCircle },
   { title: 'PM Dashboard', url: '/pm', icon: ClipboardList },
   { title: 'Settings', url: '/settings', icon: Settings },

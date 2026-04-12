@@ -1,9 +1,10 @@
 <!-- UPDATE LOG -->
 <!-- 2026-04-07 | Created — visual product roadmap in professional PM format, with agent references and saas-advisor checkpoints. Derived from product-roadmap.md (technical detail) and the SaaS Podcast advisory guide. -->
+<!-- 2026-04-12 | Add P-INTERVIEW — Interview Intelligence (S1+S2 shipped). -->
 
 # SmartATS — Product Roadmap
 
-**Last updated:** 2026-04-07
+**Last updated:** 2026-04-12
 **Owner:** Founder
 **Technical detail:** [`docs/decisions/product-roadmap.md`](product-roadmap.md) (dense reference doc — use this file for strategy, that file for implementation detail)
 **Advisory guide:** [`docs/advisory/2026-04-07_saas-podcast-advisory-guide.md`](../advisory/2026-04-07_saas-podcast-advisory-guide.md)
@@ -178,6 +179,18 @@
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Status** | COMPLETED — CODE-VERIFIED 2026-04-08. E2E runtime validation pending migration deploy.                                                                                                                                                                                            |
 | **Scope**  | `sats_upgrade_requests` table + RLS, atomic `sats_approve_upgrade_request()` RPC, `request-plan-upgrade` edge function (Resend email), `UpgradeRequestModal` user-facing component, `UpgradeRequestsPanel` admin panel with approve/deny, Admin Dashboard tab with pending badge. |
+
+---
+
+### 🔄 P-INTERVIEW — Interview Intelligence
+
+**Priority:** HIGH | **Tier:** Pro+ (MVP) · Max+ (Employee Signals, Full Vision) | **Plan:** `plans/p-interview-intelligence.md` (brainstorm) · `plans/concurrent-knitting-crescent.md` (PM discovery)
+
+|            |                                                                                                                                                                                                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status** | S1+S2 SHIPPED 2026-04-12 — CODE-VERIFIED. E2E runtime validation pending edge function deploy.                                                                                                                                                                                                         |
+| **Scope**  | 3-call sequential LLM pipeline (company research → role decode → question bank + STAR scaffolds). All 5 question categories (behavioural, gap-bridge, role-specific, company values, technical deep-dive). 24h rate limit. Graceful degradation. Entry from ATS Analyses card. `/interview-prep` page. |
+| **Next**   | S3: Two-table shared architecture (triggered when ≥3 users on same JD). S4: Proactive pre-generation. S5: Employee Signal Panel (Railway scraper expansion).                                                                                                                                           |
 
 ---
 

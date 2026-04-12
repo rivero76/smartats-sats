@@ -3970,7 +3970,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'sats_upgrade_requests_user_id_profiles_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
       }
       sats_user_notifications: {
         Row: {

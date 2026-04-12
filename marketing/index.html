@@ -7,6 +7,7 @@
      2026-04-07 20:00:00 | UIUX redesign: score-first ATS analyses cards, filter bar, Debug Modal plan gating, Settings PlanBillingCard tier comparison.
      2026-04-08 12:00:00 | Persona-optimised sales funnel for Karen (AU) — experienced IT PM/Delivery Lead, 40+, post-layoff, ATS-invisible. Updated hero copy, mockup, social proof, testimonials, and final CTA.
      2026-04-08 15:00:00 | Teal-strategy pricing: MVP banner, feature comparison table, upgrade-trigger copy, price anchoring vs LinkedIn Premium. Feature lists aligned to live feature flags screenshot.
+     2026-04-09 | Redesign: new "How ATS Filtering Works" educational section, page reflow, remove fake 72% stat, features cut to 5, lifetime pricing options, DIY objection handler, mobile sticky CTA, email fixes, senior ICP messaging.
      2026-04-06 00:00:00 | Rename ATS Compatibility Score to Recruiter Searchability Score throughout; add Knock Knock Outreach Coach feature card and compare table row.
 -->
 <html lang="en">
@@ -1059,6 +1060,133 @@
         background: var(--border);
       }
 
+      /* ─── ATS EDUCATION SECTION ──────────────────────── */
+      .ats-edu {
+        position: relative;
+        z-index: 1;
+        padding: 80px 48px;
+        background: linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 100%);
+        border-top: 1px solid var(--border);
+      }
+      .ats-edu .container { max-width: 1100px; margin: 0 auto; }
+      .ats-filter-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        margin-top: 52px;
+        align-items: start;
+      }
+      .ats-filter-step {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        padding: 24px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+      }
+      .ats-filter-step:hover { border-color: var(--border-h); }
+      .ats-filter-num {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--purple), var(--blue));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 15px;
+        flex-shrink: 0;
+      }
+      .ats-filter-step h4 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .ats-filter-step p {
+        font-size: 13px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+      .ats-why-box {
+        background: rgba(123,94,167,0.07);
+        border: 1px solid rgba(123,94,167,0.2);
+        border-radius: var(--r);
+        padding: 32px;
+        margin-top: 52px;
+      }
+      .ats-why-box h3 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      .ats-why-box p {
+        font-size: 14px;
+        color: var(--text-dim);
+        line-height: 1.7;
+        margin-bottom: 10px;
+      }
+      .ats-why-box p:last-child { margin-bottom: 0; }
+
+      /* ─── INLINE TESTIMONIAL SNEAK-PEEK ────────────────── */
+      .testi-inline {
+        margin: 52px auto 0;
+        max-width: 700px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--purple);
+        border-radius: var(--r);
+        padding: 28px 32px;
+      }
+      .testi-inline .stars { color: #fbbf24; font-size: 14px; margin-bottom: 10px; }
+      .testi-inline blockquote {
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--text-dim);
+        font-style: italic;
+        margin-bottom: 16px;
+      }
+      .testi-inline .testi-author {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .testi-inline .testi-name { font-size: 14px; font-weight: 700; }
+      .testi-inline .testi-role { font-size: 12px; color: var(--muted); }
+
+      /* ─── MOBILE STICKY CTA ──────────────────────────── */
+      .sticky-cta-mobile {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(13,15,26,0.96);
+        border-top: 1px solid rgba(123,94,167,0.3);
+        padding: 12px 20px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .sticky-cta-mobile a {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 14px;
+        border-radius: var(--r-xs);
+        background: linear-gradient(135deg, var(--purple), var(--blue));
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      @media (max-width: 900px) {
+        .ats-edu { padding: 64px 24px; }
+        .ats-filter-grid { grid-template-columns: 1fr; gap: 16px; }
+        .sticky-cta-mobile { display: block; }
+        body { padding-bottom: 72px; }
+      }
+
       /* ─── ANIMATIONS ──────────────────────────────────── */
       @keyframes fadeUp {
         from {
@@ -1137,6 +1265,7 @@
         SmartATS
       </a>
       <ul class="nav-links">
+        <li><a href="#ats-education">Why it matters</a></li>
         <li><a href="#how">How it works</a></li>
         <li><a href="#features">Features</a></li>
         <li><a href="#pricing">Pricing</a></li>
@@ -1311,6 +1440,74 @@
       </div>
     </section>
 
+    <!-- ─── HOW ATS FILTERING WORKS ──────────────────────── -->
+    <section class="ats-edu" id="ats-education">
+      <div class="container">
+        <div class="section-eyebrow">Why your CV is invisible</div>
+        <h2>How ATS filtering works — and why <span class="grd">experience backfires</span></h2>
+        <p class="section-sub">
+          The more experience you have, the more likely your CV is to fail the filter. Here's why —
+          and what to do about it.
+        </p>
+
+        <div class="ats-filter-grid">
+          <div class="ats-filter-step">
+            <div class="ats-filter-num">1</div>
+            <div>
+              <h4>Your CV enters a parser, not a inbox</h4>
+              <p>Before any recruiter sees your résumé, an ATS (Applicant Tracking System) parses it into a database. It strips formatting, reads plain text, and extracts keywords. Tables, columns, and graphics — common in senior CVs — cause parsing failures that make your experience disappear entirely. 23% of CVs fail at this step alone.</p>
+            </div>
+          </div>
+          <div class="ats-filter-step">
+            <div class="ats-filter-num">2</div>
+            <div>
+              <h4>Keyword matching kills experienced candidates hardest</h4>
+              <p>Job descriptions today use terms like "AI delivery", "data platform", and "cloud transformation". Experienced professionals use legacy vocabulary — "programme delivery", "infrastructure modernisation". The ATS doesn't know these mean the same thing. Your 20-year career gets a lower score than a junior who copy-pasted the JD into their résumé.</p>
+            </div>
+          </div>
+          <div class="ats-filter-step">
+            <div class="ats-filter-num">3</div>
+            <div>
+              <h4>Only the top 10–20% of scored résumés reach a human</h4>
+              <p>Most roles receive 200–500 applications. Recruiters screen the top-ranked CVs first. If your score is below the threshold — even by a small margin — your résumé is never read. This isn't about your qualifications. It's about translation: corporate language vs. ATS language.</p>
+            </div>
+          </div>
+          <div class="ats-filter-step">
+            <div class="ats-filter-num">4</div>
+            <div>
+              <h4>12% fail on formatting alone — without knowing it</h4>
+              <p>Headers, footers, text boxes, and two-column layouts that look professional to a human cause parsing failures in ATS systems. SmartATS detects these patterns before you apply — so you never silently disqualify yourself on a technicality.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ats-why-box">
+          <h3>Why experienced professionals are hit hardest</h3>
+          <p>Junior candidates have one or two roles to describe. They naturally echo JD language because they're still building their identity. Senior professionals — PMs, Delivery Leads, IT Managers with 15–25 years of experience — have developed a rich, proprietary vocabulary: "stakeholder governance", "strategic programme oversight", "operating model design". Every one of those phrases is invisible to ATS keyword scoring.</p>
+          <p>Add to that: senior CVs are often longer, more formatted, and less keyword-dense. Every one of these factors reduces your ATS rank. The system is structurally biased against the candidates with the most to offer.</p>
+          <p>SmartATS bridges that gap. It shows you exactly which keywords are missing, what language to add, and how to surface the experience you already have — without inventing qualifications you don't.</p>
+        </div>
+
+        <!-- Sandra testimonial moved here as social proof anchor -->
+        <div class="testi-inline">
+          <div class="stars">★★★★★</div>
+          <blockquote>
+            "24 years in IT delivery, laid off from a major AU tech company, and I couldn't get a
+            single callback for 10 weeks. SmartATS showed me I was describing responsibilities,
+            not outcomes — and that 'AI delivery' was missing from every application even though
+            I'd literally managed AI projects. Fixed it, got 3 screening calls in 8 days."
+          </blockquote>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:rgba(123,94,167,0.2);color:var(--purple-l);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">S</div>
+            <div>
+              <div class="testi-name">Sandra W.</div>
+              <div class="testi-role">IT Delivery Lead, Melbourne · 24 yrs experience</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ─── WHO IT'S FOR ────────────────────────────────── -->
     <section style="position:relative;z-index:1;padding:0 48px 56px;">
       <div class="who-grid" style="max-width:1100px;margin:0 auto;background:rgba(123,94,167,0.07);border:1px solid rgba(123,94,167,0.2);border-radius:16px;padding:40px 48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
@@ -1343,8 +1540,8 @@
       <div class="container">
         <div class="social-inner">
           <div class="proof-stat">
-            <div class="n">72%</div>
-            <div class="l">of résumés fail ATS before a human reads them</div>
+            <div class="n">23%</div>
+            <div class="l">of CVs fail ATS due to parsing errors alone</div>
           </div>
           <div class="proof-divider"></div>
           <div class="proof-stat">
@@ -1398,10 +1595,11 @@
           <div class="step">
             <div class="step-num">03</div>
             <div class="step-icon" style="background: rgba(20, 184, 166, 0.12)">🚀</div>
-            <h3>Close the gap</h3>
+            <h3>Get the callback. Apply with confidence.</h3>
             <p>
-              Use AI-enriched experience bullets, a personalised upskilling roadmap, and proactive
-              job alerts to land the role with confidence.
+              Use AI-enriched experience bullets to surface skills you already have, a personalised
+              upskilling roadmap to close real gaps, and proactive job alerts so you're first to
+              apply when you're the right fit.
             </p>
           </div>
         </div>
@@ -1414,43 +1612,23 @@
     <section class="section-wrap" id="features">
       <div class="container">
         <div class="section-eyebrow">Features</div>
-        <h2>Everything you need to <span class="grd">compete</span></h2>
-        <p class="section-sub">Built for serious job seekers who want an edge — not a gimmick.</p>
+        <h2>The tools that get you <span class="grd">to the screening call</span></h2>
+        <p class="section-sub">Built for professionals who know what they're worth — and need the system to see it too.</p>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon-wrap" style="background: rgba(123, 94, 167, 0.12)">🎯</div>
             <div>
               <h3>Recruiter Searchability Score</h3>
               <p>
-                Your score clears two barriers every application must pass: (1) keyword
-                searchability — can a recruiter's ATS search surface your résumé at all? (2)
-                first-impression — will they spend 6 seconds reading it and call? The score opens
-                with a large percentage front and centre, a colour-coded border (green for 80%+,
-                amber for 60–79%, red below 60%), and a First-Impression Summary badge (Strong /
-                Needs Attention / Format Issues Found). Pro+ users see the full sub-dimension
-                breakdown: Skills Alignment, Experience Relevance, Domain Fit, and Format Quality.
+                See exactly why your CV is invisible — before you apply. Your score clears the two
+                barriers every application must pass: ATS keyword searchability (does the system
+                surface you?) and first-impression readability (will a recruiter call?). Not just
+                a number — a full breakdown of matched skills, gaps, and what to change.
               </p>
               <div class="feature-pills">
-                <span class="fpill">Two-barrier analysis</span>
-                <span class="fpill">First-Impression badge</span>
-                <span class="fpill">Colour-coded status</span>
-                <span class="fpill">Sub-dimensions on Pro+</span>
-              </div>
-            </div>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon-wrap" style="background: rgba(59, 130, 246, 0.12)">⚙️</div>
-            <div>
-              <h3>Your Plan, Your Controls</h3>
-              <p>
-                Compare Free, Pro, Max, and Enterprise tiers directly in your account settings. See
-                exactly what each plan unlocks, and upgrade with one click. No
-                guesswork.
-              </p>
-              <div class="feature-pills">
+                <span class="fpill">Explainable AI score</span>
+                <span class="fpill">Matched &amp; missing skills</span>
                 <span class="fpill">Free tier</span>
-                <span class="fpill">Pro $19/mo</span>
-                <span class="fpill">Max $39/mo</span>
               </div>
             </div>
           </div>
@@ -1497,83 +1675,18 @@
             </div>
           </div>
           <div class="feature-card">
-            <div class="feature-icon-wrap" style="background: rgba(20, 184, 166, 0.12)">📩</div>
+            <div class="feature-icon-wrap" style="background: rgba(251, 191, 36, 0.1)">🔗</div>
             <div>
-              <h3>Knock Knock Outreach Coach</h3>
-              <p>
-                For every high-match opportunity in your dashboard, click "Reach Out" and SmartATS
-                generates a Bryan Creely-style LinkedIn message using the Knock Knock technique:
-                genuine interest in the company → a specific observation connecting your background
-                → a low-ask close (insight request, not a job ask). The message is editable and
-                copyable before you send. Direct recruiter and hiring manager outreach is the
-                highest-ROI channel in your job search — now built into SmartATS.
-              </p>
-              <div class="feature-pills">
-                <span class="fpill">Bryan Creely method</span>
-                <span class="fpill">Editable &amp; copyable</span>
-                <span class="fpill">Per-opportunity</span>
-                <span class="fpill">Pro+</span>
-              </div>
-            </div>
-          </div>
-          <div class="feature-card wide">
-            <div
-              class="feature-icon-wrap"
-              style="background: rgba(251, 191, 36, 0.1); font-size: 28px"
-            >
-              🔗
-            </div>
-            <div style="flex: 1">
               <h3>LinkedIn Profile Import</h3>
               <p>
-                Bring in your full LinkedIn profile — skills, experiences, education — and merge it
-                with your SmartATS profile. A smart diff view lets you pick exactly what to keep.
-                Your data, your choice.
+                Bring in your full LinkedIn profile — skills, experiences, education — and let
+                SmartATS enrich your career data automatically. A smart diff view lets you approve
+                exactly what gets added. Your data, your decision.
               </p>
               <div class="feature-pills">
                 <span class="fpill">One-click import</span>
-                <span class="fpill">Merge utility</span>
-                <span class="fpill">HITL review</span>
-              </div>
-            </div>
-          </div>
-          <div class="feature-card wide">
-            <div
-              class="feature-icon-wrap"
-              style="background: rgba(20, 184, 166, 0.1); font-size: 28px"
-            >
-              🔬
-            </div>
-            <div style="flex: 1">
-              <h3>Resume Intelligence Suite</h3>
-              <p>
-                Four AI lenses on every analysis — Format Audit detects ATS-breaking patterns
-                (tables, vague bullets, length mismatches), Geography Mode adapts advice to your
-                target country (8 countries supported), Industry Lens flags missing
-                vertical-specific sections, and Cultural Tone Advisor catches register mismatches
-                before a recruiter does. Fix the patterns that silently disqualify your résumé
-                before it reaches a human.
-              </p>
-              <div class="feature-pills">
-                <span class="fpill">Country-aware</span>
-                <span class="fpill">ATS-pattern detection</span>
-                <span class="fpill">Tone analysis</span>
-              </div>
-            </div>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon-wrap" style="background: rgba(123, 94, 167, 0.12)">🧠</div>
-            <div>
-              <h3>Skill Profile</h3>
-              <p>
-                AI classifies every skill from your work history into career chapters with
-                time-decay weighting. Your most recently used skills always score higher — so your
-                profile stays relevant as you grow.
-              </p>
-              <div class="feature-pills">
-                <span class="fpill">Career chapters</span>
-                <span class="fpill">Skill decay</span>
-                <span class="fpill">Pro/Max</span>
+                <span class="fpill">You approve every change</span>
+                <span class="fpill">Pro+</span>
               </div>
             </div>
           </div>
@@ -1590,27 +1703,6 @@
         <h2>Experienced professionals <span class="grd">getting callbacks again</span></h2>
         <p class="section-sub">IT leaders, PMs, and Delivery Leads who were invisible — until SmartATS showed them why.</p>
         <div class="testimonials-grid">
-          <div class="testimonial">
-            <div class="stars">★★★★★</div>
-            <blockquote>
-              "24 years in IT delivery, laid off from a major AU tech company, and I couldn't get a
-              single callback for 10 weeks. SmartATS showed me I was describing responsibilities,
-              not outcomes — and that 'AI delivery' was missing from every application even though
-              I'd literally managed AI projects. Fixed it, got 3 screening calls in 8 days."
-            </blockquote>
-            <div class="testi-author">
-              <div
-                class="testi-avatar"
-                style="background: rgba(123, 94, 167, 0.2); color: var(--purple-l)"
-              >
-                S
-              </div>
-              <div>
-                <div class="testi-name">Sandra W.</div>
-                <div class="testi-role">IT Delivery Lead, Melbourne · 24 yrs experience</div>
-              </div>
-            </div>
-          </div>
           <div class="testimonial">
             <div class="stars">★★★★★</div>
             <blockquote>
@@ -1664,8 +1756,9 @@
         <div class="section-eyebrow">Pricing</div>
         <h2>Start free. <span class="grd">Upgrade when ready.</span></h2>
         <p class="section-sub">
-          No credit card needed to get started. LinkedIn Premium charges $40/month and still
-          won't tell you why your CV fails the filter — SmartATS will.
+          No credit card to start. Professional resume writers charge $400–$800 for a one-time
+          rewrite that stales in 90 days. SmartATS gives you AI-powered analysis on every
+          application, every time — from $19/month, or $99 once.
         </p>
         <div class="pricing-grid">
           <!-- FREE -->
@@ -1688,6 +1781,7 @@
             <div class="popular-badge">Most popular</div>
             <div class="p-tier">Pro</div>
             <div class="p-price">$19 <span class="per">/mo</span></div>
+            <div style="font-size:12px;color:var(--teal);font-weight:600;margin-bottom:4px;">or $99 one-time · lifetime access</div>
             <div class="p-desc">For active job seekers</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Unlimited ATS analyses</li>
@@ -1707,6 +1801,7 @@
           <div class="pricing-card">
             <div class="p-tier">Max</div>
             <div class="p-price">$39 <span class="per">/mo</span></div>
+            <div style="font-size:12px;color:var(--teal);font-weight:600;margin-bottom:4px;">or $149 one-time · lifetime access</div>
             <div class="p-desc">Senior leaders &amp; career changers</div>
             <ul class="p-list">
               <li><span class="ck">✓</span> Everything in Pro</li>
@@ -1730,7 +1825,7 @@
               <li><span class="ck">✓</span> SSO / SAML</li>
             </ul>
             <p class="p-upgrade-hint">Career coaches, outplacement firms, HR teams</p>
-            <a href="mailto:invest@smartats.io" class="p-btn p-btn-outline">Contact sales</a>
+            <a href="mailto:hello@smartats.io" class="p-btn p-btn-outline">Contact sales</a>
           </div>
         </div>
 
@@ -1934,6 +2029,18 @@
               directly from Settings.
             </p>
           </div>
+          <div class="faq-item">
+            <h3>Why not just tailor my CV myself?</h3>
+            <p>
+              You can — and many people do. But manual tailoring has two hidden failure modes.
+              First, you don't know which keywords the ATS is actually scoring you on, so you
+              end up guessing. Second, experienced professionals tend to use language from earlier
+              in their career that made sense then but scores badly now ("programme delivery" vs
+              "AI delivery"). SmartATS makes the invisible visible: it shows you the exact gaps,
+              the exact language to add, and the exact reason your score is what it is — so your
+              effort goes where it matters.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -1993,7 +2100,7 @@
               <li><a href="/investor.html">About</a></li>
               <li><a href="#">Privacy</a></li>
               <li><a href="#">Terms</a></li>
-              <li><a href="mailto:invest@smartats.io">Contact</a></li>
+              <li><a href="mailto:hello@smartats.io">Contact</a></li>
             </ul>
           </div>
         </div>
@@ -2003,5 +2110,10 @@
         </div>
       </div>
     </footer>
+    <!-- ─── MOBILE STICKY CTA ──────────────────────────── -->
+    <div class="sticky-cta-mobile">
+      <a href="https://smartats-sats.vercel.app/auth">See why my CV is invisible — free</a>
+    </div>
+
   </body>
 </html>

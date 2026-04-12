@@ -15,14 +15,14 @@ All Supabase auth flows (email confirmation, password reset, magic link) were re
 
 ## Timeline
 
-| Time | Event |
-|------|-------|
-| ~2026-03 | Project migrated from Lovable.dev to self-hosted Vite + Vercel. Code cleaned of Lovable artifacts (MAINT-1, completed 2026-03-30). |
-| 2026-03 → 2026-04-09 | Supabase project `site_url` and `uri_allow_list` were never updated during migration. Continued pointing to Lovable.dev. |
-| 2026-04-09 | User reported sign-in/sign-up links redirecting to Lovable instead of Vercel. |
-| 2026-04-09 | Deep code review found no Lovable references in source code. Investigation expanded to Supabase project auth config via Management API. |
-| 2026-04-09 | Root cause confirmed: `site_url` = Lovable URL, `uri_allow_list` = 13 Lovable domains. |
-| 2026-04-09 | Fix applied via Supabase Management API PATCH. Verified correct values returned. |
+| Time                 | Event                                                                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| ~2026-03             | Project migrated from Lovable.dev to self-hosted Vite + Vercel. Code cleaned of Lovable artifacts (MAINT-1, completed 2026-03-30).      |
+| 2026-03 → 2026-04-09 | Supabase project `site_url` and `uri_allow_list` were never updated during migration. Continued pointing to Lovable.dev.                |
+| 2026-04-09           | User reported sign-in/sign-up links redirecting to Lovable instead of Vercel.                                                           |
+| 2026-04-09           | Deep code review found no Lovable references in source code. Investigation expanded to Supabase project auth config via Management API. |
+| 2026-04-09           | Root cause confirmed: `site_url` = Lovable URL, `uri_allow_list` = 13 Lovable domains.                                                  |
+| 2026-04-09           | Fix applied via Supabase Management API PATCH. Verified correct values returned.                                                        |
 
 ---
 
@@ -33,12 +33,14 @@ When the project was bootstrapped on Lovable.dev, Supabase set the auth `site_ur
 The `site_url` controls where Supabase sends users after email confirmation and password reset. The `uri_allow_list` controls which redirect URLs are permitted in auth flows.
 
 **Before fix:**
+
 ```
 site_url:       https://dbe265ab-2483-4c23-aa44-69fcb1894344.lovableproject.com
 uri_allow_list: 13 lovable.app / lovableproject.com domains (none for Vercel)
 ```
 
 **After fix:**
+
 ```
 site_url:       https://smartats-sats.vercel.app
 uri_allow_list: https://smartats-sats.vercel.app/**, http://localhost:8080/**, http://localhost:5173/**
@@ -72,11 +74,11 @@ No code changes required — this was a Supabase project configuration issue onl
 
 ## Action Items
 
-| # | Action | Owner | Status |
-|---|--------|-------|--------|
-| 1 | Add Supabase `site_url` + `uri_allow_list` to deployment checklist in `docs/runbooks/deployment.md` | Claude Code | ✅ Done (see below) |
-| 2 | Re-send confirmation emails to any users who signed up and could not verify | Ricardo | Pending — check `auth.users` for `email_confirmed_at IS NULL` |
-| 3 | Consider adding Vercel preview URL pattern to `uri_allow_list` if preview deployments need auth | Ricardo | Optional |
+| #   | Action                                                                                              | Owner       | Status                                                        |
+| --- | --------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------- |
+| 1   | Add Supabase `site_url` + `uri_allow_list` to deployment checklist in `docs/runbooks/deployment.md` | Claude Code | ✅ Done (see below)                                           |
+| 2   | Re-send confirmation emails to any users who signed up and could not verify                         | Ricardo     | Pending — check `auth.users` for `email_confirmed_at IS NULL` |
+| 3   | Consider adding Vercel preview URL pattern to `uri_allow_list` if preview deployments need auth     | Ricardo     | Optional                                                      |
 
 ---
 

@@ -12,8 +12,11 @@
  * 2026-04-08 00:00:00 | Callback rate UX: rename "ATS Compatibility Score" → "Recruiter Searchability Score",
  *   add recruiter-reality tooltip, surface score_breakdown bars for all users, add First-Impression
  *   Summary indicator aggregating format_audit + cultural_tone + industry_lens.
+ * 2026-04-12 00:00:00 | P-INTERVIEW S1 — Add "Prepare for Interview" button in expanded action row
+ *   for completed analyses. Routes to /interview-prep?analysis_id=<uuid>.
  */
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { staggerContainer, listItem } from '@/lib/animations'
 import ATSAnalysisProgress from '@/components/ATSAnalysisProgress'
@@ -41,6 +44,7 @@ import {
   ChevronDown,
   ChevronUp,
   Filter,
+  BrainCircuit,
 } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -78,6 +82,7 @@ const ATSAnalyses = () => {
     dataUpdatedAt,
   } = useATSAnalyses()
   const { data: stats, isLoading: statsLoading } = useATSAnalysisStats()
+  const navigate = useNavigate()
   const deleteAnalysis = useDeleteATSAnalysis()
   const retryAnalysis = useRetryATSAnalysis()
 
@@ -591,6 +596,19 @@ const ATSAnalyses = () => {
                                       <RefreshCw className="h-3 w-3 mr-1" />
                                     )}
                                     Retry
+                                  </Button>
+                                )}
+                                {hasResults && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      navigate(`/interview-prep?analysis_id=${analysis.id}`)
+                                    }
+                                    className="text-xs"
+                                  >
+                                    <BrainCircuit className="h-3 w-3 mr-1" />
+                                    Prepare for Interview
                                   </Button>
                                 )}
                                 <Button

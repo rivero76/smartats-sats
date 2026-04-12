@@ -410,27 +410,30 @@ Never delete a plan file — archive it.
 
 ## Source of Truth
 
-| Concern                       | Location                                       |
-| ----------------------------- | ---------------------------------------------- |
-| Architecture baseline         | `docs/architecture.md`                         |
-| Technical decisions (ADRs)    | `docs/decisions/`                              |
-| Coding conventions            | `docs/conventions/coding-conventions.md`       |
-| Product roadmap               | `docs/decisions/product-roadmap.md`            |
-| Product specs (per phase)     | `docs/specs/`                                  |
-| Active feature plans          | `plans/`                                       |
-| Completed/archived plans      | `plans/archive/`                               |
-| Operational runbooks          | `docs/runbooks/`                               |
-| Active code defects (bugs)    | `docs/bugs/`                                   |
-| Operational/deploy incidents  | `docs/incidents/`                              |
-| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md`  |
-| Reusable audit prompts        | `docs/audits/`                                 |
-| Audit reports (all types)     | `docs/audits/reports/`                         |
-| Security audit reports        | `docs/security/`                               |
-| Compliance policies           | `docs/compliance/`                             |
-| Release readiness             | `docs/releases/UNTESTED_IMPLEMENTATIONS.md`    |
-| Changelog                     | `docs/changelog/CHANGELOG.md`                  |
-| LLM model governance          | `docs/specs/technical/llm-model-governance.md` |
-| CI quality gates              | `.github/workflows/quality-gates.yml`          |
+| Concern                       | Location                                                          |
+| ----------------------------- | ----------------------------------------------------------------- |
+| Architecture baseline         | `docs/architecture.md`                                            |
+| Technical decisions (ADRs)    | `docs/decisions/`                                                 |
+| Coding conventions            | `docs/conventions/coding-conventions.md`                          |
+| Plan format standard          | `docs/conventions/plan-conventions.md`                            |
+| Visual product roadmap        | `docs/decisions/ROADMAP.md` (strategic, easy-to-read)             |
+| Technical roadmap             | `docs/decisions/product-roadmap.md` (dense implementation detail) |
+| Product specs (per phase)     | `docs/specs/`                                                     |
+| SaaS advisory guide           | `docs/advisory/2026-04-07_saas-podcast-advisory-guide.md`         |
+| Active feature plans          | `plans/`                                                          |
+| Completed/archived plans      | `plans/archive/`                                                  |
+| Operational runbooks          | `docs/runbooks/`                                                  |
+| Active code defects (bugs)    | `docs/bugs/`                                                      |
+| Operational/deploy incidents  | `docs/incidents/`                                                 |
+| Technical improvement backlog | `docs/improvements/TECHNICAL_IMPROVEMENTS.md`                     |
+| Reusable audit prompts        | `docs/audits/`                                                    |
+| Audit reports (all types)     | `docs/audits/reports/`                                            |
+| Security audit reports        | `docs/security/`                                                  |
+| Compliance policies           | `docs/compliance/`                                                |
+| Release readiness             | `docs/releases/UNTESTED_IMPLEMENTATIONS.md`                       |
+| Changelog                     | `docs/changelog/CHANGELOG.md`                                     |
+| LLM model governance          | `docs/specs/technical/llm-model-governance.md`                    |
+| CI quality gates              | `.github/workflows/quality-gates.yml`                             |
 
 ## Repository Structure (Canonical)
 
@@ -445,6 +448,7 @@ Never delete a plan file — archive it.
 - `plans/archive/` — completed plans
 - `marketing/` — standalone Vercel static site (`index.html` EN, `br.html` pt-BR, `investor.html`); has its own `vercel.json`
 - `docs/` — architecture, decisions, runbooks, releases, compliance
+  - `docs/advisory/` — SaaS advisory guides (Omer Khan / SaaS Podcast session outputs)
   - `docs/improvements/` — technical improvement backlog + periodic code review findings
   - `docs/bugs/` — active code defects
   - `docs/incidents/` — operational and deployment incident post-mortems

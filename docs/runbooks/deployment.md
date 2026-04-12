@@ -30,23 +30,23 @@ All edge function secrets are set per-project in the Supabase Dashboard:
 
 **Supabase Dashboard → Edge Functions → Secrets**
 
-| Secret | Required | Purpose |
-|--------|----------|---------|
-| `SUPABASE_URL` | Auto-set | Supabase project URL (injected automatically) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Auto-set | Service role key (injected automatically) |
-| `SUPABASE_ANON_KEY` | Auto-set | Anon key (injected automatically) |
-| `SATS_ALLOWED_ORIGINS` | Yes | Comma-separated list of allowed CORS origins (e.g. `https://smartats-sats.vercel.app`) |
-| `OPENAI_API_KEY` | Yes | OpenAI API key for all LLM calls |
-| `RESEND_API_KEY` | Recommended | Resend API key for transactional emails (deletion confirmation, upgrade notifications). Functions degrade gracefully without it — email steps are skipped. |
-| `SATS_ADMIN_NOTIFICATION_EMAIL` | Recommended | Email address to notify when a user submits an upgrade request. Set to your own email address. Without this, upgrade requests are still saved to the database — only the admin notification email is skipped. **Supabase Dashboard → Edge Functions → Secrets → add `SATS_ADMIN_NOTIFICATION_EMAIL` = your email address** |
-| `SATS_APP_URL` | Recommended | Public app URL (e.g. `https://smartats-sats.vercel.app`). Used in account deletion confirmation email for the cancel link. |
-| `PLAYWRIGHT_SERVICE_URL` | Yes (LinkedIn import) | URL of the Railway Playwright scraper service. Required for LinkedIn profile import. |
-| `OPENAI_MODEL_ATS` | Optional | Override default ATS scoring model (default: `gpt-4.1`) |
-| `OPENAI_MODEL_ENRICH` | Optional | Override skill enrichment model (default: `gpt-4.1-mini`) |
-| `OPENAI_MODEL_LINKEDIN_INGEST` | Optional | Override LinkedIn parse model (default: `gpt-4.1-mini`) |
-| `OPENAI_MODEL_PROFILE_FIT` | Optional | Override profile fit model (default: `gpt-4.1-mini`) |
-| `OPENAI_TEMPERATURE_ATS` | Optional | Override ATS scoring temperature (default: `0`) |
-| `OPENAI_ATS_SEED` | Optional | Override ATS scoring seed for reproducibility (default: `42`) |
+| Secret                          | Required              | Purpose                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`                  | Auto-set              | Supabase project URL (injected automatically)                                                                                                                                                                                                                                                                              |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Auto-set              | Service role key (injected automatically)                                                                                                                                                                                                                                                                                  |
+| `SUPABASE_ANON_KEY`             | Auto-set              | Anon key (injected automatically)                                                                                                                                                                                                                                                                                          |
+| `SATS_ALLOWED_ORIGINS`          | Yes                   | Comma-separated list of allowed CORS origins (e.g. `https://smartats-sats.vercel.app`)                                                                                                                                                                                                                                     |
+| `OPENAI_API_KEY`                | Yes                   | OpenAI API key for all LLM calls                                                                                                                                                                                                                                                                                           |
+| `RESEND_API_KEY`                | Recommended           | Resend API key for transactional emails (deletion confirmation, upgrade notifications). Functions degrade gracefully without it — email steps are skipped.                                                                                                                                                                 |
+| `SATS_ADMIN_NOTIFICATION_EMAIL` | Recommended           | Email address to notify when a user submits an upgrade request. Set to your own email address. Without this, upgrade requests are still saved to the database — only the admin notification email is skipped. **Supabase Dashboard → Edge Functions → Secrets → add `SATS_ADMIN_NOTIFICATION_EMAIL` = your email address** |
+| `SATS_APP_URL`                  | Recommended           | Public app URL (e.g. `https://smartats-sats.vercel.app`). Used in account deletion confirmation email for the cancel link.                                                                                                                                                                                                 |
+| `PLAYWRIGHT_SERVICE_URL`        | Yes (LinkedIn import) | URL of the Railway Playwright scraper service. Required for LinkedIn profile import.                                                                                                                                                                                                                                       |
+| `OPENAI_MODEL_ATS`              | Optional              | Override default ATS scoring model (default: `gpt-4.1`)                                                                                                                                                                                                                                                                    |
+| `OPENAI_MODEL_ENRICH`           | Optional              | Override skill enrichment model (default: `gpt-4.1-mini`)                                                                                                                                                                                                                                                                  |
+| `OPENAI_MODEL_LINKEDIN_INGEST`  | Optional              | Override LinkedIn parse model (default: `gpt-4.1-mini`)                                                                                                                                                                                                                                                                    |
+| `OPENAI_MODEL_PROFILE_FIT`      | Optional              | Override profile fit model (default: `gpt-4.1-mini`)                                                                                                                                                                                                                                                                       |
+| `OPENAI_TEMPERATURE_ATS`        | Optional              | Override ATS scoring temperature (default: `0`)                                                                                                                                                                                                                                                                            |
+| `OPENAI_ATS_SEED`               | Optional              | Override ATS scoring seed for reproducibility (default: `42`)                                                                                                                                                                                                                                                              |
 
 ### First-time setup checklist
 
@@ -56,7 +56,7 @@ All edge function secrets are set per-project in the Supabase Dashboard:
    - ⚠️ Failure to do this causes all sign-up confirmation emails and password reset links to redirect to the wrong domain. This happened when the project was migrated from Lovable.dev — see `docs/incidents/incident-2026-04-09-auth-redirects-lovable.md`.
 
 2. **Supabase Dashboard → Edge Functions → Secrets** — add all "Yes" and "Recommended" secrets above.
-2. Verify `SATS_ALLOWED_ORIGINS` includes your Vercel deployment URL and any preview URLs.
-3. Set `SATS_ADMIN_NOTIFICATION_EMAIL` to the email address where you want to receive upgrade request notifications.
-4. Set `RESEND_API_KEY` from [resend.com](https://resend.com) to enable transactional emails.
-5. Deploy the Railway Playwright service (`scripts/playwright-linkedin/`) and set `PLAYWRIGHT_SERVICE_URL`.
+3. Verify `SATS_ALLOWED_ORIGINS` includes your Vercel deployment URL and any preview URLs.
+4. Set `SATS_ADMIN_NOTIFICATION_EMAIL` to the email address where you want to receive upgrade request notifications.
+5. Set `RESEND_API_KEY` from [resend.com](https://resend.com) to enable transactional emails.
+6. Deploy the Railway Playwright service (`scripts/playwright-linkedin/`) and set `PLAYWRIGHT_SERVICE_URL`.
